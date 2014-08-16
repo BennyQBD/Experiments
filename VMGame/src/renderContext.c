@@ -68,7 +68,8 @@ void RenderContext_Clear(RenderContext* self, float r, float g, float b,
 }
 
 void RenderContext_DrawSquare(RenderContext* self, float x, float y, 
-                              float width, float height)
+                              float width, float height, 
+							  float r, float g, float b)
 {
 	(void)self;
 	float xStart = x;
@@ -76,7 +77,8 @@ void RenderContext_DrawSquare(RenderContext* self, float x, float y,
 	float xEnd = x + width;
 	float yEnd = y + height;
 
-	glColor3f(0.25f, 0.75f, 0.5f);
+	glColor3f(r, g, b);
+	//glColor3f(0.25f, 0.75f, 0.5f);
 	glBegin(GL_QUADS);
 	{
 		glVertex2f(xStart, yStart);

@@ -75,7 +75,11 @@ static int L_RenderContext_DrawSquare(lua_State* L)
 	float y                = (float)(lua_tonumber(L, 3)) - 1;
 	float width            = (float)(lua_tonumber(L, 4));
 	float height           = (float)(lua_tonumber(L, 5));
-	RenderContext_DrawSquare(context, x, y, width, height);
+	float r                = (float)(lua_tonumber(L, 6));
+	float g                = (float)(lua_tonumber(L, 7));
+	float b                = (float)(lua_tonumber(L, 8));
+
+	RenderContext_DrawSquare(context, x, y, width, height, r, g, b);
 	return 0;
 }
 

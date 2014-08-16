@@ -79,7 +79,8 @@ void RenderContext_Clear(RenderContext* self, float r, float g, float b,
 //TODO: Remove this function, and replace it with a more generally
 //useful rendering function.
 void RenderContext_DrawSquare(RenderContext* self, float x, float y, 
-                         float width, float height);
+                         float width, float height,
+						 float r, float g, float b);
 
 /**
  * Gets the width of the rendering area.
