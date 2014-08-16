@@ -1,0 +1,4 @@
+cd ../../
+./main
+cd res
+cd scripts
