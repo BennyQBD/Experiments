@@ -1,6 +1,7 @@
 require "./res/scripts/input"
 require "./res/scripts/player"
 require "./res/scripts/wall"
+require "./res/scripts/ceiling"
 require "./res/scripts/ball"
 require "./res/scripts/bricks"
 
@@ -20,7 +21,7 @@ function GameInit()
 	GameAddEntity(Player(0.4, 0.05, 0.8, 0.5, 0.5))
 	GameAddEntity(Wall(0.0, 0, 0.05, 2, 0,0,1))
 	GameAddEntity(Wall(1.95, 0, 0.05, 2, 0,0,1))
-	GameAddEntity(Wall(0, 1.95, 2, 0.05, 0,0,1))
+	GameAddEntity(Ceiling(0, 1.95, 2, 0.05, 0,0,1))
 	GameAddEntity(Game_ball)
 
 	for i = 1, 18 do
