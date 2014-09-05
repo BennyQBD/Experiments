@@ -16,7 +16,7 @@ end
 
 function GameInit()
 	Game_entities = {}
-	Game_ball = Ball(0.5, 0.5, 0.05, 0.05, 1,1,1)
+	Game_ball = Ball(1, 0.5, 0.05, 0.05, 1,1,1)
 
 	GameAddEntity(Player(0.4, 0.05, 0.8, 0.5, 0.5))
 	GameAddEntity(Wall(0.0, 0, 0.05, 2, 0,0,1))
