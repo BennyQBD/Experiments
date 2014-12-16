@@ -4,8 +4,13 @@
 #include "opengl3texture.h"
 #include "../staticlibs/stb_image.h"
 
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 #include <GL/glew.h>
 #include <sstream>
+#include <cassert>
 
 OpenGL3RenderDevice::OpenGL3RenderDevice()
 {
@@ -47,38 +52,111 @@ OpenGL3RenderDevice::OpenGL3RenderDevice()
 	else
 	{
 		std::ostringstream out;
-		out << "Error: OpenGL Version " << majorVersion << "." << minorVersion << " does not support shaders.";
+		out << "Error: OpenGL Version " << majorVersion << "." 
+			<< minorVersion << " does not support shaders.";
 		throw IRenderDevice::Exception(out.str());
 	}
 }
 
-IVertexArray* OpenGL3RenderDevice::CreateVertexArray(
-			float** vertexData, unsigned int* vertexElementSizes,
-			unsigned int numVertexComponents, unsigned int numVertices,
-			unsigned int* indices, unsigned int numIndices)
+IVertexArray* OpenGL3RenderDevice::CreateVertexArrayFromFile(const std::string& fileName)
 {
-	unsigned int numBuffers = numVertexComponents + 1;
-
-	GLuint VAO;
-	GLuint* buffers = new GLuint[numBuffers];
-
-	glGenVertexArrays(1, &VAO);
-	glBindVertexArray(VAO);
-
-	glGenBuffers(numBuffers, buffers);
-	for(unsigned int i = 0; i < numVertexComponents; i++)
+	Assimp::Importer importer;
+		
+	const aiScene* scene = importer.ReadFile(fileName.c_str(), 
+											 aiProcess_Triangulate |
+											 aiProcess_GenSmoothNormals | 
+											 aiProcess_FlipUVs |
+											 aiProcess_CalcTangentSpace);
+	
+	if(!scene)
 	{
-		glBindBuffer(GL_ARRAY_BUFFER, buffers[i]);
-		glBufferData(GL_ARRAY_BUFFER, vertexElementSizes[i] * sizeof(float) * numVertices, vertexData[i], GL_STATIC_DRAW);
-
-		glEnableVertexAttribArray(i);
-		glVertexAttribPointer(i, vertexElementSizes[i], GL_FLOAT, GL_FALSE, 0, 0);
+		std::ostringstream out;
+		out <<  "Mesh load failed!: " << fileName;
+		throw IRenderDevice::Exception(out.str());
 	}
 	
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[numVertexComponents]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, numIndices * sizeof(unsigned int), indices, GL_STATIC_DRAW);
+	const aiMesh* model = scene->mMeshes[0];
+	
+	std::vector<Vector3f> positions;
+	std::vector<Vector2f> texCoords;
+	std::vector<Vector3f> normals;
+	std::vector<Vector3f> tangents;
+	std::vector<unsigned int> indices;
 
-	return new OpenGL3VertexArray(VAO, buffers, numBuffers, numIndices);
+	const aiVector3D aiZeroVector(0.0f, 0.0f, 0.0f);
+	for(unsigned int i = 0; i < model->mNumVertices; i++) 
+	{
+		const aiVector3D pos = model->mVertices[i];
+		const aiVector3D normal = model->mNormals[i];
+		const aiVector3D texCoord = model->HasTextureCoords(0) ? model->mTextureCoords[0][i] : aiZeroVector;
+		const aiVector3D tangent = model->mTangents[i];
+
+		positions.push_back(Vector3f(pos.x, pos.y, pos.z));
+		texCoords.push_back(Vector2f(texCoord.x, texCoord.y));
+		normals.push_back(Vector3f(normal.x, normal.y, normal.z));
+		tangents.push_back(Vector3f(tangent.x, tangent.y, tangent.z));
+	}
+
+	for(unsigned int i = 0; i < model->mNumFaces; i++)
+	{
+		const aiFace& face = model->mFaces[i];
+		assert(face.mNumIndices == 3);
+		indices.push_back(face.mIndices[0]);
+		indices.push_back(face.mIndices[1]);
+		indices.push_back(face.mIndices[2]);
+	}
+	
+	return CreateVertexArray(IndexedModel(indices, positions, texCoords, normals, tangents));
+}
+
+IVertexArray* OpenGL3RenderDevice::CreateVertexArray(const IndexedModel& model)
+{
+	if(!model.IsValid())
+	{
+		std::ostringstream out;
+		out << "Error: Invalid mesh! The number of texCoords, normals,"
+			<< " and tangents must be either 0, or equal to the number of"
+			<< " positions";
+		throw IRenderDevice::Exception(out.str());
+	}
+
+	float* positions = (float*)&(model.GetPositions()[0]);
+	float* texCoords = (float*)&(model.GetTexCoords()[0]);
+	float* normals   = (float*)&(model.GetNormals()[0]);
+	float* tangents  = (float*)&(model.GetTangents()[0]);
+
+	std::vector<float*> vertexData;
+	std::vector<unsigned int> vertexElementSizes;
+
+	vertexData.push_back(positions);
+	vertexElementSizes.push_back(sizeof(model.GetPositions()[0])/sizeof(float));
+
+	unsigned int numVertexComponents = 1;
+	if(model.HasTexCoords()) 
+	{
+		vertexData.push_back(texCoords);
+		vertexElementSizes.push_back(sizeof(model.GetTexCoords()[0])/sizeof(float));
+		numVertexComponents++; 
+	}
+	if(model.HasNormals())   
+	{ 
+		vertexData.push_back(normals);
+		vertexElementSizes.push_back(sizeof(model.GetNormals()[0])/sizeof(float));
+		numVertexComponents++; 
+	}
+	if(model.HasTangents())
+	{
+		vertexData.push_back(tangents);
+		vertexElementSizes.push_back(sizeof(model.GetTangents()[0])/sizeof(float));
+		numVertexComponents++;
+	}	
+	
+	unsigned int numVertices = (unsigned int)model.GetPositions().size();
+	unsigned int* indices = (unsigned int*)&(model.GetIndices()[0]);
+	unsigned int numIndices = (unsigned int)model.GetIndices().size();
+
+	return new OpenGL3VertexArray(&vertexData[0], &vertexElementSizes[0], 
+			numVertexComponents, numVertices, indices, numIndices);
 }
 
 void OpenGL3RenderDevice::ReleaseVertexArray(IVertexArray* vertexArray)

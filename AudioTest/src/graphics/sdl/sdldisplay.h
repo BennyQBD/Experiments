@@ -4,6 +4,7 @@
 #include "../idisplay.h"
 #include "../irenderdevice.h"
 #include "../irendercontext.h"
+#include "sdlinput.h"
 
 #include <SDL2/SDL.h>
 #include <string>
@@ -22,6 +23,7 @@ public:
 	virtual int GetWidth();
 	virtual int GetHeight();
 
+	virtual IInput* GetInput();
 	virtual IRenderContext* GetRenderContext();
 	virtual IRenderDevice* GetRenderDevice();
 	virtual IRenderTarget* GetRenderTarget();
@@ -38,6 +40,7 @@ private:
 	IRenderDevice*  m_renderDevice;
 	IRenderContext* m_renderContext;
 	IRenderTarget*  m_renderTarget;
+	SDLInput*       m_input;
 	int             m_width;
 	int             m_height;
 	bool            m_isClosed;

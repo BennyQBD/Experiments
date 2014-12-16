@@ -111,6 +111,7 @@ bool SDLWAVAudioData::FillBuffer()
 	
 	Uint32 bufferLeft = (m_bufferLength - (Uint32)(m_bufferPos - m_bufferStart));
 
+	// Move whatever is left to be played to the start of the buffer.
 	for(Uint32 i = 0; i < bufferLeft; i++)
 	{
 		m_bufferStart[i] = *m_bufferPos;
@@ -312,6 +313,7 @@ static SDL_AudioSpec* OpenWavFile(SDL_RWops* src,
 
 
 
+	// TODO: This should be used to adjust the WAV data as appropriate
 	// Set up audio spec
 	SDL_memset(spec, 0, (sizeof *spec));
     spec->freq = (int)SDL_SwapLE32(format->frequency);

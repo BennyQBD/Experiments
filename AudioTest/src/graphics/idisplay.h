@@ -3,6 +3,7 @@
 
 #include "irenderdevice.h"
 #include "irendercontext.h"
+#include "../core/iinput.h"
 
 class IDisplay
 {
@@ -16,6 +17,7 @@ public:
 	virtual int GetWidth() = 0;
 	virtual int GetHeight() = 0;
 
+	virtual IInput* GetInput() = 0;
 	virtual IRenderContext* GetRenderContext() = 0;
 	virtual IRenderDevice* GetRenderDevice() = 0;
 	virtual IRenderTarget* GetRenderTarget() = 0;

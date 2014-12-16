@@ -7,6 +7,7 @@
 
 #define RENDERDEVICE OpenGL3RenderDevice
 #define RENDERCONTEXT OpenGL3RenderContext
+#define RENDERTARGET OpenGL3RenderTarget
 
 SDLDisplay::SDLDisplay(int width, int height, const std::string& title) :
 	m_width(width),
@@ -44,11 +45,13 @@ SDLDisplay::SDLDisplay(int width, int height, const std::string& title) :
 
 	m_renderContext = new RENDERCONTEXT();
 	m_renderDevice = new RENDERDEVICE();
-	m_renderTarget = new OpenGL3RenderTarget(0, m_width, m_height);
+	m_renderTarget = new RENDERTARGET(0, m_width, m_height);
+	m_input = new SDLInput(m_window);
 }
 
 SDLDisplay::~SDLDisplay()
 {
+	if(m_input) { delete m_input; }
 	if(m_renderTarget) { delete m_renderTarget; }
 	if(m_renderDevice) { delete m_renderDevice; }
 	if(m_renderContext) { delete m_renderContext; }
@@ -59,18 +62,7 @@ SDLDisplay::~SDLDisplay()
 
 void SDLDisplay::Update()
 {
-//	for(int i = 0; i < Input::NUM_MOUSEBUTTONS; i++)
-//	{
-//		m_input.SetMouseDown(i, false);
-//		m_input.SetMouseUp(i, false);
-//	}
-//
-//	for(int i = 0; i < Input::NUM_KEYS; i++)
-//	{
-//		m_input.SetKeyDown(i, false);
-//		m_input.SetKeyUp(i, false);
-//	}
-
+	m_input->Update();
 	SDL_Event e;
 	while(SDL_PollEvent(&e))
 	{
@@ -78,41 +70,10 @@ void SDLDisplay::Update()
 		{
 			m_isClosed = true;
 		}
-
-//		if(e.type == SDL_MOUSEMOTION)
-//		{
-//			m_input.SetMouseX(e.motion.x);
-//			m_input.SetMouseY(e.motion.y);
-//		}
-//
-//		if(e.type == SDL_KEYDOWN)
-//		{
-//			int value = e.key.keysym.scancode;
-//
-//			m_input.SetKey(value, true);
-//			m_input.SetKeyDown(value, true);
-//		}
-//		if(e.type == SDL_KEYUP)
-//		{
-//			int value = e.key.keysym.scancode;
-//
-//			m_input.SetKey(value, false);
-//			m_input.SetKeyUp(value, true);
-//		}
-//		if(e.type == SDL_MOUSEBUTTONDOWN)
-//		{
-//			int value = e.button.button;
-//
-//			m_input.SetMouse(value, true);
-//			m_input.SetMouseDown(value, true);
-//		}
-//		if(e.type == SDL_MOUSEBUTTONUP)
-//		{
-//			int value = e.button.button;
-//
-//			m_input.SetMouse(value, false);
-//			m_input.SetMouseUp(value, true);
-//		}
+		else
+		{
+			m_input->HandleEvent(e);
+		}
 	}
 }
 
@@ -134,6 +95,11 @@ int SDLDisplay::GetWidth()
 int SDLDisplay::GetHeight()
 {
 	return m_height;
+}
+
+IInput* SDLDisplay::GetInput()
+{
+	return m_input;
 }
 
 IRenderContext* SDLDisplay::GetRenderContext()

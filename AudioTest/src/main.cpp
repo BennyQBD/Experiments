@@ -18,29 +18,23 @@ int main(int argc, char** argv)
 	IShaderProgram* shader = 
 		device->CreateShaderProgramFromFile("./res/shaders/basicShader.glsl");
 
-	float positions[] =
-	{
-		-1.0f, -1.0f,  0.0f,
-		 0.0f,  1.0f,  0.0f,
-		 1.0f, -1.0f,  0.0f,
-	};
+//	IndexedModel model;
+//	model.AddVertex(-1.0f, -1.0f,  0.0f);
+//	model.AddVertex( 0.0f,  1.0f,  0.0f);
+//	model.AddVertex( 1.0f, -1.0f,  0.0f);
+//
+//	model.AddTexCoord(0.0f, 0.0f);
+//	model.AddTexCoord(0.5f, 1.0f);
+//	model.AddTexCoord(1.0f, 0.0f);
+//
+//	model.AddFace(0, 1, 2);
+//
+//	IVertexArray* vertexArray = device->CreateVertexArray(model); 
 
-	float texCoords[] =
-	{
-		0.0f, 0.0f,
-		0.5f, 1.0f,
-		1.0f, 0.0f,
-	};
-	unsigned int vertexElementSizes[] = { 3, 2 };
-	unsigned int indices[] = { 0, 1, 2 };
-	float* vertices[] = { positions, texCoords };
-
-	IVertexArray* vertexArray = device->CreateVertexArray(
-			vertices, vertexElementSizes, 2, 3, indices, 3);
-
+	IVertexArray* vertexArray = device->CreateVertexArrayFromFile("./res/models/monkey3.obj"); 
 	ITexture* texture = device->CreateTextureFromFile(
 			"./res/textures/bricks.jpg", false,
-			ITexture::FILTER_LINEAR_LINEAR_MIPMAP, 8.0f, false);
+			ITexture::FILTER_LINEAR_LINEAR_MIPMAP, 0.0f, false);
 	
 	RendererValues renderer;
 	renderer.SetSamplerSlot("diffuse", 0);
@@ -69,22 +63,37 @@ int main(int argc, char** argv)
 	AudioObject testSoundObject(testSound, &info);
 	audioContext->PlayAudio(testSoundObject);
 
+	IInput* input = display->GetInput();
 	float angle = 0.0f;
+	float movAmt = 0.015f;
 	while(!display->IsClosed())
 	{
 		display->Update();
+
+		if(input->GetKey(IInput::KEY_W))
+		{
+			transform.Move(Vector3f(0, 0, movAmt));
+		}
+		if(input->GetKey(IInput::KEY_S))
+		{
+			transform.Move(Vector3f(0, 0, -movAmt));
+		}
+
+
+		transform.SetRot(Quaternion());
+		transform.Rotate(Quaternion(Vector3f(1, 0, 0), angle));
+		transform.Rotate(Quaternion(Vector3f(0, 1, 0), angle));
+		transform.Rotate(Quaternion(Vector3f(0, 0, 1), angle));
+		transform.Rotate(Quaternion(Vector3f(0, 1, 0), (float)MATH_PI));
+		uniforms.world = transform.GetTransformation();
+		angle += 0.015f;
+
 
 		context->ClearScreen(target, 0.0f, 0.0f, 0.0f, 0.0f);
 		context->ClearDepth(target);
 		context->DrawVertexArray(target, shader, vertexArray, uniforms);
 
 		display->SwapBuffers();
-		transform.SetRot(Quaternion());
-		transform.Rotate(Quaternion(Vector3f(1, 0, 0), angle));
-		transform.Rotate(Quaternion(Vector3f(0, 1, 0), angle));
-		transform.Rotate(Quaternion(Vector3f(0, 0, 1), angle));
-		uniforms.world = transform.GetTransformation();
-		angle += 0.015f;
 	}
 
 	audioContext->StopAudio(testSoundObject);

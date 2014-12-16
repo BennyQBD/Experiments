@@ -4,16 +4,20 @@
 #include "ivertexarray.h"
 #include "ishaderprogram.h"
 #include "itexture.h"
+#include "indexedModel.h"
 #include <stdexcept>
 
 class IRenderDevice
 {
 public:
 	virtual ~IRenderDevice() {}
-	virtual IVertexArray* CreateVertexArray(
-			float** vertexData, unsigned int* vertexElementSizes,
-			unsigned int numVertexComponents, unsigned int numVertices,
-			unsigned int* indices, unsigned int numIndices) = 0;
+	
+	virtual IVertexArray* CreateVertexArrayFromFile(const std::string& fileName) = 0;
+	virtual IVertexArray* CreateVertexArray(const IndexedModel& model) = 0;
+//	virtual IVertexArray* CreateVertexArray(
+//			float** vertexData, unsigned int* vertexElementSizes,
+//			unsigned int numVertexComponents, unsigned int numVertices,
+//			unsigned int* indices, unsigned int numIndices) = 0;
 	virtual void ReleaseVertexArray(IVertexArray* vertexArray) = 0;
 
 	virtual IShaderProgram* CreateShaderProgram(const std::string& shaderText)

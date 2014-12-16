@@ -7,23 +7,19 @@ class OpenGL3VertexArray : public IVertexArray
 {
 public:
 	virtual ~OpenGL3VertexArray();
-	OpenGL3VertexArray(const unsigned int vertexArrayObject, 
-			const unsigned int* buffers, const unsigned int numBuffers, 
-			const unsigned int numElements) :
-		m_vertexArrayObject(vertexArrayObject),
-		m_buffers(buffers),
-		m_numBuffers(numBuffers),
-		m_numElements(numElements) {}
+	OpenGL3VertexArray(float** vertexData, unsigned int* vertexElementSizes,
+			unsigned int numVertexComponents, unsigned int numVertices,
+			unsigned int* indices, unsigned int numIndices);
 
 	inline unsigned int GetVAO() const         { return m_vertexArrayObject; }
 	inline const unsigned int* GetBuffers() const { return m_buffers; }
 	inline unsigned int GetNumBuffers() const     { return m_numBuffers; }
 	inline unsigned int GetNumElements() const    { return m_numElements; }
 private:
-	const unsigned int  m_vertexArrayObject;
-	const unsigned int* m_buffers;
-	const unsigned int  m_numBuffers;
-	const unsigned int  m_numElements;
+	unsigned int  m_vertexArrayObject;
+	unsigned int* m_buffers;
+	unsigned int  m_numBuffers;
+	unsigned int  m_numElements;
 
 	OpenGL3VertexArray(OpenGL3VertexArray& other) :
 		m_vertexArrayObject(0),

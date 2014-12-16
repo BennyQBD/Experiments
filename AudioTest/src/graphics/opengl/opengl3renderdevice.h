@@ -7,10 +7,13 @@ class OpenGL3RenderDevice : public IRenderDevice
 {
 public:
 	OpenGL3RenderDevice();
-	virtual IVertexArray* CreateVertexArray(
-			float** vertexData, unsigned int* vertexElementSizes,
-			unsigned int numVertexComponents, unsigned int numVertices,
-			unsigned int* indices, unsigned int numIndices);
+
+	virtual IVertexArray* CreateVertexArrayFromFile(const std::string& fileName);
+	virtual IVertexArray* CreateVertexArray(const IndexedModel& model);
+//	virtual IVertexArray* CreateVertexArray(
+//			float** vertexData, unsigned int* vertexElementSizes,
+//			unsigned int numVertexComponents, unsigned int numVertices,
+//			unsigned int* indices, unsigned int numIndices);
 	virtual void ReleaseVertexArray(IVertexArray* vertexArray);
 
 	virtual IShaderProgram* CreateShaderProgram(const std::string& shaderText);
