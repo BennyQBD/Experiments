@@ -1,8 +1,16 @@
 #include "sdlsubsystem.h"
 #include "../../audio/sdl/sdlaudiocontext.h"
 #include "../../audio/sdl/sdlaudiodevice.h"
+#include "../../audio/null/nullaudiodevice.h"
+#include "../../audio/null/nullaudiocontext.h"
 #include "../../graphics/sdl/sdldisplay.h"
 #include <sstream>
+
+#define AUDIO_CONTEXT SDLAudioContext
+#define AUDIO_DEVICE SDLAudioDevice
+
+//#define AUDIO_CONTEXT NullAudioContext
+//#define AUDIO_DEVICE NullAudioDevice
 
 SDLSubSystem::SDLSubSystem()
 {
@@ -16,8 +24,8 @@ SDLSubSystem::SDLSubSystem()
 		throw SubSystemException(result);
 	}
 
-	m_audioContext = new SDLAudioContext();
-	m_audioDevice = new SDLAudioDevice();
+	m_audioContext = new AUDIO_CONTEXT();
+	m_audioDevice = new AUDIO_DEVICE();
 }
 
 SDLSubSystem::~SDLSubSystem()

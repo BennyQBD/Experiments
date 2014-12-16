@@ -18,9 +18,12 @@ public:
 			const std::string& fileName);
 	virtual void ReleaseShaderProgram(IShaderProgram* shaderProgram);
 
+	virtual ITexture* CreateTextureFromFile(const std::string& fileName,
+			bool compress, int filter, float anisotropy,
+			bool clamp);
 	virtual ITexture* CreateTexture(int width, int height, unsigned char* data, 
-			int filter, float anisotropy, int internalFormat, 
-			int format, bool clamp);
+			int format, int internalFormat, bool compress, int filter, 
+			float anisotropy, bool clamp);
 
 	virtual void ReleaseTexture(ITexture* texture);
 

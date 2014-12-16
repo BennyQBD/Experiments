@@ -25,7 +25,7 @@ static GLfloat GetOpenGLFilter(int filter)
 	};
 }
 
-static GLint GetOpenGLFormat(int format)
+static GLint GetOpenGLFormat(int format, bool compress)
 {
 	switch(format)
 	{
@@ -34,9 +34,23 @@ static GLint GetOpenGLFormat(int format)
 		case ITexture::FORMAT_RG:
 			return GL_RG;
 		case ITexture::FORMAT_RGB:
-			return GL_RGB;
+			if(!compress)
+			{
+				return GL_RGB;
+			}
+			else
+			{
+				return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+			}
 		case ITexture::FORMAT_RGBA:
-			return GL_RGBA;
+			if(!compress)
+			{
+				return GL_RGBA;
+			}
+			else
+			{
+				return GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+			}
 		case ITexture::FORMAT_DEPTH:
 			return GL_DEPTH_COMPONENT;
 		case ITexture::FORMAT_DEPTH_AND_STENCIL:
@@ -50,11 +64,11 @@ static GLint GetOpenGLFormat(int format)
 
 OpenGL3Texture::OpenGL3Texture(int width, int height, unsigned char* data, 
 			int filterIn, float anisotropy, int internalFormatIn, 
-			int formatIn, bool clamp)
+			int formatIn, bool clamp, bool compress)
 {
 	GLfloat filter = GetOpenGLFilter(filterIn);
-	GLint format = GetOpenGLFormat(formatIn);
-	GLint internalFormat = GetOpenGLFormat(internalFormatIn);
+	GLint format = GetOpenGLFormat(formatIn, false);
+	GLint internalFormat = GetOpenGLFormat(internalFormatIn, compress);
 	GLenum textureTarget = GL_TEXTURE_2D;
 	GLuint textureHandle;
 

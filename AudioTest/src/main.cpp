@@ -1,8 +1,6 @@
 #include <iostream>
 #include "subsystem/sdl/sdlsubsystem.h"
-
-//TODO: This is temporary include.
-#include "stb_image.h"
+#include "core/transform.h"
 
 #define SUBSYSTEM SDLSubSystem
 
@@ -40,22 +38,9 @@ int main(int argc, char** argv)
 	IVertexArray* vertexArray = device->CreateVertexArray(
 			vertices, vertexElementSizes, 2, 3, indices, 3);
 
-
-	//BEGIN TEMP CODE
-	int x, y, bytesPerPixel;
-	unsigned char* data = stbi_load("./res/textures/bricks.jpg", &x, &y, &bytesPerPixel, 4);
-
-	if(data == NULL)
-	{
-		std::cerr << "Unable to load texture: " << "./res/textures/bricks.jpg" << std::endl;
-	}
-
-	ITexture* texture = device->CreateTexture(x, y, data, 
-			ITexture::FILTER_LINEAR_NO_MIPMAP, 0.0f, ITexture::FORMAT_RGBA,
-		   	ITexture::FORMAT_RGBA, false);
-	stbi_image_free(data);
-	//END TEMP CODE
-
+	ITexture* texture = device->CreateTextureFromFile(
+			"./res/textures/bricks.jpg", false,
+			ITexture::FILTER_LINEAR_LINEAR_MIPMAP, 8.0f, false);
 	
 	RendererValues renderer;
 	renderer.SetSamplerSlot("diffuse", 0);
@@ -63,22 +48,28 @@ int main(int argc, char** argv)
 	MaterialValues material;
 	material.SetTexture("diffuse", texture);
 
+	Transform transform;
+	transform.SetPos(Vector3f(0, 0, 3.0f));
+
 	UniformData uniforms;
-	uniforms.world = Matrix4f().InitIdentity();
-	uniforms.viewProjection = Matrix4f().InitIdentity();
+	uniforms.world = transform.GetTransformation();
+	uniforms.viewProjection = Matrix4f().InitPerspective(
+			ToRadians(70.0f), 800.0f/600.0f, 0.1f, 1000.0f);
 	uniforms.material = &material;
 	uniforms.renderData = &renderer;
 
 	IAudioContext* audioContext = subsystem->GetAudioContext();
 	IAudioDevice* audioDevice = subsystem->GetAudioDevice();
-	IAudioData* testSound = audioDevice->CreateAudioFromFile("./res/audio/testClip.wav", false);
+	IAudioData* testSound = 
+		audioDevice->CreateAudioFromFile("./res/audio/testClip.wav", false);
 	
 	SampleInfo info;
 	info.volume = 1.0f;
 	
-	AudioObject testSoundObject(testSound, info);
+	AudioObject testSoundObject(testSound, &info);
 	audioContext->PlayAudio(testSoundObject);
 
+	float angle = 0.0f;
 	while(!display->IsClosed())
 	{
 		display->Update();
@@ -88,6 +79,12 @@ int main(int argc, char** argv)
 		context->DrawVertexArray(target, shader, vertexArray, uniforms);
 
 		display->SwapBuffers();
+		transform.SetRot(Quaternion());
+		transform.Rotate(Quaternion(Vector3f(1, 0, 0), angle));
+		transform.Rotate(Quaternion(Vector3f(0, 1, 0), angle));
+		transform.Rotate(Quaternion(Vector3f(0, 0, 1), angle));
+		uniforms.world = transform.GetTransformation();
+		angle += 0.015f;
 	}
 
 	audioContext->StopAudio(testSoundObject);

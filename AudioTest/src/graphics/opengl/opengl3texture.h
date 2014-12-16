@@ -9,7 +9,7 @@ class OpenGL3Texture : public ITexture
 public:
 	OpenGL3Texture(int width, int height, unsigned char* data, 
 			int filter, float anisotropy, int internalFormat, 
-			int format, bool clamp);
+			int format, bool clamp, bool compress);
 	virtual ~OpenGL3Texture();
 
 	virtual void Bind(unsigned int samplerSlot);

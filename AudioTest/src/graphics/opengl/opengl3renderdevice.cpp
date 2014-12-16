@@ -2,6 +2,8 @@
 #include "opengl3vertexarray.h"
 #include "opengl3shaderprogram.h"
 #include "opengl3texture.h"
+#include "../staticlibs/stb_image.h"
+
 #include <GL/glew.h>
 #include <sstream>
 
@@ -100,12 +102,55 @@ void OpenGL3RenderDevice::ReleaseShaderProgram(IShaderProgram* shaderProgram)
 	if(shaderProgram) { delete shaderProgram; }
 }
 
-ITexture* OpenGL3RenderDevice::CreateTexture(int width, int height, 
-		unsigned char* data, int filter, float anisotropy, int internalFormat,
-		int format, bool clamp)
+ITexture* OpenGL3RenderDevice::CreateTextureFromFile(const std::string& fileName,
+			bool compress, int filter, float anisotropy, bool clamp)
+{
+	int x, y, numComponents;
+	unsigned char* data = stbi_load(fileName.c_str(), &x, &y, &numComponents, 0);
+
+	if(data == NULL)
+	{
+		std::ostringstream out;
+		out << "Unable to load texture: " << fileName;
+		throw ITexture::Exception(out.str());
+	}
+
+	int format = ITexture::FORMAT_RGBA;
+	
+	switch(numComponents)
+	{
+		case 1:
+			format = ITexture::FORMAT_R;
+			break;
+		case 2:
+			format = ITexture::FORMAT_RG;
+			break;
+		case 3:
+			format = ITexture::FORMAT_RGB;
+			break;
+		case 4:
+			format = ITexture::FORMAT_RGBA;
+			break;
+		default:
+			std::ostringstream out;
+			out << "Invalid number of texture components (" 
+				<< numComponents << ") in : " << fileName;
+			throw ITexture::Exception(out.str());
+	}
+
+	ITexture* texture = CreateTexture(x, y, data, format,
+			format, compress, filter, anisotropy, clamp);
+
+	stbi_image_free(data);
+	return texture;
+}
+
+ITexture* OpenGL3RenderDevice::CreateTexture(int width, int height, unsigned char* data, 
+			int format, int internalFormat, bool compress, int filter, float anisotropy, 
+			bool clamp)
 {
 	return new OpenGL3Texture(width, height, data, filter, anisotropy, 
-			internalFormat, format, clamp);
+			internalFormat, format, clamp, compress);
 }
 
 void OpenGL3RenderDevice::ReleaseTexture(ITexture* texture)

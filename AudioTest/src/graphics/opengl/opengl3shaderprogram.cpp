@@ -123,7 +123,8 @@ void OpenGL3ShaderProgram::Bind()
 void OpenGL3ShaderProgram::UpdateUniforms(const UniformData& uniformData)
 {
 	Matrix4f worldMatrix = uniformData.world;//transform.GetTransformation();
-	Matrix4f projectedMatrix = uniformData.viewProjection;//camera.GetViewProjection() * worldMatrix;
+	Matrix4f projectedMatrix = uniformData.viewProjection
+		* worldMatrix;//camera.GetViewProjection() * worldMatrix;
 
 	MaterialValues* material = uniformData.material;
 	RendererValues* renderData = uniformData.renderData;

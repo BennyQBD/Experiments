@@ -6,7 +6,7 @@
 class AudioObject
 {
 public:
-	AudioObject(IAudioData* audioData, const SampleInfo& sampleInfo) :
+	AudioObject(IAudioData* audioData, SampleInfo* sampleInfo) :
 		m_audioData(audioData),
 		m_sampleInfo(sampleInfo) {}
 
@@ -16,7 +16,7 @@ public:
 		{
 			return false;
 		}
-		return m_audioData->GenerateSamples(buffer, bufferLength, m_sampleInfo);
+		return m_audioData->GenerateSamples(buffer, bufferLength, *m_sampleInfo);
 	}
 
 	inline void Reset()
@@ -27,7 +27,7 @@ public:
 	inline bool HasAudioData(IAudioData* data) { return m_audioData == data; }
 private:
 	IAudioData* m_audioData;
-	SampleInfo  m_sampleInfo;
+	SampleInfo* m_sampleInfo;
 };
 
 #endif
