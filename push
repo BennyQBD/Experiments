@@ -1,4 +1,7 @@
 if [ "$#" != 0 ]; then
+	cd AudioTest
+	make clean
+	cd ../
 	git add -A
 	git commit -m "$1"
 	git push origin master
