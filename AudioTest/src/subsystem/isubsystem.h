@@ -5,6 +5,7 @@
 #include "../audio/iaudiocontext.h"
 #include "../audio/iaudiodevice.h"
 #include "../graphics/idisplay.h"
+#include "itimingsystem.h"
 
 class ISubSystem
 {
@@ -18,6 +19,7 @@ public:
 
 	virtual IAudioContext* GetAudioContext() = 0;
 	virtual IAudioDevice* GetAudioDevice() = 0;
+	virtual ITimingSystem* GetTimingSystem() = 0;
 
 	class SubSystemException : public std::runtime_error
 	{

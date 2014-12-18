@@ -17,9 +17,11 @@ public:
 
 	virtual IAudioContext* GetAudioContext();
 	virtual IAudioDevice* GetAudioDevice();
+	virtual ITimingSystem* GetTimingSystem();
 private:
 	IAudioContext* m_audioContext;
 	IAudioDevice* m_audioDevice;
+	ITimingSystem* m_timingSystem;
 };
 
 #endif

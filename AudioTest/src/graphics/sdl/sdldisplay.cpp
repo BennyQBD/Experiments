@@ -9,7 +9,7 @@
 #define RENDERCONTEXT OpenGL3RenderContext
 #define RENDERTARGET OpenGL3RenderTarget
 
-SDLDisplay::SDLDisplay(int width, int height, const std::string& title) :
+SDLDisplay::SDLDisplay(int width, int height, const std::string& title, bool isFullscreen) :
 	m_width(width),
 	m_height(height),
 	m_isClosed(false)
@@ -26,7 +26,15 @@ SDLDisplay::SDLDisplay(int width, int height, const std::string& title) :
 	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 3 );
 	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 2 );
 	
-	m_window = SDL_CreateWindow(title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_OPENGL);
+	unsigned int flags = SDL_WINDOW_OPENGL;
+	if(isFullscreen)
+	{
+		flags |= SDL_WINDOW_FULLSCREEN;
+	}
+
+	m_window = SDL_CreateWindow(title.c_str(), 
+			SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
+			width, height, flags);
 	m_glContext = SDL_GL_CreateContext(m_window);
 
 	//SDL_SetHint(SDL_HINT_RENDER_VSYNC, "1");

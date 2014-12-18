@@ -122,9 +122,8 @@ void OpenGL3ShaderProgram::Bind()
 
 void OpenGL3ShaderProgram::UpdateUniforms(const UniformData& uniformData)
 {
-	Matrix4f worldMatrix = uniformData.world;//transform.GetTransformation();
-	Matrix4f projectedMatrix = uniformData.viewProjection
-		* worldMatrix;//camera.GetViewProjection() * worldMatrix;
+	Matrix4f worldMatrix = uniformData.transform->GetTransformation();
+	Matrix4f projectedMatrix = uniformData.camera->GetViewProjection() * worldMatrix;
 
 	MaterialValues* material = uniformData.material;
 	RendererValues* renderData = uniformData.renderData;
@@ -190,14 +189,14 @@ void OpenGL3ShaderProgram::UpdateUniforms(const UniformData& uniformData)
 		}
 		else if(uniformName.substr(0, 2) == "C_")
 		{
-//			if(uniformName == "C_eyePos")
-//				SetUniformVector3f(uniformName, camera.GetTransform().GetTransformedPos());
-//			else
-//			{
+			if(uniformName == "C_eyePos")
+				SetUniformVector3f(uniformName, uniformData.camera->GetTransform().GetTransformedPos());
+			else
+			{
 				std::ostringstream out;
 				out << "Invalid Camera Uniform: " << uniformName;
 				throw IShaderProgram::Exception(out.str());
-//			}
+			}
 		}
 		else
 		{

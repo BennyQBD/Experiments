@@ -267,6 +267,8 @@ static SDL_AudioSpec* OpenWavFile(SDL_RWops* src,
 		goto done;
 	}
 
+
+	
 	// Find the format chunk	
 	chunk.data = NULL;
 	chunk.length = 0;

@@ -13,7 +13,7 @@
 class SDLDisplay : public IDisplay
 {
 public:
-	SDLDisplay(int width, int height, const std::string& title);
+	SDLDisplay(int width, int height, const std::string& title, bool isFullscreen);
 	virtual ~SDLDisplay();
 
 	virtual void Update();

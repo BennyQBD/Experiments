@@ -2,13 +2,14 @@
 #define I_SHADER_PROGRAM_INCLUDED_H
 
 #include "../core/math3d.h"
+#include "camera.h"
 #include "materialvalues.h"
 #include <stdexcept>
 
 struct UniformData
 {
-	Matrix4f world;
-	Matrix4f viewProjection;
+	Transform* transform;
+	Camera* camera;
 	MaterialValues* material;
 	RendererValues* renderData;
 };
