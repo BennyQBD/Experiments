@@ -9,17 +9,14 @@ CoreEngine::CoreEngine(double frameRate, IDisplay* display, ITimingSystem* timin
 	m_display(display),
 	m_timingSystem(timingSystem),
 	m_renderer(renderer),
-	m_scene(scene)
+	m_scene(scene),
+	m_resources(display->GetRenderDevice())
 {
-	//We're telling the game about this engine so it can send the engine any information it needs
-	//to the various subsystems.
-	//m_game->SetEngine(this);
-	
-	//Game is initialized here because this is the point where all rendering systems
+	//Scene is initialized here because this is the point where all rendering systems
 	//are initialized, and so creating meshes/textures/etc. will not fail due
 	//to missing context.
-	m_scene->Init(display->GetRenderDevice(),
-			(float)m_display->GetWidth()/(float)m_display->GetHeight());
+	m_scene->Init(&m_resources,
+		(float)m_display->GetWidth()/(float)m_display->GetHeight());
 }
 
 void CoreEngine::Start()
@@ -38,10 +35,10 @@ void CoreEngine::Start()
 
 	while(m_isRunning)
 	{
-		bool render = false;           //Whether or not the game needs to be rerendered.
+		bool render = false;
 
-		double startTime = m_timingSystem->GetTime();       //Current time at the start of the frame.
-		double passedTime = startTime - lastTime; //Amount of passed time since last frame.
+		double startTime = m_timingSystem->GetTime();
+		double passedTime = startTime - lastTime;
 		lastTime = startTime;
 
 		unprocessedTime += passedTime;

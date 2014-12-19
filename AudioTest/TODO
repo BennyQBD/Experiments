@@ -1,6 +1,7 @@
-- Entity/Component system
-- Core Engine
-- Scene
++ Entity/Component system
++ Core Engine
++ Scene
+- Resource Manager
 - Octree
 - Scene Graph
 - Filters

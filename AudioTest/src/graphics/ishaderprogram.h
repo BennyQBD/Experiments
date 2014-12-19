@@ -1,9 +1,10 @@
 #ifndef I_SHADER_PROGRAM_INCLUDED_H
 #define I_SHADER_PROGRAM_INCLUDED_H
 
-#include "../core/math3d.h"
-#include "camera.h"
 #include "materialvalues.h"
+#include "camera.h"
+
+#include "../core/math3d.h"
 #include <stdexcept>
 
 struct UniformData

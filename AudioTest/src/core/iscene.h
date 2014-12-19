@@ -4,13 +4,13 @@
 #include "iinput.h"
 #include "entity.h"
 #include "../graphics/irenderer.h"
-#include "../graphics/irenderdevice.h"
+#include "resourceManager.h"
 
 class IScene
 {
 public:
 	virtual ~IScene() {}
-	virtual void Init(IRenderDevice* device, float aspect) = 0;
+	virtual void Init(ResourceManager* resources, float aspect) = 0;
 	virtual void Update(IInput* input, float delta) = 0;
 	virtual void Render(IRenderer* renderer) = 0;
 	virtual IScene* Add(Entity* child) = 0;

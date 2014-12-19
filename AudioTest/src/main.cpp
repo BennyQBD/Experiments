@@ -12,31 +12,19 @@
 class MyBasicScene : public BasicScene
 {
 public:
-	virtual void Init(IRenderDevice* device, float aspect)
+	virtual void Init(ResourceManager* resources, float aspect)
 	{
-		m_device = device;
-		m_mesh = device->CreateVertexArrayFromFile("./res/models/terrain02.obj");
-		m_texture = device->CreateTextureFromFile(
-			"./res/textures/bricks.jpg", true,
-			ITexture::FILTER_LINEAR_NEAREST_MIPMAP, 0.0f, false);
+		Mesh mesh(resources->GetMesh("./res/models/terrain02.obj"));
+		Texture texture(resources->GetTexture("./res/textures/bricks.jpg", true,
+			ITexture::FILTER_LINEAR_NEAREST_MIPMAP, 0.0f, false));
 
-		m_material = new MaterialValues();
-		m_material->SetTexture("diffuse", m_texture);
+		MaterialValues* values = new MaterialValues();
+		values->SetTexture("diffuse", texture);
+
+		Material material = resources->RegisterMaterial("greyBricks", values);
 		
-		Add((new Entity())->Add(new MeshRenderer(m_mesh, m_material)));
+		Add((new Entity())->Add(new MeshRenderer(mesh, material)));
 	}
-
-	virtual ~MyBasicScene()
-	{
-		delete m_material;
-		m_device->ReleaseTexture(m_texture);
-		m_device->ReleaseVertexArray(m_mesh);
-	}
-private:
-	IRenderDevice* m_device;
-	IVertexArray* m_mesh;
-	ITexture* m_texture;
-	MaterialValues* m_material;
 };
 
 int main(int argc, char** argv)

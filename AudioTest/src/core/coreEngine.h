@@ -22,6 +22,7 @@ private:
 	ITimingSystem* m_timingSystem;
 	IRenderer*     m_renderer;
 	IScene*        m_scene;
+	ResourceManager m_resources;
 };
 
 

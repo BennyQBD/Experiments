@@ -1,8 +1,8 @@
 #ifndef MATERIAL_VALUES_INCLUDED_H
 #define MATERIAL_VALUES_INCLUDED_H
 
-#include "itexture.h"
 #include "../core/math3d.h"
+#include "texture.h"
 #include <map>
 #include <stdexcept>
 
@@ -12,12 +12,12 @@ public:
 	inline void SetVector3f(const std::string& name, const Vector3f& value)     { m_vector3fMap[name] = value; }
 	inline void SetMatrix4f(const std::string& name, const Matrix4f& value)     { m_matrix4fMap[name] = value; }
 	inline void SetFloat(const std::string& name, float value)                  { m_floatMap[name] = value; }
-	inline void SetTexture(const std::string& name, ITexture* value) { m_textureMap[name] = value; }
-	
+	void SetTexture(const std::string& name, const Texture& value);
+
 	const Vector3f& GetVector3f(const std::string& name)     const;
 	const Matrix4f& GetMatrix4f(const std::string& name)     const;
 	float GetFloat(const std::string& name)                  const;
-	ITexture* GetTexture(const std::string& name) const;
+	ITexture* GetTexture(const std::string& name);
 
 	class Exception : public std::runtime_error
 	{
@@ -34,10 +34,10 @@ public:
 	};
 protected:
 private:
-	std::map<std::string, Vector3f>      m_vector3fMap;
-	std::map<std::string, Matrix4f>      m_matrix4fMap;
-	std::map<std::string, float>         m_floatMap;
-	std::map<std::string, ITexture*> m_textureMap;
+	std::map<std::string, Vector3f>  m_vector3fMap;
+	std::map<std::string, Matrix4f>  m_matrix4fMap;
+	std::map<std::string, float>     m_floatMap;
+	std::map<std::string, Texture> m_textureMap;
 };
 
 class RendererValues : public MaterialValues

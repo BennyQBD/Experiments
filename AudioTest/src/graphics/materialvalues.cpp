@@ -1,6 +1,19 @@
 #include "materialvalues.h"
 #include <sstream>
 
+void MaterialValues::SetTexture(const std::string& name, const Texture& value)
+{
+	std::map<std::string, Texture>::iterator it = m_textureMap.find(name);
+	if(it != m_textureMap.end())
+	{
+		it->second = value;
+	}
+	else
+	{
+		m_textureMap.insert(std::pair<std::string, Texture>(name, value));
+	}
+}
+
 const Vector3f& MaterialValues::GetVector3f(const std::string& name) const
 {
 	std::map<std::string, Vector3f>::const_iterator it = m_vector3fMap.find(name);
@@ -40,12 +53,12 @@ float MaterialValues::GetFloat(const std::string& name) const
 	throw Exception(out.str());
 }
 
-ITexture* MaterialValues::GetTexture(const std::string& name) const
+ITexture* MaterialValues::GetTexture(const std::string& name)
 {
-	std::map<std::string, ITexture*>::const_iterator it = m_textureMap.find(name);
+	std::map<std::string, Texture>::iterator it = m_textureMap.find(name);
 	if(it != m_textureMap.end())
 	{
-		return it->second;
+		return (it->second).GetTexture();
 	}
 		
 	std::ostringstream out;
