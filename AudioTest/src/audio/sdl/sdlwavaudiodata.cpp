@@ -139,25 +139,52 @@ bool SDLWAVAudioData::FillBuffer()
 bool SDLWAVAudioData::GenerateSamples(float* buffer, int bufferLength, 
 		const SampleInfo& sampleInfo)
 {
-	Uint32 len = (Uint32)bufferLength;
-	Uint32 bufferLen = (m_bufferLength - (Uint32)(m_bufferPos - m_bufferStart)) / 2;
-
-	// TODO: Perhaps fill buffer in a different location?
-	if(bufferLen < len && !FillBuffer())
-	{
-		return false;
-	}
+	Uint32 neededLen = (Uint32)bufferLength / 2;
+	Uint32 bufferLen = (m_bufferLength - (Uint32)(m_bufferPos - m_bufferStart)) / 4;
 	
-	float volume = (float)sampleInfo.volume;
-
-	Sint16* samples = (Sint16*)m_bufferPos;
-	for(Uint32 i = 0; i < len; i++)
+	float volume = 1.0f + (float)sampleInfo.volume;
+	float pitchAdjust = 1.0f + (float)sampleInfo.pitchAdjust;
+	if((float)sampleInfo.pitchAdjust < 0.0f)
 	{
-		buffer[i] += volume * (float)(*samples);
-		samples++;
+		pitchAdjust = 1.0f/(((float)sampleInfo.pitchAdjust * -1.0f) + 1.0f);
 	}
-	m_bufferPos = (Uint8*)(samples);
-	return true;
+
+	Uint32 bufferStartIndex = 0;
+	do
+	{
+		Uint32 adjustedNeededLen = (Uint32)(neededLen * pitchAdjust);
+		Uint32 adjustedBufferLen = (Uint32)(bufferLen / pitchAdjust);
+		Uint32 len = bufferLen < adjustedNeededLen ? adjustedBufferLen : neededLen;
+		Sint32* samples = (Sint32*)m_bufferPos;
+
+		float sampleIndex = 0.0f;
+		Uint32 bufferEndIndex = bufferStartIndex + len;
+		for(Uint32 i = bufferStartIndex; i < bufferEndIndex; i++)
+		{
+			Sint32 sample = samples[(Uint32)sampleIndex];
+
+			Sint16 sample1 = (Sint16)(sample & 0xFFFF);
+			Sint16 sample2 = (Sint16)((sample >> 16) & 0xFFFF);
+
+			buffer[i * 2] += volume * (float)(sample1);
+			buffer[i * 2 + 1] += volume * (float)(sample2);
+			sampleIndex += pitchAdjust;
+		}
+		m_bufferPos = (Uint8*)(samples + (Uint32)sampleIndex);
+		neededLen -= len;
+		bufferStartIndex = bufferEndIndex;
+
+		if(neededLen == 0)
+		{
+			return true;
+		}
+
+		if(!FillBuffer())
+		{
+			return false;
+		}
+		bufferLen = (m_bufferLength - (Uint32)(m_bufferPos - m_bufferStart)) / 4;
+	} while(true);
 }
 
 static Uint32 ReadLE32(SDL_RWops* src)

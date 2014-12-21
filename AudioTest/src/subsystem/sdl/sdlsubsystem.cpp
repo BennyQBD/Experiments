@@ -7,11 +7,11 @@
 #include "../../graphics/sdl/sdldisplay.h"
 #include <sstream>
 
-//#define AUDIO_CONTEXT SDLAudioContext
-//#define AUDIO_DEVICE SDLAudioDevice
+#define AUDIO_CONTEXT SDLAudioContext
+#define AUDIO_DEVICE SDLAudioDevice
 
-#define AUDIO_CONTEXT NullAudioContext
-#define AUDIO_DEVICE NullAudioDevice
+//#define AUDIO_CONTEXT NullAudioContext
+//#define AUDIO_DEVICE NullAudioDevice
 
 #define TIMING_SYSTEM SDLTimingSystem
 
