@@ -9,7 +9,7 @@ public:
 	IAudioData() {}
 	virtual ~IAudioData() {}
 
-	virtual bool GenerateSamples(float* buffer, int bufferLength,
+	virtual int GenerateSamples(float* buffer, int bufferLength, int audioPos,
 		   	const SampleInfo& sampleInfo) = 0;
 	virtual void Reset() = 0;
 
