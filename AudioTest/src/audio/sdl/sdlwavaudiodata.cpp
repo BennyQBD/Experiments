@@ -183,10 +183,6 @@ int SDLWAVAudioData::GenerateSamples(float* buffer, int bufferLength, int audioP
 {	
 	float volume = (float)(1.0 + sampleInfo.volume);
 	float pitchAdjust = (float)(1.0 + sampleInfo.pitchAdjust);
-	if(sampleInfo.pitchAdjust < 0.0)
-	{
-		pitchAdjust = (float)(1.0/((sampleInfo.pitchAdjust * -1.0) + 1.0));
-	}
 
 	if(!GotoAudioPos(audioPos, (Uint32)(bufferLength * pitchAdjust)))
 	{

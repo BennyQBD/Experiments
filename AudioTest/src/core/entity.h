@@ -2,7 +2,7 @@
 #define ENTITY_INCLUDED_H
 
 #include "transform.h"
-#include "iinput.h"
+#include "enginesystems.h"
 #include "../graphics/renderparams.h"
 
 #include <vector>
@@ -20,7 +20,7 @@ public:
 
 	Entity* Add(EntityComponent* component);
 	
-	void Update(IInput* input, float delta);
+	void Update(EngineSystems& systems, float delta);
 	void Render(RenderParams& params);
 
 	inline Transform* GetTransform() { return &m_transform; }

@@ -5,7 +5,8 @@
 + Audio Seek Features
 + In WAV audio code, handle loading partial buffers
 + Add Audio to Resource Manager
-- Play audio from within component
++ Play audio from within component
++ Looping audio clips
 - Octree
 - Scene Graph
 - Filters

@@ -2,8 +2,8 @@
 
 #include <stdio.h>
 
-CoreEngine::CoreEngine(double frameRate, IDisplay* display,
-		IAudioDevice* device, ITimingSystem* timingSystem, IRenderer* renderer,
+CoreEngine::CoreEngine(double frameRate, IDisplay* display, IAudioContext* audioContext,
+		IAudioDevice* audioDevice, ITimingSystem* timingSystem, IRenderer* renderer,
 	   	IScene* scene) :
 	m_isRunning(false),
 	m_frameTime(1.0/frameRate),
@@ -11,8 +11,11 @@ CoreEngine::CoreEngine(double frameRate, IDisplay* display,
 	m_timingSystem(timingSystem),
 	m_renderer(renderer),
 	m_scene(scene),
-	m_resources(display->GetRenderDevice(), device)
+	m_resources(display->GetRenderDevice(), audioDevice)
 {
+	m_systems.input = m_display->GetInput();
+	m_systems.audio = audioContext;
+
 	// Scene is initialized here because this is the point where all rendering
 	// systems are initialized, and so creating meshes/textures/etc. will not
 	// fail due to missing context.
@@ -69,7 +72,7 @@ void CoreEngine::Start()
 				Stop();
 			}
 			
-			m_scene->Update(m_display->GetInput(), (float)m_frameTime);
+			m_scene->Update(m_systems, (float)m_frameTime);
 			render = true;
 			unprocessedTime -= m_frameTime;
 		}

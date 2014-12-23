@@ -1,10 +1,10 @@
 #include "basicScene.h"
 
-void BasicScene::Update(IInput* input, float delta)
+void BasicScene::Update(EngineSystems& systems, float delta)
 {
 	for(unsigned int i = 0; i < m_entities.size(); i++)
 	{
-		m_entities[i]->Update(input, delta);
+		m_entities[i]->Update(systems, delta);
 	}
 }
 

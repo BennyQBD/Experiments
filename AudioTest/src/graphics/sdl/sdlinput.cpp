@@ -41,29 +41,41 @@ void SDLInput::HandleEvent(const SDL_Event& e)
 	{
 		int value = e.key.keysym.scancode;
 
-		m_inputs[value] = true;
-		m_downKeys[value] = true;
+		if(!m_inputs[value])
+		{
+			m_inputs[value] = true;
+			m_downKeys[value] = true;
+		}
 	}
 	if(e.type == SDL_KEYUP)
 	{
 		int value = e.key.keysym.scancode;
 
-		m_inputs[value] = false;
-		m_upKeys[value] = true;
+		if(m_inputs[value])
+		{
+			m_inputs[value] = false;
+			m_upKeys[value] = true;
+		}
 	}
 	if(e.type == SDL_MOUSEBUTTONDOWN)
 	{
 		int value = e.button.button;
 
-		m_mouseInput[value] = true;
-		m_downMouse[value] = true;
+		if(!m_mouseInput[value])
+		{
+			m_mouseInput[value] = true;
+			m_downMouse[value] = true;
+		}
 	}
 	if(e.type == SDL_MOUSEBUTTONUP)
 	{
 		int value = e.button.button;
 
-		m_mouseInput[value] = false;
-		m_upMouse[value] = true;
+		if(m_mouseInput[value])
+		{
+			m_mouseInput[value] = false;
+			m_upMouse[value] = true;
+		}
 	}
 }
 

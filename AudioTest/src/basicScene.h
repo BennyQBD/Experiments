@@ -10,7 +10,7 @@ class BasicScene : public IScene
 public:
 	BasicScene() {}
 	virtual ~BasicScene();
-	virtual void Update(IInput* input, float delta);
+	virtual void Update(EngineSystems& systems, float delta);
 	virtual void Render(IRenderer* renderer);
 	virtual IScene* Add(Entity* child);
 private:

@@ -19,11 +19,11 @@ Entity* Entity::Add(EntityComponent* component)
 	return this;
 }
 
-void Entity::Update(IInput* input, float delta)
+void Entity::Update(EngineSystems& systems, float delta)
 {
 	for(unsigned int i = 0; i < m_components.size(); i++)
 	{
-		m_components[i]->Update(input, delta);
+		m_components[i]->Update(systems, delta);
 	}
 }
 

@@ -5,6 +5,8 @@ struct SampleInfo
 {
 	double volume;
 	double pitchAdjust;
+	double loopStart;
+	double loopEnd;
 };
 
 #endif

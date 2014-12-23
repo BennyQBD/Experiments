@@ -10,7 +10,7 @@ public:
 		m_parent(0) {}
 	virtual ~EntityComponent() {}
 
-	virtual void Update(IInput* input, float delta) {}
+	virtual void Update(EngineSystems& systems, float delta) {}
 	virtual void Render(RenderParams& params) {}
 	
 	inline Transform* GetTransform()             { return m_parent->GetTransform(); }
