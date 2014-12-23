@@ -63,8 +63,6 @@ int main(int argc, char** argv)
 	IAudioDevice* audioDevice = subsystem->GetAudioDevice();
 	IAudioData* testSound = 
 		audioDevice->CreateAudioFromFile("./res/audio/sample.wav", false);
-	IAudioData* testSound2 = 
-		audioDevice->CreateAudioFromFile("./res/audio/sample.wav", false);
 
 	// intervalX = 2^(X/12).
 	// Precalculated for convenience.	
@@ -90,7 +88,7 @@ int main(int argc, char** argv)
 	info2.pitchAdjust = 0.0f;
 
 	AudioObject testSoundObject(testSound, &info);
-	AudioObject testSoundObject2(testSound2, &info2);
+	AudioObject testSoundObject2(testSound, &info2);
 	audioContext->PlayAudio(testSoundObject);
 	audioContext->PlayAudio(testSoundObject2);
 
@@ -100,7 +98,6 @@ int main(int argc, char** argv)
 	audioContext->StopAudio(testSoundObject);
 	audioContext->StopAudio(testSoundObject2);
 	audioDevice->ReleaseAudio(testSound);
-	audioDevice->ReleaseAudio(testSound2);
 
 
 	delete scene;
@@ -111,21 +108,4 @@ int main(int argc, char** argv)
 	delete subsystem;
 	return 0;
 }
-
-/*
-   IAudioContext* audioContext = subsystem->GetAudioContext();
-	IAudioDevice* audioDevice = subsystem->GetAudioDevice();
-	IAudioData* testSound = 
-		audioDevice->CreateAudioFromFile("./res/audio/testClip.wav", true);
-	
-	SampleInfo info;
-	info.volume = 1.0f;
-	
-	AudioObject testSoundObject(testSound, &info);
-	audioContext->PlayAudio(testSoundObject);
-
-	audioContext->StopAudio(testSoundObject);
-	audioDevice->ReleaseAudio(testSound);
-
-   */
  

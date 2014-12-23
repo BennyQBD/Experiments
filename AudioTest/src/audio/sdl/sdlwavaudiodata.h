@@ -13,12 +13,12 @@ public:
 
 	virtual int GenerateSamples(float* buffer, int bufferLength, int audioPos,
 		const SampleInfo& sampleInfo);
-	virtual void Reset();
 private:
 	SDL_RWops* m_src;
 	Uint8* m_bufferStart;
 	Uint8* m_bufferPos;
 	Uint32 m_bufferLength;
+	Uint32 m_totalBufferLength;
 	Uint32 m_filePos;
 	Uint32 m_fileLength;
 	std::string m_fileName;

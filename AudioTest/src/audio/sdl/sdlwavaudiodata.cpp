@@ -73,6 +73,7 @@ void SDLWAVAudioData::Init()
 	wavBuffer = (Uint8*)malloc(m_bufferLength);
 	m_bufferStart = wavBuffer;
 	m_bufferPos = wavBuffer + m_bufferLength;
+	m_totalBufferLength = m_bufferLength;
 	m_filePos = 0;
 	m_fileLength = wavLength;
 	m_fileName = m_fileName;
@@ -84,19 +85,6 @@ void SDLWAVAudioData::DeInit()
 {
 	free(m_bufferStart);
 	SDL_RWclose(m_src);
-}
-
-void SDLWAVAudioData::Reset()
-{
-	if(m_streamFromFile)
-	{
-		DeInit();
-		Init();
-	}
-	else
-	{
-		m_bufferPos = m_bufferStart;
-	}
 }
 
 bool SDLWAVAudioData::FillBuffer()
@@ -118,9 +106,9 @@ bool SDLWAVAudioData::FillBuffer()
 	}
 
 	m_bufferPos = (m_bufferStart + bufferLeft);
-	Uint32 readAmt = (m_bufferLength - bufferLeft);
+	Uint32 readAmt = (m_totalBufferLength - bufferLeft);
 
-	Uint32 logicalBufferLength = m_bufferLength;
+	Uint32 logicalBufferLength = m_totalBufferLength;
 	if(audioLeft < readAmt)
 	{
 		readAmt = audioLeft;
@@ -131,28 +119,51 @@ bool SDLWAVAudioData::FillBuffer()
 	ReadWavChunkData(m_src, m_bufferPos, readAmt);
 	m_bufferPos = m_bufferStart;
 
-	if(logicalBufferLength != m_bufferLength)
-	{
-		// Zero the remaining buffer that doesn't have audio data.
-		for(Uint32 i = logicalBufferLength; i < m_bufferLength; i++)
-		{
-			m_bufferStart[i] = 0;
-		}
-	}
-
+	m_bufferLength = logicalBufferLength;
 	// TODO: If data is encoded, this is where it would be decoded.
 
 	return true;
 }
 
-bool SDLWAVAudioData::GotoAudioPos(int audioPos)
+bool SDLWAVAudioData::GotoAudioPos(int audioPosIn)
 {
-	if(GetCurrentAudioPos() == (Uint32)audioPos)
+	Uint32 audioPos = (Uint32)audioPosIn;
+	Uint32 currentPos = GetCurrentAudioPos();
+
+	if(audioPos == currentPos)
 	{
 		return true;
 	}
+	if(audioPos >= m_fileLength || audioPosIn < 0)
+	{
+		return false;
+	}
 
-	return false;
+	Uint8* bufferEnd = m_bufferStart + m_bufferLength;
+
+	Sint32 distance = (Sint32)audioPos - (Sint32)currentPos;
+	Uint8* newBufferPos = m_bufferPos + distance;
+	
+	bool insideBufferStart = newBufferPos >= m_bufferStart;
+	bool insideBufferEnd = newBufferPos <= bufferEnd;
+	if(insideBufferStart && insideBufferEnd && !m_streamFromFile)
+	{
+		m_bufferPos = newBufferPos;
+		return true;
+	}
+	else if(!m_streamFromFile)
+	{
+		return false;
+	}
+
+	// At this point, stream from file code begins
+
+	Sint64 seekDistance = (newBufferPos - bufferEnd);
+	m_bufferPos = bufferEnd;
+	m_filePos += seekDistance;
+	SDL_RWseek(m_src, seekDistance, RW_SEEK_CUR);
+	FillBuffer();
+	return true;
 }
 
 int SDLWAVAudioData::GenerateSamples(float* buffer, int bufferLength, int audioPos,
@@ -179,7 +190,6 @@ int SDLWAVAudioData::GenerateSamples(float* buffer, int bufferLength, int audioP
 		Uint32 adjustedBufferLeft = (Uint32)(bufferLeft / pitchAdjust);
 		
 		Uint32 len = adjustedBufferLeft < neededLen ? adjustedBufferLeft : neededLen;
-
 		Uint32 bufferEndIndex = bufferStartIndex + len;
 		
 		Sint32* samples = (Sint32*)m_bufferPos;

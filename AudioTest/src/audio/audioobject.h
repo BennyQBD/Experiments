@@ -31,7 +31,6 @@ public:
 	inline void Reset()
 	{
 		m_audioPos = 0;
-		m_audioData->Reset();
 	}
 
 	inline bool HasAudioData(IAudioData* data) { return m_audioData == data; }
