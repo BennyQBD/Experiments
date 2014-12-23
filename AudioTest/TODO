@@ -8,9 +8,10 @@
 + Play audio from within component
 + Looping audio clips
 + Linear Audio Sampling
++ Abstract Audio Base Class
+- Camera/Movement Components
 - Octree
 - Scene Graph
-- Filters
 - Lighting
 - More Audio Formats
 - Physics

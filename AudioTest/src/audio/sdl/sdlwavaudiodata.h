@@ -1,48 +1,27 @@
 #ifndef SDL_WAV_AUDIO_DATA_INCLUDED_H
 #define SDL_WAV_AUDIO_DATA_INCLUDED_H
 
-#include "../iaudiodata.h"
+#include "../base16bitaudio.h"
 #include <string>
 #include <SDL2/SDL.h>
 
-class SDLWAVAudioData : public IAudioData
+class SDLWAVAudioData : public Base16BitAudio
 {
 public:
 	SDLWAVAudioData(const std::string& fileName, bool streamFromFile);
 	virtual ~SDLWAVAudioData();
-
-	virtual int GenerateSamples(float* buffer, int bufferLength, int audioPos,
-		const SampleInfo& sampleInfo);
-	virtual int GetAudioLength();
-	virtual int GetSampleRate();
+protected:
+	virtual void LoadAudioData(char* buffer, long numBytes);
+	virtual void MoveAudioPos(long amt);
 private:
 	SDL_RWops* m_src;
-	Uint8* m_bufferStart;
-	Uint8* m_bufferPos;
-	Uint32 m_bufferLength;
-	Uint32 m_totalBufferLength;
-	Uint32 m_filePos;
-	Uint32 m_fileLength;
-	float m_sampleIndexCarryOver;
 	std::string m_fileName;
-	bool m_streamFromFile;
 
-	bool FillBuffer(unsigned int amt);
-	bool GotoAudioPos(int audioPos, unsigned int neededSamples);
-	void Init();
-	void DeInit();
-
-	inline Uint32 GetBufferLeft() 
-	{
-		return (m_bufferLength - (Uint32)(m_bufferPos - m_bufferStart));
+	SDLWAVAudioData(SDLWAVAudioData& other) : 
+		Base16BitAudio(0)
+	{ 
+		(void)other;
 	}
-
-	inline Uint32 GetCurrentAudioPos()
-	{
-		return m_filePos - GetBufferLeft();
-	}
-
-	SDLWAVAudioData(SDLWAVAudioData& other) { (void)other; }
 	void operator=(const SDLWAVAudioData& other) { (void)other;}
 };
 
