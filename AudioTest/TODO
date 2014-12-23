@@ -7,6 +7,7 @@
 + Add Audio to Resource Manager
 + Play audio from within component
 + Looping audio clips
++ Linear Audio Sampling
 - Octree
 - Scene Graph
 - Filters

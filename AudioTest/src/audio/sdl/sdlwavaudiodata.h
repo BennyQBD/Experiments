@@ -23,6 +23,7 @@ private:
 	Uint32 m_totalBufferLength;
 	Uint32 m_filePos;
 	Uint32 m_fileLength;
+	float m_sampleIndexCarryOver;
 	std::string m_fileName;
 	bool m_streamFromFile;
 

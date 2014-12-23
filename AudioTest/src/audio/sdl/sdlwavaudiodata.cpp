@@ -77,6 +77,7 @@ void SDLWAVAudioData::Init()
 	m_filePos = 0;
 	m_fileLength = wavLength;
 	m_fileName = m_fileName;
+	m_sampleIndexCarryOver = 0.0f;
 
 	FillBuffer(m_totalBufferLength);
 }
@@ -146,6 +147,8 @@ bool SDLWAVAudioData::GotoAudioPos(int audioPosIn, unsigned int neededSamples)
 	{
 		return true;
 	}
+
+	m_sampleIndexCarryOver = 0.0f;
 	if(audioPos >= m_fileLength || audioPosIn < 0)
 	{
 		return false;
@@ -191,23 +194,38 @@ int SDLWAVAudioData::GenerateSamples(float* buffer, int bufferLength, int audioP
 
 	Uint32 bufferStartIndex = 0;
 	Uint32 neededLen = (Uint32)bufferLength / 2;
-	float sampleIndexCarryOver = 0.0f;
 	do
 	{
-		Uint32 bufferLeft = GetBufferLeft() / 4;
+		// Since linear sampling is used, leave off 1 sample. This way, the
+		// linear sampler will never read outside the buffer
+		Uint32 bufferLeft = GetBufferLeft() / 4 - 1;
+		if(bufferLeft < 0)
+		{
+			bufferLeft = 0;
+		}
 		Uint32 adjustedBufferLeft = (Uint32)(bufferLeft / pitchAdjust);
 		
 		Uint32 len = adjustedBufferLeft < neededLen ? adjustedBufferLeft : neededLen;
 		Uint32 bufferEndIndex = bufferStartIndex + len;
 		
 		Sint32* samples = (Sint32*)m_bufferPos;
-		float sampleIndex = sampleIndexCarryOver;
+		float sampleIndex = m_sampleIndexCarryOver;
 		for(Uint32 i = bufferStartIndex; i < bufferEndIndex; i++)
 		{
 			Sint32 sample = samples[(Uint32)sampleIndex];
+			Sint32 nextSample = samples[(Uint32)sampleIndex + 1];
 
 			Sint16 sample1 = (Sint16)(sample & 0xFFFF);
 			Sint16 sample2 = (Sint16)((sample >> 16) & 0xFFFF);
+
+			Sint16 nextSample1 = (Sint16)(nextSample & 0xFFFF);
+			Sint16 nextSample2 = (Sint16)((nextSample >> 16) & 0xFFFF);
+
+			float factor2 = sampleIndex - (int)sampleIndex;
+			float factor1 = 1.0f - factor2;
+
+			sample1 = (Sint16)(factor1 * sample1 + factor2 * nextSample1);
+			sample2 = (Sint16)(factor1 * sample2 + factor2 * nextSample2);
 
 			buffer[i * 2] += volume * (float)(sample1);
 			buffer[i * 2 + 1] += volume * (float)(sample2);
@@ -216,7 +234,7 @@ int SDLWAVAudioData::GenerateSamples(float* buffer, int bufferLength, int audioP
 		m_bufferPos = (Uint8*)(samples + (Uint32)sampleIndex);
 		neededLen -= len;
 		bufferStartIndex = bufferEndIndex;
-		sampleIndexCarryOver = sampleIndex - (int)sampleIndex;
+		m_sampleIndexCarryOver = sampleIndex - (int)sampleIndex;
 
 		if(neededLen == 0)
 		{
