@@ -13,6 +13,8 @@ public:
 
 	virtual int GenerateSamples(float* buffer, int bufferLength, int audioPos,
 		const SampleInfo& sampleInfo);
+	virtual int GetAudioLength();
+	virtual int GetSampleRate();
 private:
 	SDL_RWops* m_src;
 	Uint8* m_bufferStart;
@@ -24,8 +26,8 @@ private:
 	std::string m_fileName;
 	bool m_streamFromFile;
 
-	bool FillBuffer();
-	bool GotoAudioPos(int audioPos);
+	bool FillBuffer(unsigned int amt);
+	bool GotoAudioPos(int audioPos, unsigned int neededSamples);
 	void Init();
 	void DeInit();
 

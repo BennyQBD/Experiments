@@ -1,7 +1,11 @@
 + Entity/Component system
 + Core Engine
 + Scene
-- Resource Manager
++ Resource Manager
++ Audio Seek Features
++ In WAV audio code, handle loading partial buffers
++ Add Audio to Resource Manager
+- Play audio from within component
 - Octree
 - Scene Graph
 - Filters

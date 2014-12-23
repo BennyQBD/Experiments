@@ -78,7 +78,7 @@ void SDLWAVAudioData::Init()
 	m_fileLength = wavLength;
 	m_fileName = m_fileName;
 
-	FillBuffer();
+	FillBuffer(m_totalBufferLength);
 }
 
 void SDLWAVAudioData::DeInit()
@@ -87,8 +87,13 @@ void SDLWAVAudioData::DeInit()
 	SDL_RWclose(m_src);
 }
 
-bool SDLWAVAudioData::FillBuffer()
+bool SDLWAVAudioData::FillBuffer(unsigned int amt)
 {
+	if(amt > m_totalBufferLength)
+	{
+		amt = m_totalBufferLength;
+	}
+
 	Uint32 audioLeft = (m_fileLength - m_filePos);
 
 	if(audioLeft <= 0)
@@ -98,6 +103,13 @@ bool SDLWAVAudioData::FillBuffer()
 	
 	Uint32 bufferLeft = GetBufferLeft();
 
+	// If there are already enough samples loaded, no need to do any buffer
+	// filling.
+	if(amt <= bufferLeft)
+	{
+		return true;
+	}
+
 	// Move whatever is left to be played to the start of the buffer.
 	for(Uint32 i = 0; i < bufferLeft; i++)
 	{
@@ -106,9 +118,9 @@ bool SDLWAVAudioData::FillBuffer()
 	}
 
 	m_bufferPos = (m_bufferStart + bufferLeft);
-	Uint32 readAmt = (m_totalBufferLength - bufferLeft);
+	Uint32 readAmt = (amt - bufferLeft);
 
-	Uint32 logicalBufferLength = m_totalBufferLength;
+	Uint32 logicalBufferLength = amt;
 	if(audioLeft < readAmt)
 	{
 		readAmt = audioLeft;
@@ -125,7 +137,7 @@ bool SDLWAVAudioData::FillBuffer()
 	return true;
 }
 
-bool SDLWAVAudioData::GotoAudioPos(int audioPosIn)
+bool SDLWAVAudioData::GotoAudioPos(int audioPosIn, unsigned int neededSamples)
 {
 	Uint32 audioPos = (Uint32)audioPosIn;
 	Uint32 currentPos = GetCurrentAudioPos();
@@ -162,23 +174,23 @@ bool SDLWAVAudioData::GotoAudioPos(int audioPosIn)
 	m_bufferPos = bufferEnd;
 	m_filePos += seekDistance;
 	SDL_RWseek(m_src, seekDistance, RW_SEEK_CUR);
-	FillBuffer();
+	FillBuffer(neededSamples);
 	return true;
 }
 
 int SDLWAVAudioData::GenerateSamples(float* buffer, int bufferLength, int audioPos,
 		const SampleInfo& sampleInfo)
-{
-	if(!GotoAudioPos(audioPos))
+{	
+	float volume = (float)(1.0 + sampleInfo.volume);
+	float pitchAdjust = (float)(1.0 + sampleInfo.pitchAdjust);
+	if(sampleInfo.pitchAdjust < 0.0)
+	{
+		pitchAdjust = (float)(1.0/((sampleInfo.pitchAdjust * -1.0) + 1.0));
+	}
+
+	if(!GotoAudioPos(audioPos, (Uint32)(bufferLength * pitchAdjust)))
 	{
 		return -1;
-	}
-	
-	float volume = 1.0f + (float)sampleInfo.volume;
-	float pitchAdjust = 1.0f + (float)sampleInfo.pitchAdjust;
-	if((float)sampleInfo.pitchAdjust < 0.0f)
-	{
-		pitchAdjust = 1.0f/(((float)sampleInfo.pitchAdjust * -1.0f) + 1.0f);
 	}
 
 	Uint32 bufferStartIndex = 0;
@@ -215,11 +227,22 @@ int SDLWAVAudioData::GenerateSamples(float* buffer, int bufferLength, int audioP
 			return (int)GetCurrentAudioPos();
 		}
 
-		if(!FillBuffer())
+		if(!FillBuffer(m_totalBufferLength))
 		{
 			return -1;
 		}
 	} while(true);
+}
+
+int SDLWAVAudioData::GetAudioLength()
+{
+	return (int)m_fileLength;
+}
+
+int SDLWAVAudioData::GetSampleRate()
+{
+	// TODO: Don't hardcode this.
+	return 44100;
 }
 
 static Uint32 ReadLE32(SDL_RWops* src)

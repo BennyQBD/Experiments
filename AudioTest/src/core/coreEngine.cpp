@@ -2,19 +2,20 @@
 
 #include <stdio.h>
 
-CoreEngine::CoreEngine(double frameRate, IDisplay* display, ITimingSystem* timingSystem,
-	   IRenderer* renderer, IScene* scene) :
+CoreEngine::CoreEngine(double frameRate, IDisplay* display,
+		IAudioDevice* device, ITimingSystem* timingSystem, IRenderer* renderer,
+	   	IScene* scene) :
 	m_isRunning(false),
 	m_frameTime(1.0/frameRate),
 	m_display(display),
 	m_timingSystem(timingSystem),
 	m_renderer(renderer),
 	m_scene(scene),
-	m_resources(display->GetRenderDevice())
+	m_resources(display->GetRenderDevice(), device)
 {
-	//Scene is initialized here because this is the point where all rendering systems
-	//are initialized, and so creating meshes/textures/etc. will not fail due
-	//to missing context.
+	// Scene is initialized here because this is the point where all rendering
+	// systems are initialized, and so creating meshes/textures/etc. will not
+	// fail due to missing context.
 	m_scene->Init(&m_resources,
 		(float)m_display->GetWidth()/(float)m_display->GetHeight());
 }

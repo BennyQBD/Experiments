@@ -22,7 +22,13 @@ public:
 		values->SetTexture("diffuse", texture);
 
 		Material material = resources->RegisterMaterial("greyBricks", values);
-		
+
+		AudioData data = resources->GetAudioData("./res/audio/sample.wav", false);
+		SampleInfo info;
+		info.volume = -0.65;
+		info.pitchAdjust = 0.0;
+		AudioObject audio(data, info);
+
 		Add((new Entity())->Add(new MeshRenderer(mesh, material)));
 	}
 };
@@ -59,45 +65,48 @@ int main(int argc, char** argv)
 	IScene* scene = new MyBasicScene();
 	
 
-	IAudioContext* audioContext = subsystem->GetAudioContext();
+//	IAudioContext* audioContext = subsystem->GetAudioContext();
 	IAudioDevice* audioDevice = subsystem->GetAudioDevice();
-	IAudioData* testSound = 
-		audioDevice->CreateAudioFromFile("./res/audio/sample.wav", false);
+//	IAudioData* testSound = 
+//		audioDevice->CreateAudioFromFile("./res/audio/sample.wav", false);
 
 	// intervalX = 2^(X/12).
 	// Precalculated for convenience.	
-	float interval1 = 1.0594630943593f;
-	float interval2 = 1.12246204830937f;
-	float interval3 = 1.18920711500272f;
-	float interval4 = 1.25992104989487f;
-	float interval5 = 1.33483985417003f;
-	float interval6 = 1.4142135623731f;
-	float interval7 = 1.49830707687668f;
-	float interval8 = 1.5874010519682f;
-	float interval9 = 1.68179283050743f;
-	float interval10 = 1.78179743628068f;
-	float interval11 = 1.88774862536339f;
-	float interval12 = 2.0f;
+//	float interval1 = 1.0594630943593f;
+//	float interval2 = 1.12246204830937f;
+//	float interval3 = 1.18920711500272f;
+//	float interval4 = 1.25992104989487f;
+//	float interval5 = 1.33483985417003f;
+//	float interval6 = 1.4142135623731f;
+//	float interval7 = 1.49830707687668f;
+//	float interval8 = 1.5874010519682f;
+//	float interval9 = 1.68179283050743f;
+//	float interval10 = 1.78179743628068f;
+//	float interval11 = 1.88774862536339f;
+//	float interval12 = 2.0f;
+//
+//	SampleInfo info;
+//	info.volume = -0.65f;
+//	info.pitchAdjust = interval7 - 1.0f;
+//
+//	SampleInfo info2;
+//	info2.volume = -0.65f;
+//	info2.pitchAdjust = 0.0f;
 
-	SampleInfo info;
-	info.volume = -0.65f;
-	info.pitchAdjust = interval7 - 1.0f;
+//	AudioObject testSoundObject(testSound, &info);
+//	AudioObject testSoundObject2(testSound, &info2);
+////	testSoundObject.SetPos(testSoundObject.GetSecond());
+////	testSoundObject2.SetPos(testSoundObject2.GetSecond());
+//
+//	audioContext->PlayAudio(testSoundObject);
+//	audioContext->PlayAudio(testSoundObject2);
 
-	SampleInfo info2;
-	info2.volume = -0.65f;
-	info2.pitchAdjust = 0.0f;
-
-	AudioObject testSoundObject(testSound, &info);
-	AudioObject testSoundObject2(testSound, &info2);
-	audioContext->PlayAudio(testSoundObject);
-	audioContext->PlayAudio(testSoundObject2);
-
-	CoreEngine engine(60.0f, display, timingSystem, renderer, scene);
+	CoreEngine engine(60.0f, display, audioDevice, timingSystem, renderer, scene);
 	engine.Start();
 
-	audioContext->StopAudio(testSoundObject);
-	audioContext->StopAudio(testSoundObject2);
-	audioDevice->ReleaseAudio(testSound);
+//	audioContext->StopAudio(testSoundObject);
+//	audioContext->StopAudio(testSoundObject2);
+//	audioDevice->ReleaseAudio(testSound);
 
 
 	delete scene;

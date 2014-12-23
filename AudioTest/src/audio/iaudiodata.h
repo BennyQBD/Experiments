@@ -11,6 +11,8 @@ public:
 
 	virtual int GenerateSamples(float* buffer, int bufferLength, int audioPos,
 		   	const SampleInfo& sampleInfo) = 0;
+	virtual int GetAudioLength() = 0;
+	virtual int GetSampleRate() = 0;
 private:
 	IAudioData(IAudioData& other) { (void)other; }
 	void operator=(const IAudioData& other) { (void)other;}

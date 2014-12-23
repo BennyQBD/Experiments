@@ -3,8 +3,8 @@
 
 struct SampleInfo
 {
-	float volume;
-	float pitchAdjust;
+	double volume;
+	double pitchAdjust;
 };
 
 #endif

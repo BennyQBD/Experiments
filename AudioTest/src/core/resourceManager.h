@@ -7,11 +7,13 @@
 #include "../graphics/texture.h"
 #include "../graphics/material.h"
 #include "../graphics/irenderdevice.h"
+#include "../audio/audioData.h"
+#include "../audio/iaudiodevice.h"
 
 class ResourceManager
 {
 public:
-	ResourceManager(IRenderDevice* device);
+	ResourceManager(IRenderDevice* render, IAudioDevice* audio);
 	
 	Mesh GetMesh(const std::string& name);
 	Mesh RegisterMesh(const std::string& name, const IndexedModel& model);
@@ -27,12 +29,16 @@ public:
 
 	Material GetMaterial(const std::string& name);
 	Material RegisterMaterial(const std::string& name, MaterialValues* values);
+
+	AudioData GetAudioData(const std::string& name, bool streamFromFile);
 private:
-	IRenderDevice*  m_device;
+	IRenderDevice*  m_render;
+	IAudioDevice*   m_audio;
 	ResourceTracker m_meshTracker;
 	ResourceTracker m_shaderTracker;
 	ResourceTracker m_textureTracker;
 	ResourceTracker m_materialTracker;
+	ResourceTracker m_audioTracker;
 };
 
 #endif

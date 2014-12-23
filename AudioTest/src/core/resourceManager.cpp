@@ -60,12 +60,27 @@ static void ReleaseMaterial(void* allocator, void* data)
 	delete values;
 }
 
-ResourceManager::ResourceManager(IRenderDevice* device) :
-	m_device(device),
-	m_meshTracker(device, CreateMeshFromFile, ReleaseMesh),
-	m_shaderTracker(device, CreateShaderFromFile, ReleaseShader),
-	m_textureTracker(device, CreateTextureFromFile, ReleaseTexture),
-	m_materialTracker(NULL, CreateMaterialFromFile, ReleaseMaterial) {}
+static void* CreateAudioDataFromFile(void* iaudiodevice,
+		const std::string& fileName, void* params)
+{
+	bool streamFromFile = *(bool*)params;
+	IAudioDevice* device = (IAudioDevice*)iaudiodevice;
+	return (void*)device->CreateAudioFromFile(fileName, streamFromFile);
+}
+
+static void ReleaseAudioData(void* iaudiodevice, void* data)
+{
+	IAudioDevice* device = (IAudioDevice*)iaudiodevice;
+	device->ReleaseAudio((IAudioData*)data);
+}
+
+ResourceManager::ResourceManager(IRenderDevice* render, IAudioDevice* audio) :
+	m_render(render),
+	m_meshTracker(render, CreateMeshFromFile, ReleaseMesh),
+	m_shaderTracker(render, CreateShaderFromFile, ReleaseShader),
+	m_textureTracker(render, CreateTextureFromFile, ReleaseTexture),
+	m_materialTracker(NULL, CreateMaterialFromFile, ReleaseMaterial),
+	m_audioTracker(audio, CreateAudioDataFromFile, ReleaseAudioData) {}
 
 Mesh ResourceManager::GetMesh(const std::string& name)
 {
@@ -80,7 +95,7 @@ Mesh ResourceManager::GetMesh(const std::string& name)
 Mesh ResourceManager::RegisterMesh(const std::string& name, 
 		const IndexedModel& model)
 {
-	IVertexArray* data = m_device->CreateVertexArray(model);
+	IVertexArray* data = m_render->CreateVertexArray(model);
 	Resource result = m_meshTracker.RegisterResource(name, data);
 	return *(Mesh*)(&result);
 }
@@ -93,7 +108,7 @@ Shader ResourceManager::GetShader(const std::string& name)
 
 Shader ResourceManager::RegisterShader(const std::string& name, const std::string& shaderText)
 {
-	IShaderProgram* data = m_device->CreateShaderProgram(shaderText);
+	IShaderProgram* data = m_render->CreateShaderProgram(shaderText);
 	Resource result = m_shaderTracker.RegisterResource(name, data);
 	return *(Shader*)(&result);
 }
@@ -115,7 +130,7 @@ Texture ResourceManager::RegisterTexture(const std::string& name, int width,
 		int height, unsigned char* data, int format, int internalFormat,
 		bool compress, int filter, float anisotropy, bool clamp)
 {
-	ITexture* textureData = m_device->CreateTexture(width, height, data, format,
+	ITexture* textureData = m_render->CreateTexture(width, height, data, format,
 			internalFormat, compress, filter, anisotropy, clamp);
 	Resource result = m_textureTracker.RegisterResource(name, textureData);
 	return *(Texture*)(&result);
@@ -131,4 +146,10 @@ Material ResourceManager::RegisterMaterial(const std::string& name, MaterialValu
 {
 	Resource result = m_materialTracker.RegisterResource(name, values);
 	return *(Material*)(&result);
+}
+
+AudioData ResourceManager::GetAudioData(const std::string& name, bool streamFromFile)
+{
+	Resource result = m_audioTracker.GetResource(name, &streamFromFile);
+	return *(AudioData*)(&result);
 }

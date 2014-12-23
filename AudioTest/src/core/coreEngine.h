@@ -9,7 +9,7 @@
 class CoreEngine
 {
 public:
-	CoreEngine(double frameRate, IDisplay* display, 
+	CoreEngine(double frameRate, IDisplay* display, IAudioDevice* device,
 			ITimingSystem* timingSystem, IRenderer* renderer, IScene* scene);
 	
 	void Start();
