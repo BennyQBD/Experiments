@@ -7,7 +7,7 @@
 class Base16BitAudio : public IAudioData
 {
 public:
-	Base16BitAudio(long bufferSize);
+	Base16BitAudio();
 	virtual ~Base16BitAudio();
 
 	virtual int GenerateSamples(float* buffer, int bufferLength, int audioPos,
@@ -15,7 +15,7 @@ public:
 	virtual int GetAudioLength();
 	virtual int GetSampleRate();
 protected:
-	void Init(long audioLength);
+	void Init(long audioLength, long bufferSize);
 	virtual void LoadAudioData(char* buffer, long numBytes) = 0;
 	virtual void MoveAudioPos(long amt) = 0;
 private:

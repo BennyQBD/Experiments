@@ -31,6 +31,7 @@ public:
 	Material RegisterMaterial(const std::string& name, MaterialValues* values);
 
 	AudioData GetAudioData(const std::string& name, bool streamFromFile);
+	AudioData RegisterAudioData(const std::string& name, IAudioData* data);
 private:
 	IRenderDevice*  m_render;
 	IAudioDevice*   m_audio;

@@ -153,3 +153,9 @@ AudioData ResourceManager::GetAudioData(const std::string& name, bool streamFrom
 	Resource result = m_audioTracker.GetResource(name, &streamFromFile);
 	return *(AudioData*)(&result);
 }
+
+AudioData ResourceManager::RegisterAudioData(const std::string& name, IAudioData* data)
+{
+	Resource result = m_audioTracker.RegisterResource(name, data);
+	return *(AudioData*)(&result);
+}

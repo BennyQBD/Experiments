@@ -3,6 +3,7 @@
 
 #include "audioData.h"
 
+#include <iostream>
 class AudioObject
 {
 public:
@@ -20,9 +21,11 @@ public:
 		{
 			return false;
 		}
-		m_audioPos = m_audioData.GetAudioData()->GenerateSamples(buffer, bufferLength, 
+
+		m_audioPos = m_audioData.GetAudioData()->GenerateSamples(buffer,
+				bufferLength, 
 				m_audioPos, m_sampleInfo);
-		
+				
 		if(shouldLoop && (GetPos() >= m_sampleInfo.loopEnd))
 		{
 			SetPos(m_sampleInfo.loopStart);
@@ -39,7 +42,6 @@ public:
 			m_audioPos = 0;
 			return false;
 		}
-
 		
 		return true;
 	}

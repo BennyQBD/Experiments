@@ -7,6 +7,7 @@
 #include "basicScene.h"
 #include "components/meshrenderer.h"
 #include "components/basicsound.h"
+#include "audio/sinWave.h"
 #include <cstring>
 
 #define SUBSYSTEM SDLSubSystem
@@ -25,13 +26,17 @@ public:
 
 		Material material = resources->RegisterMaterial("greyBricks", values);
 
-		AudioData data = resources->GetAudioData("./res/audio/sample.wav", false);
+		AudioData data = 
+			resources->RegisterAudioData("sinWaveTest", new SinWave(440.0));
+			//resources->GetAudioData("./res/audio/sample.wav", false);
 		SampleInfo info;
 		memset(&info, 0, sizeof(info));
 		info.volume = -0.65;
 		info.pitchAdjust = 0.0;
-		info.loopStart = 0.2;
-		info.loopEnd = 0.95;
+		info.loopStart = 0.0;
+		info.loopEnd = 0.5;
+//		info.loopStart = 0.2;
+//		info.loopEnd = 0.95;
 		AudioObject audio(data, info);
 
 		Add((new Entity())->Add(new MeshRenderer(mesh, material)));

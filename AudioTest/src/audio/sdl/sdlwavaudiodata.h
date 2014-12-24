@@ -17,11 +17,7 @@ private:
 	SDL_RWops* m_src;
 	std::string m_fileName;
 
-	SDLWAVAudioData(SDLWAVAudioData& other) : 
-		Base16BitAudio(0)
-	{ 
-		(void)other;
-	}
+	SDLWAVAudioData(SDLWAVAudioData& other)	{ (void)other; }
 	void operator=(const SDLWAVAudioData& other) { (void)other;}
 };
 

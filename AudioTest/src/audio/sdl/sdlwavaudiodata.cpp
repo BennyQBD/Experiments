@@ -37,7 +37,6 @@ static Uint32 ReadLE32(SDL_RWops* src);
 static void ReadWavChunkHeader(SDL_RWops* src, Uint32* header, Uint32* length);
 
 SDLWAVAudioData::SDLWAVAudioData(const std::string& fileName, bool streamFromFile) :
-	Base16BitAudio(streamFromFile ? BUFFER_SIZE : 0),
 	m_fileName(fileName)
 {
 	Uint32 wavLength;
@@ -51,7 +50,7 @@ SDLWAVAudioData::SDLWAVAudioData(const std::string& fileName, bool streamFromFil
 		throw std::runtime_error(stream.str());
 	}
 
-	Init(wavLength);
+	Init(wavLength, streamFromFile ? BUFFER_SIZE : 0);
 }
 
 SDLWAVAudioData::~SDLWAVAudioData()

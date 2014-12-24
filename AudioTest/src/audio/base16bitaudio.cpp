@@ -1,19 +1,20 @@
 #include "base16bitaudio.h"
 #include <cstdlib>
 
-Base16BitAudio::Base16BitAudio(long bufferSize)
-{
-	m_streamFromFile = bufferSize != 0;
-	m_bufferLength = bufferSize;
-}
+Base16BitAudio::Base16BitAudio() {}
 
 Base16BitAudio::~Base16BitAudio()
 {
 	free(m_bufferStart);
 }
 
-void Base16BitAudio::Init(long audioLength)
+void Base16BitAudio::Init(long audioLength, long bufferSize)
 {
+	m_streamFromFile = bufferSize != 0;
+	
+	// Round the buffer size up to the next multiple of 4.
+	m_bufferLength = (bufferSize + 3) & (~3);
+
 	if(m_bufferLength == 0)
 	{
 		m_bufferLength = audioLength;
@@ -125,7 +126,10 @@ int Base16BitAudio::GenerateSamples(float* buffer, int bufferLength, int audioPo
 	float pitchAdjust = (float)(1.0 + sampleInfo.pitchAdjust);
 
 	unsigned int predictedNeededSamples = 
-		(unsigned int)((bufferLength * 2) * pitchAdjust * 1.1) + 4;
+		(unsigned int)((bufferLength * 2) * pitchAdjust * 1.1) + 8;
+
+	// Make sure the needed samples are a multiple of 4
+	predictedNeededSamples = predictedNeededSamples & (~3);
 	if(predictedNeededSamples > m_totalBufferLength)
 	{
 		predictedNeededSamples = (unsigned int)m_totalBufferLength;
