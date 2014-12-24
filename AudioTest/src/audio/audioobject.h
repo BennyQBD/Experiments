@@ -40,7 +40,7 @@ public:
 				bufferLength, m_audioPos, audioEndPos, &bufferRemaining,
 				m_sampleInfo);
 
-		if(bufferRemaining != 0)
+		if(bufferRemaining != 0 && shouldLoop)
 		{
 			SetPos(m_sampleInfo.loopStart);
 			m_audioPos = m_audioData.GetAudioData()->GenerateSamples(

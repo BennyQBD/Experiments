@@ -10,7 +10,7 @@
 + Linear Audio Sampling
 + Abstract Audio Base Class
 + Precise Audio Looping
-= Waveform Audio Classes
++ Waveform Audio Classes
 - Audio Panning
 - Camera/Movement Components
 - Octree

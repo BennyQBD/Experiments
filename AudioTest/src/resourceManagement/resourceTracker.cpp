@@ -20,6 +20,7 @@ Resource ResourceTracker::RegisterResource(const std::string& name,
 {
 	ResourceData* data =
 		new ResourceData(resourceData, this, name);
+	
 	m_resourceMap[name] = data;
 
 	// Remove the reference from our pointer
