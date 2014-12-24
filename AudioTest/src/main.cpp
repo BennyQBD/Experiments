@@ -34,7 +34,7 @@ public:
 		info.volume = -0.65;
 		info.pitchAdjust = 0.0;
 		info.loopStart = 0.0;
-		info.loopEnd = 0.5;
+		info.loopEnd = 1.0;
 //		info.loopStart = 0.2;
 //		info.loopEnd = 0.95;
 		AudioObject audio(data, info);

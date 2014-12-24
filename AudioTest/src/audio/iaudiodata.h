@@ -10,6 +10,7 @@ public:
 	virtual ~IAudioData() {}
 
 	virtual int GenerateSamples(float* buffer, int bufferLength, int audioPos,
+			int audioEndPos, int* bufferLeft,
 		   	const SampleInfo& sampleInfo) = 0;
 	virtual int GetAudioLength() = 0;
 	virtual int GetSampleRate() = 0;

@@ -9,8 +9,9 @@
 + Looping audio clips
 + Linear Audio Sampling
 + Abstract Audio Base Class
++ Precise Audio Looping
 = Waveform Audio Classes
-- Precise Audio Looping
+- Audio Panning
 - Camera/Movement Components
 - Octree
 - Scene Graph

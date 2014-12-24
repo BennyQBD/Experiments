@@ -120,6 +120,7 @@ bool Base16BitAudio::GotoAudioPos(long audioPos, unsigned int neededSamples)
 }
 
 int Base16BitAudio::GenerateSamples(float* buffer, int bufferLength, int audioPos,
+		int audioEndPos, int* bufferRemaining,
 		const SampleInfo& sampleInfo)
 {	
 	float volume = (float)(1.0 + sampleInfo.volume);
@@ -139,8 +140,15 @@ int Base16BitAudio::GenerateSamples(float* buffer, int bufferLength, int audioPo
 		return -1;
 	}
 
+	long maxCopyDistance = (long)(((audioEndPos - audioPos)/4 - 1)/ pitchAdjust);
 	long bufferStartIndex = 0;
 	long neededLen = (long)bufferLength / 2;
+	*bufferRemaining = 0;
+	if(neededLen > maxCopyDistance)
+	{
+		*bufferRemaining = (int)(neededLen - maxCopyDistance) * 2;
+		neededLen = maxCopyDistance;
+	}
 	do
 	{
 		// Since linear sampling is used, leave off 1 sample. This way, the
@@ -187,7 +195,7 @@ int Base16BitAudio::GenerateSamples(float* buffer, int bufferLength, int audioPo
 		{
 			return (int)GetCurrentAudioPos();
 		}
-
+		
 		if(!FillBuffer(m_totalBufferLength))
 		{
 			return -1;

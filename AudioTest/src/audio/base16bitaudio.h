@@ -11,6 +11,7 @@ public:
 	virtual ~Base16BitAudio();
 
 	virtual int GenerateSamples(float* buffer, int bufferLength, int audioPos,
+			int audioEndPos, int* bufferLeft,
 		const SampleInfo& sampleInfo);
 	virtual int GetAudioLength();
 	virtual int GetSampleRate();

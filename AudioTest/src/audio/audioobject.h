@@ -17,19 +17,36 @@ public:
 	{
 		bool shouldLoop = m_sampleInfo.loopStart != m_sampleInfo.loopEnd;
 
+		if(shouldLoop && m_sampleInfo.loopStart > m_sampleInfo.loopEnd)
+		{
+			double temp = m_sampleInfo.loopStart;
+			m_sampleInfo.loopStart = m_sampleInfo.loopEnd;
+			m_sampleInfo.loopEnd = temp;
+		}
+
 		if(m_audioData.GetAudioData() == 0)
 		{
 			return false;
 		}
 
+		int bufferRemaining = 0;
+		int audioEndPos = m_audioLength;
+		if(shouldLoop)
+		{
+			audioEndPos = ToAbsolutePos(m_sampleInfo.loopEnd);
+		}
+
 		m_audioPos = m_audioData.GetAudioData()->GenerateSamples(buffer,
-				bufferLength, 
-				m_audioPos, m_sampleInfo);
-				
-		if(shouldLoop && (GetPos() >= m_sampleInfo.loopEnd))
+				bufferLength, m_audioPos, audioEndPos, &bufferRemaining,
+				m_sampleInfo);
+
+		if(bufferRemaining != 0)
 		{
 			SetPos(m_sampleInfo.loopStart);
-			return true;
+			m_audioPos = m_audioData.GetAudioData()->GenerateSamples(
+					buffer + (bufferLength - bufferRemaining),
+					bufferRemaining, m_audioPos, audioEndPos, &bufferRemaining,
+					m_sampleInfo);	
 		}
 			
 		if(m_audioPos == -1)
@@ -76,7 +93,7 @@ public:
 		{
 			pos = 0.0;
 		}
-		m_audioPos = (int)(pos * (double)m_audioLength);
+		m_audioPos = ToAbsolutePos(pos);
 
 		// Keep aligned to a 4-byte position.
 		m_audioPos = m_audioPos & (~3);
@@ -89,6 +106,10 @@ public:
 
 	inline SampleInfo* GetSampleInfo() { return &m_sampleInfo; }
 private:
+	inline int ToAbsolutePos(double pos)
+	{
+		return (int)(pos * (double)m_audioLength);
+	}
 	AudioData   m_audioData;
 	SampleInfo  m_sampleInfo;
 	int         m_audioPos;
