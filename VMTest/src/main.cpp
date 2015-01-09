@@ -1,7 +1,6 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
-#include <vector>
 #include <map>
 #include <stdexcept>
 #include <sstream>
@@ -26,27 +25,45 @@
 
 typedef size_t inttype;
 
-static std::vector<std::vector<std::string> > global_program;
+/* (struct vector<struct vector<char*>>) */
+static struct vector global_program;
 static std::map<std::string, size_t> global_labels;
 static std::map<std::string, size_t> global_labels_stack_frame_sizes;
 
+/* (struct vector<struct ring_buffer>) */
 static struct vector global_function_stacks;
+/* (struct vector<size_t>) */
 static struct vector global_instruction_pointers;
 static size_t global_instruction_pointer = 0;
-
-static void ring_buffer_release_vec(void* data)
-{
-	ring_buffer_release((struct ring_buffer*)data);
-}
 
 static void init_interpretter()
 {
 	vector_create(&global_instruction_pointers, sizeof(size_t), NULL);
-	vector_create(&global_function_stacks, sizeof(ring_buffer), NULL);
+	vector_create(&global_function_stacks, sizeof(struct ring_buffer), NULL);
+	vector_create(&global_program, sizeof(struct vector), NULL);
 }
 
 static void deinit_interpretter()
 {
+	size_t i, j;
+
+	for(i = 0; i < vector_size(&global_program); i++) {
+
+		for(j = 0; j < vector_size((struct vector*)
+					vector_at(&global_program, i)); j++) {
+
+			free(*(char**)vector_at((struct vector*)
+						vector_at(&global_program, i), j));
+		}
+		vector_release((struct vector*)vector_at(&global_program, i));
+	}
+
+	vector_release(&global_program);
+
+	for(i = 0; i < vector_size(&global_function_stacks); i++) {
+		ring_buffer_release((struct ring_buffer*)vector_at(&global_function_stacks, i));
+	}
+
 	vector_release(&global_function_stacks);
 	vector_release(&global_instruction_pointers);
 }
@@ -90,8 +107,7 @@ static void add_label(const std::string& label)
 static void goto_label(const std::string& label)
 {
 	std::map<std::string, size_t>::const_iterator it =global_labels.find(label);
-	if(it == global_labels.end())
-	{
+	if(it == global_labels.end()) {
 		std::ostringstream out;
 		out << "Error: " << label << " is not specified in the program!";
 		throw std::runtime_error(out.str());
@@ -116,12 +132,19 @@ static void return_function()
 	vector_pop_back(&global_instruction_pointers);
 }
 
-static std::string remove_comments(const std::string& line)
+static char* remove_comments(char* line)
 {
-	if(line.empty()) {
+	char* comment_loc;
+	if(!line[0]) {
 		return line;
 	} else {
-		return line.substr(0, line.find(COMMENT_CHAR, 0));
+		comment_loc = strchr(line, COMMENT_CHAR);
+
+		if(comment_loc != NULL) {
+			*comment_loc = 0;
+		}
+		
+		return line;
 	}	
 }
 
@@ -147,43 +170,46 @@ static bool string_to_inttype(const std::string& strIn, inttype* resultPtr)
 	return i >= str_length;
 }
 
-static std::vector<std::string> instruction_to_tokens(
-		const std::string& line)
+static void strlower(char* str)
 {
-	struct tokenizer tokens;
-	std::string token;
-	char* tokenIn = (char*)malloc(line.length() * sizeof(char));
-	std::vector<std::string> result;
+	for(; *str; ++str) {
+		*str = (char)tolower(*str);
+	}
+}
 
-	tokenizer_create(&tokens, line.c_str(), " \t\r\n", "");
+static void instruction_to_tokens(struct vector* tokens, char* line)
+{
+	const char* delim = " \t\r\n";
+	char* token_out;
 
-	while(tokenizer_next_token(&tokens, tokenIn, (unsigned int)line.length())) {
-		token = std::string(tokenIn);
-		if(token.empty()) {
+	line = strtok(line, delim);
+	while(line != NULL) {
+		if(!line[0]) {
 			continue;
 		}
 
-		std::transform(token.begin(), token.end(), token.begin(), ::tolower);
+		strlower(line);
 
-		result.push_back(token);
+		token_out = (char*)malloc((strlen(line) + 1) * sizeof(char));
+		strcpy(token_out, line);
+
+		vector_push_back(tokens, &token_out);
+		line = strtok(NULL, delim);
 	}
-
-	tokenizer_release(&tokens);
-	free(tokenIn);
-	return result;
 }
 
-static void get_parameters(struct vector* result,
-		const std::vector<std::string>& tokens)
+static void get_parameters(struct vector* result, struct vector* tokens)
 {
-	for(std::vector<std::string>::const_iterator it = ++tokens.begin();
-			it != tokens.end(); ++it) {
-		std::string current = *it;
+	size_t i;
+
+	for(i = 1; i < vector_size(tokens); i++) {
+		char* current = *(char**)vector_at(tokens, i);
 		inttype val;
 		bool is_stack_val = current[0] == STACK_CHAR;
 
 		if(is_stack_val) {
-			current = current.substr(1, current.length() - 1);
+			// Ignore the first character.
+			current++;
 		}
 
 		if(!string_to_inttype(current, &val)) {
@@ -200,7 +226,7 @@ static void get_parameters(struct vector* result,
 	}
 }
 
-static void interpret_line(const std::vector<std::string>& tokens)
+static void interpret_line(struct vector* tokens)
 {
 	const char* ins;
 	struct vector parms_list;
@@ -208,11 +234,11 @@ static void interpret_line(const std::vector<std::string>& tokens)
 	size_t parms_length;
 	size_t i;
 
-	ins = tokens[0].c_str();
+	ins = *(const char**)vector_at(tokens, 0);
 
 	if(!strcmp(ins, "branch")) {
 		if(get_stack_val(0) == 1) {
-			goto_label(tokens[1]);
+			goto_label(*(char**)vector_at(tokens, 1));
 		}
 		return;
 	}
@@ -256,26 +282,38 @@ static void interpret_line(const std::vector<std::string>& tokens)
 	vector_release(&parms_list);
 }
 
-static void add_line(const std::string& lineIn)
+static void add_line(char* lineIn)
 {
-	std::string line = remove_comments(lineIn);
-	if(line.empty()) {
+	struct vector tokens;
+	char* line = remove_comments(lineIn);
+
+	if(!line[0]) {
 		return;
 	}
 	
-	std::vector<std::string> tokens = instruction_to_tokens(line);
-	if(tokens.empty()) {
+	vector_create(&tokens, sizeof(char*), NULL);
+	instruction_to_tokens(&tokens, line);
+
+	if(vector_size(&tokens) == 0) {
+		vector_release(&tokens);
 		return;
 	}
 
-	std::string ins = tokens[0];
+	std::string ins = *(char**)vector_at(&tokens, 0);
 
 	if(ins[ins.length() - 1] == LABEL_END_CHAR) {
 		add_label(ins.substr(0, ins.length() - 1));
+		assert(vector_size(&tokens) == 1);
+
+		for(size_t i = 0; i < vector_size(&tokens); i++) {
+			free(*(char**)vector_at(&tokens, i));
+		}
+
+		vector_release(&tokens);
 		return;
 	}
 
-	global_program.push_back(tokens);
+	vector_push_back(&global_program, &tokens);
 	global_instruction_pointer++;
 }
 
@@ -289,17 +327,18 @@ static void build_stack_frame_sizes()
 		goto_label(it->first);
 		global_instruction_pointer++;
 
-		while(global_instruction_pointer < global_program.size()) {
-			std::vector<std::string> tokens = 
-				global_program[global_instruction_pointer];
+		while(global_instruction_pointer < vector_size(&global_program)) {
+			struct vector* tokens = (struct vector*)vector_at(&global_program,
+					global_instruction_pointer);
 
-			for(size_t i = 1; i < tokens.size(); i++) {
-				std::string current = tokens[i];
+			for(size_t i = 1; i < vector_size(tokens); i++) {
+				char* current = *(char**)vector_at(tokens, i);
 				if(current[0] != 's') {
 					continue;
 				}
 				
-				current = current.substr(1, current.length() - 1);
+				// Ignore first char
+				current++;
 				inttype val = 0;
 
 				if(!string_to_inttype(current, &val)) {
@@ -315,7 +354,7 @@ static void build_stack_frame_sizes()
 				}
 			}
 
-			if(tokens[0] == "ret") {
+			if(!strcmp(*(char**)vector_at(tokens, 0), "ret")) {
 				break;
 			}
 
@@ -338,8 +377,9 @@ static inttype interpret_program()
 	call_function(STARTUP_FUNCTION);
 	global_instruction_pointer++;
 
-	while(global_instruction_pointer < global_program.size()) {
-		interpret_line(global_program[global_instruction_pointer]);
+	while(global_instruction_pointer < vector_size(&global_program)) {
+		interpret_line((struct vector*)vector_at(&global_program,
+					global_instruction_pointer));
 		global_instruction_pointer++;
 
 		// If this is true, then the main function has returned
@@ -357,6 +397,7 @@ static inttype interpret_program()
 static inttype interpret_file(const std::string& file_name)
 {
 	std::string line;
+	char* line_out;
 	std::ifstream program_text(file_name.c_str());
 	if(!program_text.is_open()) {
 		throw std::runtime_error(
@@ -365,7 +406,10 @@ static inttype interpret_file(const std::string& file_name)
 
 	while(program_text.good()) {
 		getline(program_text, line);
-		add_line(line);
+		line_out = (char*)malloc(line.size() * sizeof(char));
+		strcpy(line_out, line.c_str());
+		add_line(line_out);
+		free(line_out);
 	}
 	
 	return interpret_program();
