@@ -99,7 +99,7 @@ bool Base16BitAudio::GotoAudioPos(long audioPos, unsigned int neededSamples)
 	
 	bool insideBufferStart = newBufferPos >= m_bufferStart;
 	bool insideBufferEnd = newBufferPos <= bufferEnd;
-	if(insideBufferStart && insideBufferEnd && !m_streamFromFile)
+	if(insideBufferStart && insideBufferEnd)
 	{
 		m_bufferPos = newBufferPos;
 		return true;

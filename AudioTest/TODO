@@ -11,6 +11,7 @@
 + Abstract Audio Base Class
 + Precise Audio Looping
 + Waveform Audio Classes
++ .hpp files
 - Audio Panning
 - Camera/Movement Components
 - Octree
