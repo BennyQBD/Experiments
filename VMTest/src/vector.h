@@ -41,4 +41,4 @@ void vector_unit_test();
 }
 #endif
 
-#endif // TOKENIZER_H_INCLUDED
+#endif

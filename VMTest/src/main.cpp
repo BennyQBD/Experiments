@@ -10,7 +10,9 @@
 #include "tokenizer.h"
 #include "ring_buffer.h"
 #include "vector.h"
+#include "map.h"
 
+// TODO: C style maps
 // TODO: C++ might be overkill for this. Possibly revert to C?
 // TODO: Don't cram everything in one file anymore. This experiment is getting
 //       large enough to warrant some structure.
@@ -27,8 +29,10 @@ typedef size_t inttype;
 
 /* (struct vector<struct vector<char*>>) */
 static struct vector global_program;
-static std::map<std::string, size_t> global_labels;
-static std::map<std::string, size_t> global_labels_stack_frame_sizes;
+/* (struct map<char*, size_t>) */
+static struct map global_labels;
+/* (struct map<char*, size_t>) */
+static struct map global_labels_stack_frame_sizes;
 
 /* (struct vector<struct ring_buffer>) */
 static struct vector global_function_stacks;
@@ -36,16 +40,44 @@ static struct vector global_function_stacks;
 static struct vector global_instruction_pointers;
 static size_t global_instruction_pointer = 0;
 
+static int global_labels_cmp_fn(const void* a, const void* b)
+{
+	char* temp1 = *(char**)a;
+	char* temp2 = *(char**)b;
+	return strcmp(temp1, temp2);
+}
+
 static void init_interpretter()
 {
 	vector_create(&global_instruction_pointers, sizeof(size_t), NULL);
 	vector_create(&global_function_stacks, sizeof(struct ring_buffer), NULL);
 	vector_create(&global_program, sizeof(struct vector), NULL);
+
+	map_create(&global_labels, sizeof(char*), sizeof(size_t), 
+			global_labels_cmp_fn);
+	map_create(&global_labels_stack_frame_sizes, sizeof(char*), sizeof(size_t),
+			global_labels_cmp_fn);
+}
+
+static void global_labels_free_visit_fn(void* userdata, void* keyIn, void* valIn)
+{
+	char* key = *(char**)keyIn;
+	(void)userdata;
+	(void)valIn;
+
+	free(key);
 }
 
 static void deinit_interpretter()
 {
 	size_t i, j;
+
+	/* The keys in this map are the same as the keys in global_labels, so they
+	   don't need to be freed */
+	map_release(&global_labels_stack_frame_sizes);
+
+	map_visit_prefix(&global_labels, NULL, global_labels_free_visit_fn);
+	map_release(&global_labels);
 
 	for(i = 0; i < vector_size(&global_program); i++) {
 
@@ -61,7 +93,8 @@ static void deinit_interpretter()
 	vector_release(&global_program);
 
 	for(i = 0; i < vector_size(&global_function_stacks); i++) {
-		ring_buffer_release((struct ring_buffer*)vector_at(&global_function_stacks, i));
+		ring_buffer_release(
+				(struct ring_buffer*)vector_at(&global_function_stacks, i));
 	}
 
 	vector_release(&global_function_stacks);
@@ -99,29 +132,39 @@ static void stack_push(inttype val)
 	ring_buffer_add(buffer, val);
 }
 
-static void add_label(const std::string& label)
+static void add_label(const char* key)
 {
-	global_labels[label] = global_instruction_pointer -1;
+	assert(key != NULL);
+	size_t value = global_instruction_pointer - 1;
+	map_insert(&global_labels, &key, &value);
 }
 
-static void goto_label(const std::string& label)
+static void goto_label(const char* label)
 {
-	std::map<std::string, size_t>::const_iterator it =global_labels.find(label);
-	if(it == global_labels.end()) {
+	size_t* new_ip = (size_t*)map_at(&global_labels, &label);
+
+	if(new_ip == NULL) {
 		std::ostringstream out;
 		out << "Error: " << label << " is not specified in the program!";
 		throw std::runtime_error(out.str());
 	}
-	
-	global_instruction_pointer = global_labels[label];
+
+	global_instruction_pointer = *new_ip;
 }
 
-static void call_function(const std::string& label)
+static void call_function(const char* label)
 {
+	size_t* frame_size;
 	vector_push_back(&global_instruction_pointers, &global_instruction_pointer);
 
 	goto_label(label);
-	enter_stack_frame(global_labels_stack_frame_sizes[label]);
+	frame_size = (size_t*)map_at(&global_labels_stack_frame_sizes, &label);
+	if(frame_size == NULL) {
+		std::ostringstream out;
+		out << "Error: " << label << " is not specified in the program!";
+		throw std::runtime_error(out.str());
+	}
+	enter_stack_frame(*frame_size);
 }
 
 static void return_function()
@@ -282,87 +325,110 @@ static void interpret_line(struct vector* tokens)
 	vector_release(&parms_list);
 }
 
-static void add_line(char* lineIn)
+static void add_line(const char* lineIn)
 {
 	struct vector tokens;
-	char* line = remove_comments(lineIn);
+	size_t lineLength = strlen(lineIn) + 1;
+	char* line = (char*)malloc(lineLength);
+	char* ins;
+	size_t insEndPos;
 
+	memcpy(line, lineIn, lineLength);
+	line = remove_comments(line);
+
+	/* Nothing in this line; safe to ignore */
 	if(!line[0]) {
-		return;
+		goto add_line_cleanup_1;
 	}
 	
 	vector_create(&tokens, sizeof(char*), NULL);
 	instruction_to_tokens(&tokens, line);
 
+	/* No code in this line; safe to ignore */
 	if(vector_size(&tokens) == 0) {
-		vector_release(&tokens);
-		return;
+		goto add_line_cleanup_2;
 	}
 
-	std::string ins = *(char**)vector_at(&tokens, 0);
+	ins = *(char**)vector_at(&tokens, 0);
+	insEndPos = strlen(ins) - 1;
 
-	if(ins[ins.length() - 1] == LABEL_END_CHAR) {
-		add_label(ins.substr(0, ins.length() - 1));
-		assert(vector_size(&tokens) == 1);
+	if(ins[insEndPos] != LABEL_END_CHAR) {
+		/* Line is valid code. Register it, delete string, but keep token data
+		   for later interprettation */
+		vector_push_back(&global_program, &tokens);
+		global_instruction_pointer++;
+		goto add_line_cleanup_1;
+	} 
+	
+	/* Line is a label. Register it, and delete extra token data */
+	ins[insEndPos] = 0; /* Remove end char; it's just a marker*/
+	add_label(ins);
+	assert(vector_size(&tokens) == 1);
 
-		for(size_t i = 0; i < vector_size(&tokens); i++) {
-			free(*(char**)vector_at(&tokens, i));
+	/* Don't delete the first element; it's kept around as the label */
+	for(size_t i = 1; i < vector_size(&tokens); i++) {
+		free(*(char**)vector_at(&tokens, i));
+	}
+
+add_line_cleanup_2:
+	vector_release(&tokens);
+add_line_cleanup_1:
+	free(line);
+}
+
+static void build_stack_frame_sizes_visit_fn(void* userdata, 
+		void* keyIn, void* valIn)
+{
+	char* key = *(char**)keyIn;
+	inttype max_frame_size = 1;
+
+	(void)userdata;
+	(void)valIn;
+
+	goto_label(key);
+	global_instruction_pointer++;
+
+	while(global_instruction_pointer < vector_size(&global_program)) {
+		struct vector* tokens = (struct vector*)vector_at(&global_program,
+				global_instruction_pointer);
+
+		for(size_t i = 1; i < vector_size(tokens); i++) {
+			char* current = *(char**)vector_at(tokens, i);
+			if(current[0] != 's') {
+				continue;
+			}
+			
+			// Ignore first char
+			current++;
+			inttype val = 0;
+
+			if(!string_to_inttype(current, &val)) {
+				std::ostringstream out;
+				out << "Error: " << current << " is not a number!";
+				throw std::runtime_error(out.str());
+			}
+
+			// Increment by 1, since index is 0 based.
+			val++;
+			if(val > max_frame_size) {
+				max_frame_size = val;
+			}
 		}
 
-		vector_release(&tokens);
-		return;
+		if(!strcmp(*(char**)vector_at(tokens, 0), "ret")) {
+			break;
+		}
+
+		global_instruction_pointer++;
 	}
 
-	vector_push_back(&global_program, &tokens);
-	global_instruction_pointer++;
+	map_insert(&global_labels_stack_frame_sizes, &key, &max_frame_size);
 }
 
 static void build_stack_frame_sizes()
 {
 	global_instruction_pointer = 0;
-	for(std::map<std::string, size_t>::iterator it=global_labels.begin();
-			it!=global_labels.end(); ++it) {
-		inttype max_frame_size = 1;
-
-		goto_label(it->first);
-		global_instruction_pointer++;
-
-		while(global_instruction_pointer < vector_size(&global_program)) {
-			struct vector* tokens = (struct vector*)vector_at(&global_program,
-					global_instruction_pointer);
-
-			for(size_t i = 1; i < vector_size(tokens); i++) {
-				char* current = *(char**)vector_at(tokens, i);
-				if(current[0] != 's') {
-					continue;
-				}
-				
-				// Ignore first char
-				current++;
-				inttype val = 0;
-
-				if(!string_to_inttype(current, &val)) {
-					std::ostringstream out;
-					out << "Error: " << current << " is not a number!";
-					throw std::runtime_error(out.str());
-				}
-
-				// Increment by 1, since index is 0 based.
-				val++;
-				if(val > max_frame_size) {
-					max_frame_size = val;
-				}
-			}
-
-			if(!strcmp(*(char**)vector_at(tokens, 0), "ret")) {
-				break;
-			}
-
-			global_instruction_pointer++;
-		}
-
-		global_labels_stack_frame_sizes[it->first] = max_frame_size;
-	}
+	map_visit_prefix(&global_labels, NULL, build_stack_frame_sizes_visit_fn);
 }
 
 static inttype interpret_program()
@@ -394,43 +460,107 @@ static inttype interpret_program()
 	return result;
 }
 
-static inttype interpret_file(const std::string& file_name)
+enum io_error {
+	IO_ERROR_NONE,
+	IO_ERROR_OUT_OF_MEMORY,
+	IO_ERROR_EOF,
+	IO_ERROR_FILE_NOT_FOUND
+};
+static enum io_error read_line(char** result, size_t* line_alloc_size, FILE* file)
 {
-	std::string line;
-	char* line_out;
-	std::ifstream program_text(file_name.c_str());
-	if(!program_text.is_open()) {
-		throw std::runtime_error(
-				"Error: Unable to open file");
+	char* line = *result;
+	size_t result_alloc_size = *line_alloc_size;
+	size_t char_read_count = 0;
+	char ch;
+
+	assert(file != NULL);
+
+	ch = (char)getc(file);
+	if(ch == EOF) {
+		return IO_ERROR_EOF;
 	}
 
-	while(program_text.good()) {
-		getline(program_text, line);
-		line_out = (char*)malloc(line.size() * sizeof(char));
-		strcpy(line_out, line.c_str());
-		add_line(line_out);
-		free(line_out);
+	if(result_alloc_size == 0) {
+		result_alloc_size = 128;
+		line = (char*)malloc(sizeof(char) * result_alloc_size);
+		if(line == NULL) {
+			return IO_ERROR_OUT_OF_MEMORY;
+		}
 	}
+
+	while((ch != '\n') && (ch != EOF)) {
+		if(char_read_count == result_alloc_size) {
+			result_alloc_size *= 2;
+			line = (char*)realloc(result, result_alloc_size);
+			if(line == NULL) {
+				return IO_ERROR_OUT_OF_MEMORY;
+			}
+		}
+		line[char_read_count] = ch;
+		char_read_count++;
+
+		ch = (char)getc(file);
+	}
+
+	if(ch == EOF) {
+		ungetc(ch, file);
+	}
+
+	line[char_read_count] = 0;
+	*result = line;
+	*line_alloc_size = result_alloc_size;
+	return IO_ERROR_NONE;
+}
+
+static enum io_error interpret_file(inttype* result, const std::string& file_name)
+{
+	enum io_error error;
+	char* line;
+	size_t line_alloc_size;
+	FILE* file;
+
+	file = fopen(file_name.c_str(), "r");
+	if(file == NULL) {
+		return IO_ERROR_FILE_NOT_FOUND;
+	}
+
+	// TODO: Handle errors!
+	line_alloc_size = 128;
+	line = (char*)malloc(sizeof(char) * line_alloc_size);
+	error = read_line(&line, &line_alloc_size, file);
+	while(error == IO_ERROR_NONE)
+	{
+		add_line(line);
+		error = read_line(&line, &line_alloc_size, file); 
+	}
+
+	free(line);
+	fclose(file);
 	
-	return interpret_program();
+	*result = interpret_program();
+	return IO_ERROR_NONE;
 }
 
 int main(int argc, char** argv)
 {
+	size_t val;
+
+	(void)argc;
+	(void)argv;
 	init_interpretter();
 
-//	interpret_line("   ");
-//	interpret_line("; introductory text thingy");
-//	interpret_line("add 5 3");
-//	interpret_line("add s0 7");
-//	interpret_line("add s0 s1");
-//	interpret_line("add s0 s2");
-//	interpret_line("sub s0 1");
-//	interpret_line("div s0 4");
-//	interpret_line("mul s0 4");
-//	interpret_line("add s0 s2");
+//	add_line("main:");
+//	add_line("push 5");
+//	add_line("push 3");
+//	add_line("add s0 s1");
+//	std::cout << interpret_program() << std::endl;
 
-	std::cout << interpret_file(PROGRAM_FILE_NAME) << std::endl;
+	if(interpret_file(&val, PROGRAM_FILE_NAME) != IO_ERROR_NONE) {
+		fprintf(stderr, "Error: File could not be interpretted");
+		exit(1);
+	}
+
+	std::cout << val << std::endl;
 
 //	for(int i = 0; i < global_stack.size(); i++) {
 //		std::cout << get_stack_val(i) << std::endl;

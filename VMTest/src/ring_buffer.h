@@ -17,7 +17,9 @@ void ring_buffer_create(struct ring_buffer* self, size_t size);
 void ring_buffer_release(struct ring_buffer* self);
 
 void ring_buffer_add(struct ring_buffer* self, size_t val);
-size_t ring_buffer_get(struct ring_buffer* self, size_t index);
+size_t ring_buffer_get(const struct ring_buffer* self, size_t index);
+
+void ring_buffer_unit_test();
 
 #ifdef __cplusplus
 }
