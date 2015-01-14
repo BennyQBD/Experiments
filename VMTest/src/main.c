@@ -1,29 +1,35 @@
-#include <iostream>
-#include <fstream>
-#include <algorithm>
-#include <map>
-#include <stdexcept>
-#include <sstream>
 #include <stdlib.h>
 #include <string.h>
-#include <cassert>
+#include <assert.h>
+#include <stdio.h>
+#include <ctype.h>
 #include "tokenizer.h"
 #include "ring_buffer.h"
 #include "vector.h"
 #include "map.h"
 
-// TODO: C style maps
-// TODO: C++ might be overkill for this. Possibly revert to C?
-// TODO: Don't cram everything in one file anymore. This experiment is getting
-//       large enough to warrant some structure.
-// TODO: Good way of handling different data types/sizes
-// TODO: Possibly variable-size integer types
+/*
+ * TODO: Don't cram everything in one file anymore. This experiment is getting
+         large enough to warrant some structure.
+ * TODO: Good way of handling different data types/sizes
+ * TODO: Possibly variable-size integer types
+ */
 
 #define PROGRAM_FILE_NAME "./res/test.asm"
 #define STARTUP_FUNCTION "main"
 #define COMMENT_CHAR ';'
 #define STACK_CHAR 's'
 #define LABEL_END_CHAR ':'
+
+enum interpreter_error {
+	INTERPRETER_ERROR_NONE,
+	INTERPRETER_ERROR_INVALID_LABEL,
+	INTERPRETER_ERROR_NUMBER_PARSE_FAIL,
+	INTERPRETER_ERROR_FILE_NOT_FOUND
+};
+
+#define INTERPRETER_TRY(error, line) \
+	if((error = line) != INTERPRETER_ERROR_NONE) return error
 
 typedef size_t inttype;
 
@@ -139,32 +145,33 @@ static void add_label(const char* key)
 	map_insert(&global_labels, &key, &value);
 }
 
-static void goto_label(const char* label)
+static enum interpreter_error goto_label(const char* label)
 {
 	size_t* new_ip = (size_t*)map_at(&global_labels, &label);
 
 	if(new_ip == NULL) {
-		std::ostringstream out;
-		out << "Error: " << label << " is not specified in the program!";
-		throw std::runtime_error(out.str());
+		return INTERPRETER_ERROR_INVALID_LABEL;
 	}
 
 	global_instruction_pointer = *new_ip;
+	return INTERPRETER_ERROR_NONE;
 }
 
-static void call_function(const char* label)
+static enum interpreter_error call_function(const char* label)
 {
+	enum interpreter_error error;
 	size_t* frame_size;
 	vector_push_back(&global_instruction_pointers, &global_instruction_pointer);
 
-	goto_label(label);
+	INTERPRETER_TRY(error, goto_label(label));
+
 	frame_size = (size_t*)map_at(&global_labels_stack_frame_sizes, &label);
 	if(frame_size == NULL) {
-		std::ostringstream out;
-		out << "Error: " << label << " is not specified in the program!";
-		throw std::runtime_error(out.str());
+		return INTERPRETER_ERROR_INVALID_LABEL;
 	}
+
 	enter_stack_frame(*frame_size);
+	return INTERPRETER_ERROR_NONE;
 }
 
 static void return_function()
@@ -191,10 +198,9 @@ static char* remove_comments(char* line)
 	}	
 }
 
-static bool string_to_inttype(const std::string& strIn, inttype* resultPtr)
+static char string_to_inttype(const char* str, inttype* resultPtr)
 {
-	const char* str = strIn.c_str();
-	size_t str_length = strIn.length();
+	size_t str_length = strlen(str);
 	size_t i;
 	int negate;
 	inttype result = 0;
@@ -241,24 +247,22 @@ static void instruction_to_tokens(struct vector* tokens, char* line)
 	}
 }
 
-static void get_parameters(struct vector* result, struct vector* tokens)
+static enum interpreter_error get_parameters(struct vector* result, struct vector* tokens)
 {
 	size_t i;
 
 	for(i = 1; i < vector_size(tokens); i++) {
 		char* current = *(char**)vector_at(tokens, i);
 		inttype val;
-		bool is_stack_val = current[0] == STACK_CHAR;
+		char is_stack_val = current[0] == STACK_CHAR;
 
 		if(is_stack_val) {
-			// Ignore the first character.
+			/* Ignore the first character. */
 			current++;
 		}
 
 		if(!string_to_inttype(current, &val)) {
-			std::ostringstream out;
-			out << "Error: " << current << " is not a number!";
-			throw std::runtime_error(out.str());
+			return INTERPRETER_ERROR_NUMBER_PARSE_FAIL;
 		}
 
 		if(is_stack_val) {
@@ -267,10 +271,13 @@ static void get_parameters(struct vector* result, struct vector* tokens)
 
 		vector_push_back(result, &val);
 	}
+
+	return INTERPRETER_ERROR_NONE;
 }
 
-static void interpret_line(struct vector* tokens)
+static enum interpreter_error interpret_line(struct vector* tokens)
 {
+	enum interpreter_error error;
 	const char* ins;
 	struct vector parms_list;
 	inttype* parms;
@@ -281,13 +288,13 @@ static void interpret_line(struct vector* tokens)
 
 	if(!strcmp(ins, "branch")) {
 		if(get_stack_val(0) == 1) {
-			goto_label(*(char**)vector_at(tokens, 1));
+			return goto_label(*(char**)vector_at(tokens, 1));
 		}
-		return;
+		return INTERPRETER_ERROR_NONE;
 	}
 	
 	vector_create(&parms_list, sizeof(inttype), NULL);
-	get_parameters(&parms_list, tokens);
+	INTERPRETER_TRY(error, get_parameters(&parms_list, tokens));
 	
 	parms = (inttype*)vector_to_array(&parms_list);
 	parms_length = vector_size(&parms_list);
@@ -309,20 +316,21 @@ static void interpret_line(struct vector* tokens)
 		stack_push(parms[0] == parms[1]);
 	}
 
-	// Function calling instructions
+	/* Function calling instructions */
 	else if(!strcmp(ins, "ret")) {
 		return_function();
 		for(i = 0; i < parms_length; i++) {
 			stack_push(parms[i]);
 		}
 	} else {
-		call_function(ins);
+		INTERPRETER_TRY(error, call_function(ins));
 		for(i = 0; i < parms_length; i++) {
 			stack_push(parms[i]);
 		}
 	}
 
 	vector_release(&parms_list);
+	return INTERPRETER_ERROR_NONE;
 }
 
 static void add_line(const char* lineIn)
@@ -379,13 +387,21 @@ add_line_cleanup_1:
 static void build_stack_frame_sizes_visit_fn(void* userdata, 
 		void* keyIn, void* valIn)
 {
+	enum interpreter_error* error = (enum interpreter_error*)userdata;
 	char* key = *(char**)keyIn;
 	inttype max_frame_size = 1;
+
+	if(*error != INTERPRETER_ERROR_NONE) {
+		return;
+	}
 
 	(void)userdata;
 	(void)valIn;
 
-	goto_label(key);
+	*error = goto_label(key);
+	if(*error != INTERPRETER_ERROR_NONE) {
+		return;
+	}
 	global_instruction_pointer++;
 
 	while(global_instruction_pointer < vector_size(&global_program)) {
@@ -398,17 +414,16 @@ static void build_stack_frame_sizes_visit_fn(void* userdata,
 				continue;
 			}
 			
-			// Ignore first char
+			/* Ignore first char */
 			current++;
 			inttype val = 0;
 
 			if(!string_to_inttype(current, &val)) {
-				std::ostringstream out;
-				out << "Error: " << current << " is not a number!";
-				throw std::runtime_error(out.str());
+				*error = INTERPRETER_ERROR_NUMBER_PARSE_FAIL;
+				return;
 			}
 
-			// Increment by 1, since index is 0 based.
+			/* Increment by 1, since index is 0 based. */
 			val++;
 			if(val > max_frame_size) {
 				max_frame_size = val;
@@ -425,39 +440,44 @@ static void build_stack_frame_sizes_visit_fn(void* userdata,
 	map_insert(&global_labels_stack_frame_sizes, &key, &max_frame_size);
 }
 
-static void build_stack_frame_sizes()
+static enum interpreter_error build_stack_frame_sizes()
 {
+	enum interpreter_error result = INTERPRETER_ERROR_NONE;
+
 	global_instruction_pointer = 0;
-	map_visit_prefix(&global_labels, NULL, build_stack_frame_sizes_visit_fn);
+	map_visit_prefix(&global_labels, &result, build_stack_frame_sizes_visit_fn);
+
+	return result;
 }
 
-static inttype interpret_program()
+static enum interpreter_error interpret_program(inttype* result)
 {
-	inttype result;
+	enum interpreter_error error;
 
-	build_stack_frame_sizes();
+	INTERPRETER_TRY(error, build_stack_frame_sizes());
 
-	// The create a stack frame to hold the main function's result
+	/* Create a stack frame to hold the main function's result */
 	enter_stack_frame(1);
 
-	call_function(STARTUP_FUNCTION);
+	INTERPRETER_TRY(error, call_function(STARTUP_FUNCTION));
 	global_instruction_pointer++;
 
 	while(global_instruction_pointer < vector_size(&global_program)) {
-		interpret_line((struct vector*)vector_at(&global_program,
-					global_instruction_pointer));
+		INTERPRETER_TRY(error, 
+				interpret_line((struct vector*)vector_at(&global_program,
+					global_instruction_pointer)));
 		global_instruction_pointer++;
 
-		// If this is true, then the main function has returned
+		/* If this is true, then the main function has returned */
 		if(vector_size(&global_function_stacks) < 2) {
 			break;
 		}
 	}
 	
-	result = get_stack_val(0);
+	*result = get_stack_val(0);
 	leave_stack_frame();
 	
-	return result;
+	return INTERPRETER_ERROR_NONE;
 }
 
 enum io_error {
@@ -512,19 +532,19 @@ static enum io_error read_line(char** result, size_t* line_alloc_size, FILE* fil
 	return IO_ERROR_NONE;
 }
 
-static enum io_error interpret_file(inttype* result, const std::string& file_name)
+static enum interpreter_error interpret_file(inttype* result, const char* file_name)
 {
 	enum io_error error;
+	enum interpreter_error error2;
 	char* line;
 	size_t line_alloc_size;
 	FILE* file;
 
-	file = fopen(file_name.c_str(), "r");
+	file = fopen(file_name, "r");
 	if(file == NULL) {
-		return IO_ERROR_FILE_NOT_FOUND;
+		return INTERPRETER_ERROR_FILE_NOT_FOUND;
 	}
 
-	// TODO: Handle errors!
 	line_alloc_size = 128;
 	line = (char*)malloc(sizeof(char) * line_alloc_size);
 	error = read_line(&line, &line_alloc_size, file);
@@ -537,8 +557,8 @@ static enum io_error interpret_file(inttype* result, const std::string& file_nam
 	free(line);
 	fclose(file);
 	
-	*result = interpret_program();
-	return IO_ERROR_NONE;
+	INTERPRETER_TRY(error2, interpret_program(result));
+	return INTERPRETER_ERROR_NONE;
 }
 
 int main(int argc, char** argv)
@@ -549,30 +569,12 @@ int main(int argc, char** argv)
 	(void)argv;
 	init_interpretter();
 
-//	add_line("main:");
-//	add_line("push 5");
-//	add_line("push 3");
-//	add_line("add s0 s1");
-//	std::cout << interpret_program() << std::endl;
-
-	if(interpret_file(&val, PROGRAM_FILE_NAME) != IO_ERROR_NONE) {
+	if(interpret_file(&val, PROGRAM_FILE_NAME) != INTERPRETER_ERROR_NONE) {
 		fprintf(stderr, "Error: File could not be interpretted");
 		exit(1);
 	}
 
-	std::cout << val << std::endl;
-
-//	for(int i = 0; i < global_stack.size(); i++) {
-//		std::cout << get_stack_val(i) << std::endl;
-//	}
-
-//	inttype val = 0;
-//	if(!string_to_inttype("981264109264", &val)) {
-//		std::cout << "Value did not convert!" << std::endl;
-//	}
-//
-//	std::cout << ((signed long)val) << std::endl;
-	//std::cout << "Hello World" << std::endl;
+	printf("%lu\n", val);
 
 	deinit_interpretter();
 	return 0;
