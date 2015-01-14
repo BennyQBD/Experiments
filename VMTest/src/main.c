@@ -1,6 +1,11 @@
 #include <stdio.h>
 #include "interpreter.h"
 
+/*
+ * TODO: Good way of handling different data types/sizes
+ * TODO: Possibly variable-size integer types
+ */
+
 #define PROGRAM_FILE_NAME "./res/test.asm"
 
 int main(int argc, char** argv)
@@ -29,7 +34,7 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	printf("Hello, World: %lu\n", result);
+	printf("Result: %lu\n", result);
 
 	interpreter_release(&interp);
 	return 0;

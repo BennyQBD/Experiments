@@ -81,7 +81,8 @@ void interpreter_release(struct interpreter* self)
 	   don't need to be freed */
 	map_release(&self->stack_frame_sizes__charptr__size_t);
 
-	map_visit_prefix(&self->labels__charptr__size_t, NULL, charptr_free_visit_fn);
+	map_visit_prefix(&self->labels__charptr__size_t, NULL,
+			charptr_free_visit_fn);
 	map_release(&self->labels__charptr__size_t);
 
 	for(i = 0; i < vector_size(&self->program__struct_vector__charptr); i++) {
@@ -94,14 +95,17 @@ void interpreter_release(struct interpreter* self)
 						vector_at(&self->program__struct_vector__charptr, 
 							i), j));
 		}
-		vector_release((struct vector*)vector_at(&self->program__struct_vector__charptr, i));
+		vector_release((struct vector*)
+				vector_at(&self->program__struct_vector__charptr, i));
 	}
 
 	vector_release(&self->program__struct_vector__charptr);
 
-	for(i = 0; i < vector_size(&self->function_stacks__struct_ring_buffer); i++) {
+	for(i = 0; i < vector_size(&self->function_stacks__struct_ring_buffer); 
+			i++) {
 		ring_buffer_release(
-				(struct ring_buffer*)vector_at(&self->function_stacks__struct_ring_buffer, i));
+				(struct ring_buffer*)vector_at(
+					&self->function_stacks__struct_ring_buffer, i));
 	}
 
 	vector_release(&self->function_stacks__struct_ring_buffer);
@@ -313,7 +317,8 @@ static void build_stack_frame_sizes_visit_fn(void* userdata,
 		self->instruction_ptr++;
 	}
 
-	map_insert(&self->stack_frame_sizes__charptr__size_t, &key, &max_frame_size);
+	map_insert(&self->stack_frame_sizes__charptr__size_t,
+			&key, &max_frame_size);
 }
 
 
