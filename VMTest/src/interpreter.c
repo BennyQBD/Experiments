@@ -149,7 +149,7 @@ void interpreter_add_line(struct interpreter* self, const char* lineIn)
 	
 	
 	/* Line is a label. Register it, and delete extra token data */
-	ins[insEndPos] = 0; /* Remove end char; it's just a marker*/
+	ins[insEndPos] = 0; /* Remove end char; it's just a marker */
 	add_label(self, ins);
 	assert(vector_size(&tokens) == 1);
 
