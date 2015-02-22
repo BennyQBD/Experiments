@@ -1,0 +1,43 @@
+#ifndef DISPLAY_H
+#define DISPLAY_H
+
+#include <SDL2/SDL.h>
+#include <string>
+#include "bitmap.h"
+#include "input.h"
+
+class Display
+{
+public:
+	Display(unsigned int width, unsigned int height, double scale, const std::string& title);
+	
+	void Update(); 
+	bool IsClosed();
+	
+	inline Bitmap& GetRaster() { return &m_raster; }
+	inline Input& GetInput() { return &m_input; }
+	inline unsigned int GetWidth() { return m_width; }
+	inline unsigned int GetHeight() { return m_height; }
+	
+	virtual ~Display();
+protected:
+private:
+	static const unsigned int NUM_KEYS = 512;
+
+	Display(const Display& other) {}
+	void operator=(const Display& other) {}
+	
+	SDL_Window* m_window;
+	SDL_Texture* m_image;
+	SDL_Renderer* m_renderer;
+	Bitmap m_raster;
+	
+	unsigned int m_width;
+	unsigned int m_height;
+	
+	Input m_input;
+	bool m_downKeys[NUM_KEYS];
+	bool m_isClosed;
+};
+
+#endif // DISPLAY_H

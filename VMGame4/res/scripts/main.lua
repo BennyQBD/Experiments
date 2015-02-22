@@ -87,11 +87,45 @@ function Display2(width, height, title)
 	local self = Display(width, height, title)
 
 	function self.draw_rect(xStart, xEnd, yStart, yEnd, hex_color)
+		if(xEnd >= width) then
+			xEnd = width - 1
+		end
+		if(xStart < 0) then
+			xStart = 0
+		end
+		if(yEnd >= height) then
+			yEnd = height - 1
+		end
+		if(yStart < 0) then
+			yStart = 0
+		end
+
 		for y = yStart, yEnd do
 			for x = xStart, xEnd do
 				self.draw_pixel(x, y, hex_color)
 			end
 		end
+	end
+
+	function self.draw_intersecting_rects(
+			xStart1, xEnd1, yStart1, yEnd1, hex_color1,
+			xStart2, xEnd2, yStart2, yEnd2, hex_color2)
+		self.draw_rect(xStart1, xEnd1, yStart1, yEnd1, hex_color1)
+		self.draw_rect(xStart2, xEnd2, yStart2, yEnd2, hex_color2)
+		
+		if(xStart1 < xStart2) then
+			xStart1 = xStart2
+		end
+		if(xEnd1 > xEnd2) then
+			xEnd1 = xEnd2
+		end
+		if(yStart1 < yStart2) then
+			yStart1 = yStart2
+		end
+		if(yEnd1 > yEnd2) then
+			yEnd1 = yEnd2
+		end
+		self.draw_rect(xStart1, xEnd1, yStart1, yEnd1, hex_color1 + hex_color2)
 	end
 
 	return self
@@ -101,15 +135,24 @@ function main()
 	local v1 = vec4(1, 2, 3)
 	local v2 = vec4(4, 5, 6)
 	local v3 = v1.cross(v2)
+	--[[
 	io.write("Hello, World: ")
 	io.write(tostring(v3))
 	io.write(tostring(v1 == v1))
+	--]]
 
 	local display = Display2(800, 600, "My Display")
+	local xLoc = 0
+	local yLoc = 0
 
 	while(display.is_closed() ~= true) do
 		display.clear()
-		display.draw_rect(100, 200, 100, 200, 0x00FF00)
+		--display.draw_rect(100 + xLoc, 200 + xLoc, 100, 200, 0x00FF00)
+		--display.draw_rect(100, 200, 100 + yLoc, 200 + yLoc, 0xFF0000)
+		display.draw_intersecting_rects(100 + xLoc, 200 + xLoc, 100, 200, 0xAB00FF,
+			100, 200, 100 + yLoc, 200 + yLoc, 0x12FF00)
 		display.update()
+		xLoc = xLoc + 1
+		yLoc = yLoc + 600.0/800.0
 	end
 end
