@@ -1,5 +1,5 @@
 OUTPUT_NAME = main
-LIBS := -lSDL2
+LIBS := 
 
 SRC_DIR := src
 OBJ_DIR := obj

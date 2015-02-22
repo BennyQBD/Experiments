@@ -35,15 +35,17 @@ Bitmap::~Bitmap()
 
 static float sRGBEncode(float c)
 {
-	if(c < 0.0031308f)
-	{
-		return 12.92f * c;
-	}
-	else
-	{
-		// Inverse Gamma 2.4
-		return 1.055f * powf(c, 0.4166667f) - 0.055f;
-	}
+	return c;
+	//return powf(c, 1.0f/2.2f);
+//	if(c < 0.0031308f)
+//	{
+//		return 12.92f * c;
+//	}
+//	else
+//	{
+//		// Inverse Gamma 2.4
+//		return 1.055f * powf(c, 0.4166667f) - 0.055f;
+//	}
 }
 
 static float Saturate(float c, float exposure)
@@ -54,15 +56,15 @@ static float Saturate(float c, float exposure)
 	}
 	else
 	{
-		return 1.0f - expf(c * exposure);
+		return 1.0f - expf(c * exposure * -1.0f);
 	}
 }
 
 void Bitmap::DrawPixel(unsigned int x, unsigned int y, const Vector3f& color, float exposure)
 {
-	int r = ((int)(Saturate(color.GetX(), exposure) * 255)) & 0xFF;
-	int g = ((int)(Saturate(color.GetY(), exposure) * 255)) & 0xFF;
-	int b = ((int)(Saturate(color.GetZ(), exposure) * 255)) & 0xFF;
+	int r = ((int)(sRGBEncode(Saturate(color.GetX(), exposure)) * 255.0f + 0.5f)) & 0xFF;
+	int g = ((int)(sRGBEncode(Saturate(color.GetY(), exposure)) * 255.0f + 0.5f)) & 0xFF;
+	int b = ((int)(sRGBEncode(Saturate(color.GetZ(), exposure)) * 255.0f + 0.5f)) & 0xFF;
 	
 	unsigned int index = x + m_width * y;
 	
