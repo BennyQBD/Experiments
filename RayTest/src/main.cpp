@@ -179,6 +179,11 @@ private:
 	float m_reflectivity;
 };
 
+static float Randf()
+{
+	return (float)rand()/RAND_MAX;
+}
+
 class Sphere
 {
 public:
@@ -218,9 +223,19 @@ public:
 		return (surfaceLoc - m_center).Normalized();
 	}
 
-	Vector3f GetDirectionFromPoint(const Vector3f& point) const
+	Vector3f GetRandomDirectionFromPoint(const Vector3f& point) const
 	{
-		return (m_center - point).Normalized();
+		float r1 = Randf();
+		float r2 = Randf();
+		r1 *= 2.0f * (float)MATH_PI;
+		r2 = acosf(2.0f * r2 - 1.0f);
+
+		Vector3f randomDir(
+				cosf(r1)*sinf(r2),
+				sinf(r1)*sinf(r2),
+				cosf(r2));
+
+		return ((randomDir.Normalized() * m_radius + m_center) - point).Normalized();
 	}
 
 	inline const Material& GetMaterial() const { return m_material; }
@@ -236,10 +251,6 @@ struct NearestIntersection
 	const Sphere* sphere;
 };
 
-static float Randf()
-{
-	return (float)rand()/RAND_MAX;
-}
 
 class Scene
 {
@@ -355,17 +366,12 @@ private:
 		for(size_t i = 0; i < m_spheres[SPHERE_TYPE_LIGHT].size(); i++)
 		{
 			const Sphere& currentSphere = m_spheres[SPHERE_TYPE_LIGHT][i];
-			Vector3f lightDir = currentSphere.GetDirectionFromPoint(p);
-
+			Vector3f lightDir = currentSphere.GetRandomDirectionFromPoint(p);
 			NearestIntersection intersect = FindNearestIntersection(Ray(p, lightDir));
 
 			if(intersect.sphere == NULL || intersect.sphere == &currentSphere)
 			{
 				float lightAmt = normal.Dot(lightDir);
-				if(lightAmt < 0.0f)
-				{
-					lightAmt = 0.0f;
-				}
 				result += currentSphere.GetMaterial().GetEmissionColor() * lightAmt;
 			}
 		}
@@ -408,6 +414,22 @@ private:
 
 		if(diffuseRatio != 0.0f)
 		{
+//			float r1 = Randf();
+//			float r2 = Randf();
+//			r1 *= 2.0f * (float)MATH_PI;
+//			float sqrtr2 = sqrtf(r2);
+//
+//			Vector3f u = ((fabs(normal.GetX()) > 0.1f ? Vector3f(0.0f, 1.0f, 0.0f) :
+//						Vector3f(1.0f, 0.0f, 0.0f)).Cross(normal));
+//			Vector3f v = normal.Cross(u);
+//
+//			Vector3f newDirection = (u * cosf(r1) * sqrtr2 +
+//					v * sinf(r1) * sqrtr2 + normal * sqrtf(1 - r2)).Normalized();
+//
+//			surfaceColor += diffuseColor.ComponentMultiply(
+//					Trace(Ray(hitLoc + normal * BIAS, newDirection), 
+//						depth)) * diffuseRatio;
+
 			Vector3f lightAmt = CalculateDiffuseLighting(hitLoc, normal);
 			surfaceColor += diffuseColor.ComponentMultiply(lightAmt)
 				* diffuseRatio;
@@ -435,13 +457,13 @@ private:
 
 int main()
 {
-	Bitmap result(800, 600);
+	Bitmap result(320, 240);
 	
 	Camera camera;
 	camera.pos = Vector3f(0,0,0);
 	camera.fov = ToRadians(30.0f);
 	camera.exposure = 0.0f;
-	camera.depthOfField = 1.0f/200.0f;
+	camera.depthOfField = 0.0f/150.0f;
 
 	Cubemap background("./res/envmap.png");
 
