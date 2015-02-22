@@ -9,6 +9,7 @@ struct Camera
 {
 	Vector3f pos;
 	float fov;
+	float depthOfField;
 	float exposure;
 };
 
@@ -235,6 +236,11 @@ struct NearestIntersection
 	const Sphere* sphere;
 };
 
+static float Randf()
+{
+	return (float)rand()/RAND_MAX;
+}
+
 class Scene
 {
 public:
@@ -283,9 +289,22 @@ public:
 							* tanHalfFOV * aspect;
 						float y = (1 - 2 * ((jj + sampleFactorSqrt / 2.0f) * invHeight))
 							* tanHalfFOV;
-						Ray viewRay(m_camera.pos, 
-								Vector3f(x, y, -1).Normalized());
-						color += Trace(viewRay, 0) * sampleFactor;
+
+						Vector3f origin = m_camera.pos;
+						Vector3f direction = Vector3f(x, y, -1).Normalized();
+
+						if(m_camera.depthOfField != 0.0f)
+						{
+							Vector3f disturbance(
+									m_camera.depthOfField * Randf(),
+									m_camera.depthOfField * Randf(), 0.0f);
+
+							Vector3f aimedPoint = origin + direction;
+							origin = origin + disturbance;
+							direction = (aimedPoint - origin).Normalized();
+						}
+
+						color += Trace(Ray(origin, direction), 0) * sampleFactor;
 					}
 				}
 
@@ -379,7 +398,7 @@ private:
 		Vector3f diffuseColor = material.GetDiffuseColor();
 		float maxReflectance = diffuseColor.MaxComponent();
 
-		if(depth >= m_maxTraceDepth || maxReflectance < 1.0f/255.0f)
+		if(depth > m_maxTraceDepth || maxReflectance < 1.0f/255.0f)
 		{
 			return material.GetEmissionColor();
 		}
@@ -422,10 +441,11 @@ int main()
 	camera.pos = Vector3f(0,0,0);
 	camera.fov = ToRadians(30.0f);
 	camera.exposure = 0.0f;
+	camera.depthOfField = 1.0f/200.0f;
 
 	Cubemap background("./res/envmap.png");
 
-	Scene scene(camera, background, 5, 1);
+	Scene scene(camera, background, 5, 16);
 	scene.AddSphere(Sphere(Vector3f(0.0f, -10004.0f, -20.0f), 10000.0f, 
 				Material(Vector3f(0.2f, 0.2f, 0.2f), 0.0f)));
 	scene.AddSphere(Sphere(Vector3f(0.0f, 0.0f, -20.0f), 4.0f,
