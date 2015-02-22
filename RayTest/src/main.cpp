@@ -28,6 +28,138 @@ private:
 	Vector3f m_direction;
 };
 
+class Cubemap : public Bitmap
+{
+public:
+	Cubemap(const std::string& fileName) : Bitmap(fileName) {}
+
+	Vector3f ReadPixel(const Ray& ray) const 
+	{
+		static const unsigned int CUBE_UP = 0;
+		static const unsigned int CUBE_DOWN = 1;
+
+		static const unsigned int CUBE_RIGHT = 4;
+		static const unsigned int CUBE_LEFT = 5;
+		static const unsigned int CUBE_FORWARD = 2;
+		static const unsigned int CUBE_BACKWARD = 3;
+
+		const Vector3f rayDir = ray.GetDirection();
+		float ardx = fabsf(rayDir.GetX());
+		float ardy = fabsf(rayDir.GetY());
+		float ardz = fabsf(rayDir.GetZ());
+
+//		return GetCubemapPixel(CUBE_RIGHT, 
+//				1.0f - (rayDir.GetZ()/rayDir.GetX() + 1.0f) * 0.5f,
+//				(rayDir.GetY()/rayDir.GetX() + 1.0f) * 0.5f);
+
+		if(ardx >= ardy && ardx >= ardz)
+		{
+			if(rayDir.GetX() > 0.0f)
+			{
+				return GetCubemapPixel(CUBE_RIGHT,
+						1.0f - (rayDir.GetY()/rayDir.GetX() + 1.0f) * 0.5f,
+						1.0f - (rayDir.GetZ()/rayDir.GetX() + 1.0f) * 0.5f);
+			}
+			else
+			{
+				return GetCubemapPixel(CUBE_LEFT,
+						(rayDir.GetY()/rayDir.GetX() + 1.0f) * 0.5f,
+						1.0f - (rayDir.GetZ()/rayDir.GetX() + 1.0f) * 0.5f); 
+			}
+		}
+		else if(ardy >= ardx && ardy >= ardz)
+		{
+			if(rayDir.GetY() > 0.0f)
+			{
+				return GetCubemapPixel(CUBE_UP,
+						(rayDir.GetX()/rayDir.GetY() + 1.0f) * 0.5f,
+						1.0f - (rayDir.GetZ()/rayDir.GetY() + 1.0f) * 0.5f);
+			}
+			else
+			{
+				return GetCubemapPixel(CUBE_DOWN,
+						1.0f - (rayDir.GetX()/rayDir.GetY() + 1.0f) * 0.5f,
+						(rayDir.GetZ()/rayDir.GetY() + 1.0f) * 0.5f); 
+			}
+		}
+		else if(ardz >= ardx && ardz >= ardy)
+		{
+			if(rayDir.GetZ() > 0.0f)
+			{
+				return GetCubemapPixel(CUBE_FORWARD,
+						1.0f - (rayDir.GetY()/rayDir.GetZ() + 1.0f) * 0.5f,
+						(rayDir.GetX()/rayDir.GetZ() + 1.0f) * 0.5f);
+			}
+			else
+			{
+				return GetCubemapPixel(CUBE_BACKWARD,
+						(rayDir.GetY()/rayDir.GetZ() + 1.0f) * 0.5f,
+						(rayDir.GetX()/rayDir.GetZ() + 1.0f) * 0.5f); 
+			}
+		}
+
+		return Vector3f(0.0f, 0.0f, 0.0f);
+	}
+private:
+	Vector3f GetPixel(unsigned int faceNum, unsigned int x, unsigned int y) const
+	{
+		x += GetHeight() * faceNum;
+		const int* pixels = GetPixels();
+
+		int pixel = pixels[x + GetWidth() * y];
+
+		float r = ((pixel >> 16) & 0xFF)/255.0f;
+		float g = ((pixel >> 8) & 0xFF)/255.0f;
+		float b = ((pixel) & 0xFF)/255.0f;
+
+		return Vector3f(r, g, b);
+	}
+
+	Vector3f GetCubemapPixel(unsigned int faceNum, float xIn, float yIn) const
+	{
+		if(faceNum >= 6)
+		{
+			// TODO: Possibly different error handling?
+			return Vector3f(0.0f, 0.0f, 0.0f);
+		}
+	
+		// Despite the name, this is supposed to be GetHeight
+		unsigned int width = GetHeight();
+		unsigned int height = GetHeight();
+
+//		unsigned int x = (unsigned int)(xIn * width + 0.5f);
+//		unsigned int y = (unsigned int)(yIn * height + 0.5f);
+//
+//		return GetPixel(faceNum, x, y);
+
+		float u = fabsf(xIn);
+		float v = fabsf(yIn);
+		unsigned int uMin = (unsigned int)(width * u);
+		unsigned int vMin = (unsigned int)(height * v);
+		unsigned int uMax = (unsigned int)(width * u) + 1;
+		unsigned int vMax = (unsigned int)(height * v) + 1;
+
+		float ucoef = fabsf(width * u - uMin);
+		float vcoef = fabsf(height * v - vMin);
+
+		uMin = Clamp(uMin, 0u, width - 1);
+		uMax = Clamp(uMax, 0u, width - 1);
+		vMin = Clamp(vMin, 0u, height - 1);
+		vMax = Clamp(vMax, 0u, height - 1);
+
+		Vector3f samp1 = GetPixel(faceNum, uMin, vMin);
+		Vector3f samp2 = GetPixel(faceNum, uMax, vMin);
+		Vector3f samp3 = GetPixel(faceNum, uMin, vMax);
+		Vector3f samp4 = GetPixel(faceNum, uMax, vMax);
+
+		return 
+			(samp1 * (1.0f - ucoef) + samp2 * ucoef) * (1.0f - vcoef) +
+			(samp3 * (1.0f - ucoef) + samp4 * ucoef) * vcoef;
+
+	}
+};
+
+
 class Material
 {
 public:
@@ -106,10 +238,10 @@ struct NearestIntersection
 class Scene
 {
 public:
-	Scene(const Camera& camera, const Vector3f& backgroundColor, 
+	Scene(const Camera& camera, const Cubemap& background, 
 			unsigned int maxTraceDepth, unsigned int samples) :
 		m_camera(camera),
-		m_backgroundColor(backgroundColor),
+		m_background(&background),
 		m_maxTraceDepth(maxTraceDepth),
 		m_samples(samples) {}
 	void AddSphere(const Sphere& sphere) 
@@ -171,7 +303,7 @@ private:
 	};
 	std::vector<Sphere> m_spheres[SPHERE_TYPE_SIZE];
 	Camera m_camera;
-	Vector3f m_backgroundColor;
+	const Cubemap* m_background;
 	unsigned int m_maxTraceDepth;
 	unsigned int m_samples;
 
@@ -232,7 +364,7 @@ private:
 
 		if(sphere == NULL)
 		{
-			return m_backgroundColor;
+			return m_background->ReadPixel(ray);
 		}
 
 		Vector3f hitLoc = ray.HitPoint(t);
@@ -291,7 +423,9 @@ int main()
 	camera.fov = ToRadians(30.0f);
 	camera.exposure = 0.0f;
 
-	Scene scene(camera, Vector3f(1.0f, 1.0f, 1.0f), 5, 1);
+	Cubemap background("./res/envmap.png");
+
+	Scene scene(camera, background, 5, 1);
 	scene.AddSphere(Sphere(Vector3f(0.0f, -10004.0f, -20.0f), 10000.0f, 
 				Material(Vector3f(0.2f, 0.2f, 0.2f), 0.0f)));
 	scene.AddSphere(Sphere(Vector3f(0.0f, 0.0f, -20.0f), 4.0f,

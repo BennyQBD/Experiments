@@ -12,7 +12,7 @@ public:
 	
 	void Save(const std::string& fileName);
 	void DrawPixel(unsigned int x, unsigned int y, const Vector3f& color, float exposure);
-	
+
 	inline unsigned int GetWidth() const { return m_width; }
 	inline unsigned int GetHeight() const { return m_height; }
 	inline const int* GetPixels() const { return m_image; }
