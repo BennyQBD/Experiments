@@ -2,6 +2,7 @@ package engine.core;
 
 import engine.rendering.IBitmap;
 import engine.rendering.IRenderContext;
+import engine.core.space.AABB;
 
 public class SpriteComponent extends EntityComponent{
 	public static final String COMPONENT_NAME = "SpriteComponent";

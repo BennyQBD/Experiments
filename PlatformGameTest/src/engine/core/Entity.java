@@ -10,8 +10,11 @@ import java.util.NoSuchElementException;
 import engine.rendering.IBitmap;
 import engine.rendering.IRenderContext;
 import engine.rendering.ArrayBitmap;
+import engine.core.space.ISpatialObject;
+import engine.core.space.ISpatialStructure;
+import engine.core.space.AABB;
 
-public class Entity implements IHasAABB {
+public class Entity implements ISpatialObject {
 	private ISpatialStructure<Entity> structure;
 	private AABB aabb;
 	private boolean isBlocking;

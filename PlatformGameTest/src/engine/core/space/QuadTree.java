@@ -1,4 +1,4 @@
-package engine.core;
+package engine.core.space;
 
 import java.util.Set;
 

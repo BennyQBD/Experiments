@@ -1,8 +1,8 @@
-package engine.core;
+package engine.core.space;
 
 import java.util.Set;
 
-public interface ISpatialStructure<T extends IHasAABB> {
+public interface ISpatialStructure<T extends ISpatialObject> {
 	public void add(T obj);
 	public boolean remove(T obj);
 	public Set<T> getAll(Set<T> result);

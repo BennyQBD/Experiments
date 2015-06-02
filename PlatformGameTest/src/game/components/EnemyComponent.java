@@ -1,12 +1,13 @@
-package engine.core;
+package game.components;
 
 import engine.rendering.IBitmap;
 import engine.rendering.IRenderContext;
+import engine.core.*;
 
 public class EnemyComponent extends EntityComponent {
 	public static final String COMPONENT_NAME = "EnemyComponent";
 	private static final double REMOVE_DELAY = 0.1;
-	private static final double CLIFF_LOOKAHEAD_TIME = 0.05;
+	private static final int CLIFF_LOOKDOWN_DIST = 4;
 	private static final int STATE_WALK = 0;
 	private static final int STATE_DYING = 1;
 	private int state;
@@ -49,7 +50,8 @@ public class EnemyComponent extends EntityComponent {
 		float newMoveX = (float)(speedX*delta);
 		float moveX = getEntity().move(newMoveX, 0.0f);
 		if(moveX != newMoveX ||
-				aboutToWalkOffCliff(speedX*CLIFF_LOOKAHEAD_TIME, 4)) {
+				aboutToWalkOffCliff(getEntity().getAABB().getWidth() *
+					speedX/Math.abs(speedX), CLIFF_LOOKDOWN_DIST)) {
 			speedX = -speedX;
 			tryHitPlayer();
 		}

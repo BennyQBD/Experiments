@@ -1,6 +1,6 @@
 package engine.rendering;
 
-import engine.core.AABB;
+import engine.core.space.AABB;
 import java.util.Arrays;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;

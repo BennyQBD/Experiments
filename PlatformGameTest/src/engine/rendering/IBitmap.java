@@ -1,6 +1,6 @@
 package engine.rendering;
 
-import engine.core.AABB;
+import engine.core.space.AABB;
 import java.io.IOException;
 import java.io.File;
 

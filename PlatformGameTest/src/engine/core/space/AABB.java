@@ -1,4 +1,4 @@
-package engine.core;
+package engine.core.space;
 
 public class AABB {
 	private static final double DEFAULT_MIN_Z = Double.MIN_VALUE;

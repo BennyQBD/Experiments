@@ -13,6 +13,8 @@ import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 
+import game.PlatformScene;
+
 
 public class Main {
 	public static void main(String[] args) throws IOException, ParseException {
@@ -21,7 +23,7 @@ public class Main {
 		IDisplay display = new AWTDisplay(256, 224, 3.0, "My Game");
 		CoreEngine engine = 
 			new CoreEngine(display, 
-					new Scene(test, display.getInput()),
+					new PlatformScene(test, display.getInput()),
 					60.0);
 		engine.start();
 		engine.dispose();

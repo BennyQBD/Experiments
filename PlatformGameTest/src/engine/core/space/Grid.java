@@ -1,11 +1,13 @@
-package engine.core;
+package engine.core.space;
+
+import engine.core.Util;
 
 import java.util.Set;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-public class Grid<T extends IHasAABB> implements ISpatialStructure<T> {
+public class Grid<T extends ISpatialObject> implements ISpatialStructure<T> {
 	private final int tileSize;
 	private final int width;
 	private final int height;
