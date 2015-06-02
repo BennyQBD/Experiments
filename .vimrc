@@ -83,7 +83,10 @@ vnoremap <S-C> :s!^!//!<CR>
 vnoremap <S-X> :s!^//!!<CR>
 vnoremap <S-DOWN> <DOWN>
 vnoremap <S-UP> <UP>
+vnoremap <C-R> y<ESC>:%s/<C-R>"//g<LEFT><LEFT>
 
+" Turns last typed word into an XML. Ex: 'test' turns into '<test></test>'
+inoremap <C-W> ><C-Left><C-Left><<ESC>d3wppi<C-Left>/<C-Left><Right>
 inoremap <S-MiddleMouse> <ESC><LeftMouse>g]
 inoremap <MiddleMouse> <ESC><LeftMouse><C-]>a
 inoremap <C-MiddleMouse> <ESC><C-T>a
@@ -102,5 +105,5 @@ inoremap <S-Right> <ESC>v<Right>
 inoremap <S-Up> <ESC>v<Up>
 inoremap <S-Down> <ESC>v<Down>
 
-autocmd VimEnter * NERDTree
+"autocmd VimEnter * NERDTree
 autocmd FileType * setlocal formatoptions-=c formatoptions-=r formatoptions-=o
