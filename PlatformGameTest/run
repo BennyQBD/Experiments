@@ -1,0 +1,7 @@
+mv res bin/res
+cd bin
+
+java engine/Main
+
+mv res ../res
+cd ../

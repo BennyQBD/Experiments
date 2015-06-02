@@ -1,0 +1,22 @@
++ Background "window" tiles
++ Transparency
++ Variable height jumping
++ Hold to run button (Probably shift by default)
++ Separate Entity classes
++ Collectables
++ Points
++ Enemies
++ Damage enemies by jumping on them
+- Health
+- GUI
+- Flying powerup
+- Lives
+- Lives from getting a certain number of points
+- Environmental hazards (spikes, lava, lasers, etc.)
+- Locked areas
+- Items to unlock locked areas
+- Secret locked areas
+
+- Weapons?
+
+IMPLI DAMA TORT CAU WEVE 
