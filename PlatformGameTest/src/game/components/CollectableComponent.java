@@ -1,7 +1,7 @@
 package game.components;
 
-import engine.rendering.IBitmap;
-import engine.core.*;
+import engine.core.Entity;
+import engine.core.EntityComponent;
 
 public class CollectableComponent extends EntityComponent {
 	public static final String COMPONENT_NAME = "CollectableComponent";

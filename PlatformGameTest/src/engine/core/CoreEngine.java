@@ -17,6 +17,7 @@ public class CoreEngine {
 		display.dispose();
 	}
 
+	@SuppressWarnings("unused")
 	public void start() {
 		int frames = 0;
 		double unprocessedTime = 0.0;

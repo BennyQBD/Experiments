@@ -1,43 +1,39 @@
 package engine.parsing;
 
-import java.util.Map;
-import java.util.HashMap;
-
-import java.io.File;
-import java.io.IOException;
 import java.io.BufferedReader;
 import java.io.FileReader;
-
+import java.io.IOException;
 import java.text.ParseException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Config {
 	private Map<String, String> map;
+
 	public Config(String fileName) throws IOException, ParseException {
 		map = new HashMap<String, String>();
-		BufferedReader br = new BufferedReader(new FileReader(fileName));
-		try {
+
+		try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
 			String line;
 			int lineNumber = 0;
-			while((line = br.readLine()) != null) {
+			while ((line = br.readLine()) != null) {
 				lineNumber++;
-				if(line.isEmpty()) {
+				if (line.isEmpty()) {
 					continue;
 				}
-				
+
 				char start = line.charAt(0);
-				if(start == '[' || start == '#') {
+				if (start == '[' || start == '#') {
 					continue;
 				}
 				String[] tokens = line.split("=");
-				if(tokens.length != 2) {
-					throw new ParseException("Line has too many '='", lineNumber);
+				if (tokens.length != 2) {
+					throw new ParseException("Line has too many '='",
+							lineNumber);
 				}
 
 				map.put(tokens[0].trim(), tokens[1].trim());
 			}
-			
-		} finally {
-			br.close();
 		}
 	}
 

@@ -1,8 +1,10 @@
 package game.components;
 
-import engine.rendering.IBitmap;
+import engine.core.Entity;
+import engine.core.EntityComponent;
+import engine.core.IEntityVisitor;
+import engine.core.SpriteComponent;
 import engine.rendering.IRenderContext;
-import engine.core.*;
 
 public class EnemyComponent extends EntityComponent {
 	public static final String COMPONENT_NAME = "EnemyComponent";
@@ -17,15 +19,14 @@ public class EnemyComponent extends EntityComponent {
 	private SpriteComponent spriteComponent;
 
 	private SpriteComponent getSpriteComponent() {
-		if(spriteComponent != null) {
+		if (spriteComponent != null) {
 			return spriteComponent;
 		}
-		
-		spriteComponent = (SpriteComponent)
-			getEntity().getComponent(SpriteComponent.COMPONENT_NAME);
+
+		spriteComponent = (SpriteComponent) getEntity().getComponent(
+				SpriteComponent.COMPONENT_NAME);
 		return spriteComponent;
 	}
-
 
 	public EnemyComponent(Entity entity) {
 		super(entity, COMPONENT_NAME);
@@ -37,24 +38,33 @@ public class EnemyComponent extends EntityComponent {
 
 	@Override
 	public void update(double delta) {
-		switch(state) {
-			case STATE_WALK: walkUpdate(delta); break;
-			case STATE_DYING: if(dyingUpdate(delta)) { return; }; break;
-			default:
-				throw new AssertionError("State " + state + " is an invalid enemy state");
+		switch (state) {
+		case STATE_WALK:
+			walkUpdate(delta);
+			break;
+		case STATE_DYING:
+			if (dyingUpdate(delta)) {
+				return;
+			}
+			;
+			break;
+		default:
+			throw new AssertionError("State " + state
+					+ " is an invalid enemy state");
 		}
-		applyGravity(157.0, delta);	
+		applyGravity(157.0, delta);
 	}
 
 	private void walkUpdate(double delta) {
-		float newMoveX = (float)(speedX*delta);
+		float newMoveX = (float) (speedX * delta);
 		float moveX = getEntity().move(newMoveX, 0.0f);
-		if(moveX != newMoveX ||
-				aboutToWalkOffCliff(getEntity().getAABB().getWidth() *
-					speedX/Math.abs(speedX), CLIFF_LOOKDOWN_DIST)) {
+		if (moveX != newMoveX
+				|| aboutToWalkOffCliff(getEntity().getAABB().getWidth()
+						* speedX / Math.abs(speedX), CLIFF_LOOKDOWN_DIST)) {
 			speedX = -speedX;
-			tryHitPlayer();
+			getSpriteComponent().setFlipX(speedX < 0);
 		}
+		tryHitPlayer();
 	}
 
 	private class DoubleVal {
@@ -65,18 +75,18 @@ public class EnemyComponent extends EntityComponent {
 		final DoubleVal val = new DoubleVal();
 		getEntity().visitInRange(null,
 				getEntity().getAABB().move(distX, distY), new IEntityVisitor() {
-			@Override
-			public void visit(Entity entity, EntityComponent component) {
-				if(entity != getEntity() && entity.getBlocking()) {
-					val.val = 1.0;
-				}
-			}
-		});
+					@Override
+					public void visit(Entity entity, EntityComponent component) {
+						if (entity != getEntity() && entity.getBlocking()) {
+							val.val = 1.0;
+						}
+					}
+				});
 		return val.val != 1.0;
 	}
 
 	private boolean dyingUpdate(double delta) {
-		if(lastRenderCounter > REMOVE_DELAY) {
+		if (this.lastRenderCounter > REMOVE_DELAY) {
 			getEntity().remove();
 			return true;
 		}
@@ -85,31 +95,34 @@ public class EnemyComponent extends EntityComponent {
 	}
 
 	public void kill() {
+		if(!isLiving()) {
+			return;
+		}
 		state = STATE_DYING;
 		velY = -100;
 		getEntity().setBlocking(false);
 		getSpriteComponent().setFlipY(true);
 	}
 
-	public boolean isLiving() {
+	private boolean isLiving() {
 		return state != STATE_DYING;
 	}
 
 	private void tryHitPlayer() {
 		getEntity().visitInRange(PlayerComponent.COMPONENT_NAME,
 				getEntity().getAABB().expand(1, 0, 0), new IEntityVisitor() {
-			@Override
-			public void visit(Entity entity, EntityComponent component) {
-				((PlayerComponent)component).damage();
-			}
-		});
+					@Override
+					public void visit(Entity entity, EntityComponent component) {
+						((PlayerComponent) component).damage();
+					}
+				});
 	}
 
 	private void applyGravity(double gravity, double delta) {
 		velY += gravity * delta;
-		float newMoveY = (float)(velY * delta);
+		float newMoveY = (float) (velY * delta);
 		float moveY = getEntity().move(0, newMoveY);
-		if(newMoveY != moveY) {
+		if (newMoveY != moveY) {
 			velY = 0;
 		}
 	}

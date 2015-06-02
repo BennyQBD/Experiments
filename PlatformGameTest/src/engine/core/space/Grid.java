@@ -1,34 +1,35 @@
 package engine.core.space;
 
-import engine.core.Util;
-
-import java.util.Set;
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+import engine.core.Util;
 
 public class Grid<T extends ISpatialObject> implements ISpatialStructure<T> {
 	private final int tileSize;
 	private final int width;
 	private final int height;
 	private final List<T>[] tiles;
-	
+
+	@SuppressWarnings("unchecked")
 	public Grid(int tileSize, int width, int height) {
 		this.tileSize = tileSize;
 		this.width = width;
 		this.height = height;
-		this.tiles = (List<T>[])(new List[width * height]);
-		for(int i = 0; i < tiles.length; i++) {
+		this.tiles = (List<T>[]) (new List[width * height]);
+		for (int i = 0; i < tiles.length; i++) {
 			tiles[i] = new ArrayList<T>();
 		}
 	}
 
 	private int getGridPosMin(double pos) {
-		return (int)Math.floor(pos / (double)tileSize);
+		return (int) Math.floor(pos / (double) tileSize);
 	}
 
 	private int getGridPosMax(double pos) {
-		return (int)Math.ceil(pos / (double)tileSize);
+		return (int) Math.ceil(pos / (double) tileSize);
 	}
 
 	private int getTileX(int x) {
@@ -49,24 +50,24 @@ public class Grid<T extends ISpatialObject> implements ISpatialStructure<T> {
 
 	private void visit(final AABB aabb, final IVisitor<T> visitor) {
 		int minX, minY, maxX, maxY;
-		
-		if(aabb.getWidth() > (double)(width * tileSize)) {
+
+		if (aabb.getWidth() > (double) (width * tileSize)) {
 			minX = 0;
-			maxX = width-1;
+			maxX = width - 1;
 		} else {
 			minX = getGridPosMin(aabb.getMinX());
 			maxX = getGridPosMax(aabb.getMaxX());
 		}
-		if(aabb.getHeight() > (double)(height * tileSize)) {
+		if (aabb.getHeight() > (double) (height * tileSize)) {
 			minY = 0;
-			maxY = height-1;
+			maxY = height - 1;
 		} else {
 			minY = getGridPosMin(aabb.getMinY());
 			maxY = getGridPosMax(aabb.getMaxY());
 		}
-	
-		for(int j = minY; j <= maxY; j++) {
-			for(int i = minX; i <= maxX; i++) {
+
+		for (int j = minY; j <= maxY; j++) {
+			for (int i = minX; i <= maxX; i++) {
 				visitor.onVisit(getTile(i, j));
 			}
 		}
@@ -93,7 +94,7 @@ public class Grid<T extends ISpatialObject> implements ISpatialStructure<T> {
 
 		return false;
 	}
-	
+
 	@Override
 	public Set<T> getAll(Set<T> result) {
 		return result;
@@ -101,9 +102,9 @@ public class Grid<T extends ISpatialObject> implements ISpatialStructure<T> {
 
 	private Set<T> queryTile(List<T> tile, Set<T> result, AABB aabb) {
 		Iterator<T> it = tile.iterator();
-		while(it.hasNext()) {
+		while (it.hasNext()) {
 			T t = it.next();
-			if(t.getAABB().intersects(aabb)) {
+			if (t.getAABB().intersects(aabb)) {
 				result.add(t);
 			}
 		}

@@ -2,15 +2,16 @@ package engine.core.space;
 
 import java.util.Set;
 
-public class QuadTree<T extends IHasAABB> implements ISpatialStructure<T> {
+public class QuadTree<T extends ISpatialObject> implements ISpatialStructure<T> {
 	private QuadTree<T> nodes[];
-	private T           objects[];
-	private int         numObjects;
-	private AABB        aabb;
+	private T objects[];
+	private int numObjects;
+	private AABB aabb;
 
+	@SuppressWarnings("unchecked")
 	public QuadTree(AABB aabb, int numObjectsPerNode) {
-		this.nodes = (QuadTree<T>[])(new QuadTree[4]);
-		this.objects = (T[])(new IHasAABB[numObjectsPerNode]);
+		this.nodes = (QuadTree<T>[]) (new QuadTree[4]);
+		this.objects = (T[]) (new ISpatialObject[numObjectsPerNode]);
 		this.numObjects = 0;
 		this.aabb = aabb;
 	}
@@ -22,6 +23,7 @@ public class QuadTree<T extends IHasAABB> implements ISpatialStructure<T> {
 		this.aabb = other.aabb;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void add(T obj) {
 		if (obj.getAABB().intersects(aabb)) {
@@ -45,33 +47,29 @@ public class QuadTree<T extends IHasAABB> implements ISpatialStructure<T> {
 			double expanseX = maxX - minX;
 			double expanseY = maxY - minY;
 
-			nodes = (QuadTree<T>[])(new QuadTree[4]);
+			nodes = (QuadTree<T>[]) (new QuadTree[4]);
 			numObjects = 0;
-			objects = (T[])(new IHasAABB[objects.length]);;
+			objects = (T[]) (new ISpatialObject[objects.length]);
+			;
 
 			if (dirX <= 0 && dirY <= 0) {
 				nodes[1] = thisAsNode;
-				aabb = new AABB(minX - expanseX,
-						minY - expanseY, maxX, maxY);
+				aabb = new AABB(minX - expanseX, minY - expanseY, maxX, maxY);
 			} else if (dirX <= 0 && dirY > 0) {
 				nodes[3] = thisAsNode;
-				aabb = new AABB(minX - expanseX, minY, maxX,
-						maxY + expanseY);
+				aabb = new AABB(minX - expanseX, minY, maxX, maxY + expanseY);
 
 			} else if (dirX > 0 && dirY > 0) {
 				nodes[2] = thisAsNode;
-				aabb = new AABB(minX, minY, maxX + expanseX,
-						maxY + expanseY);
+				aabb = new AABB(minX, minY, maxX + expanseX, maxY + expanseY);
 
 			} else if (dirX > 0 && dirY <= 0) {
 				nodes[0] = thisAsNode;
-				aabb = new AABB(minX, minY - expanseY, maxX
-						+ expanseX, maxY);
+				aabb = new AABB(minX, minY - expanseY, maxX + expanseX, maxY);
 			} else {
 				throw new AssertionError(
-						"Error: QuadTree direction is invalid (?): "
-								+ dirX + " (dirX) " + dirY
-								+ " (dirY)");
+						"Error: QuadTree direction is invalid (?): " + dirX
+								+ " (dirX) " + dirY + " (dirY)");
 			}
 
 			add(obj);
@@ -108,13 +106,12 @@ public class QuadTree<T extends IHasAABB> implements ISpatialStructure<T> {
 		tryToAddToChildNode(obj, minX, minY, maxX, maxY, 2);
 	}
 
-	private void tryToAddToChildNode(T obj, double minX,
-			double minY, double maxX, double maxY, int nodeIndex) {
-		if (obj.getAABB().intersectRect(minX, minY, maxX,
-				maxY)) {
+	private void tryToAddToChildNode(T obj, double minX, double minY,
+			double maxX, double maxY, int nodeIndex) {
+		if (obj.getAABB().intersectRect(minX, minY, maxX, maxY)) {
 			if (nodes[nodeIndex] == null) {
-				nodes[nodeIndex] = new QuadTree<T>(new AABB(minX,
-						minY, maxX, maxY), objects.length);
+				nodes[nodeIndex] = new QuadTree<T>(new AABB(minX, minY, maxX,
+						maxY), objects.length);
 			}
 
 			nodes[nodeIndex].add(obj);
@@ -159,7 +156,7 @@ public class QuadTree<T extends IHasAABB> implements ISpatialStructure<T> {
 		objects[numObjects - 1] = null;
 		numObjects--;
 	}
-	
+
 	@Override
 	public Set<T> getAll(Set<T> result) {
 		return queryRange(result, aabb);
