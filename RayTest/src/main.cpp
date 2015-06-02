@@ -1,5 +1,6 @@
 #include "bitmap.h"
 #include "math3d.h"
+#include "sobol.h"
 
 #include <iostream>
 #include <float.h>
@@ -184,6 +185,17 @@ static float Randf()
 	return (float)rand()/RAND_MAX;
 }
 
+static void QuasiRand2f(float* res1, float* res2)
+{
+	static int seed = 0;
+	float res[2];
+	i4_sobol(2, &seed, res);
+	*res1 = res[0];
+	*res2 = res[1];
+//	*res1 = Randf();
+//	*res2 = Randf();
+}
+
 class Sphere
 {
 public:
@@ -225,8 +237,10 @@ public:
 
 	Vector3f GetRandomDirectionFromPoint(const Vector3f& point) const
 	{
-		float r1 = Randf();
-		float r2 = Randf();
+		float r1, r2;
+//		r1 = Randf();
+//		r2 = Randf();
+		QuasiRand2f(&r1, &r2);
 		r1 *= 2.0f * (float)MATH_PI;
 		r2 = acosf(2.0f * r2 - 1.0f);
 
@@ -255,10 +269,11 @@ struct NearestIntersection
 class Scene
 {
 public:
-	Scene(const Camera& camera, const Cubemap& background, 
+	Scene(const Camera& camera, const Cubemap& background, unsigned int minTraceDepth,
 			unsigned int maxTraceDepth, unsigned int samples) :
 		m_camera(camera),
 		m_background(&background),
+		m_minTraceDepth(minTraceDepth),
 		m_maxTraceDepth(maxTraceDepth),
 		m_samples(samples) {}
 	void AddSphere(const Sphere& sphere) 
@@ -306,9 +321,13 @@ public:
 
 						if(m_camera.depthOfField != 0.0f)
 						{
+							float r1, r2;
+							r1 = Randf();
+							r2 = Randf();
+							//QuasiRand2f(&r1, &r2);
 							Vector3f disturbance(
-									m_camera.depthOfField * Randf(),
-									m_camera.depthOfField * Randf(), 0.0f);
+									m_camera.depthOfField * r1,
+									m_camera.depthOfField * r2, 0.0f);
 
 							Vector3f aimedPoint = origin + direction;
 							origin = origin + disturbance;
@@ -334,6 +353,7 @@ private:
 	std::vector<Sphere> m_spheres[SPHERE_TYPE_SIZE];
 	Camera m_camera;
 	const Cubemap* m_background;
+	unsigned int m_minTraceDepth;
 	unsigned int m_maxTraceDepth;
 	unsigned int m_samples;
 
@@ -408,12 +428,37 @@ private:
 		{
 			return material.GetEmissionColor();
 		}
+		else if(depth > m_minTraceDepth)
+		{
+			if(Randf() < maxReflectance)
+			{
+				diffuseColor = diffuseColor * (1.0f/maxReflectance);
+			}
+			else
+			{
+				return material.GetEmissionColor();
+			}
+		}
 
 		float reflectRatio = sphere->GetMaterial().GetReflectivity();
 		float diffuseRatio = 1.0f - reflectRatio;
 
 		if(diffuseRatio != 0.0f)
 		{
+//			float r1, r2;
+//			QuasiRand2f(&r1, &r2);
+//			r1 *= 2.0f * (float)MATH_PI;
+//			r2 = acosf(2.0f * r2 - 1.0f);
+//
+//			Vector3f newDirection(
+//					cosf(r1)*sinf(r2),
+//					sinf(r1)*sinf(r2),
+//					cosf(r2));
+//
+//			if(newDirection.Dot(normal) < 0)
+//			{
+//				newDirection = newDirection * -1.0f;
+//			}
 //			float r1 = Randf();
 //			float r2 = Randf();
 //			r1 *= 2.0f * (float)MATH_PI;
@@ -462,12 +507,12 @@ int main()
 	Camera camera;
 	camera.pos = Vector3f(0,0,0);
 	camera.fov = ToRadians(30.0f);
-	camera.exposure = 0.0f;
-	camera.depthOfField = 0.0f/150.0f;
+	camera.exposure = 1.0f;
+	camera.depthOfField = 0.0f/50.0f;
 
 	Cubemap background("./res/envmap.png");
 
-	Scene scene(camera, background, 5, 16);
+	Scene scene(camera, background, 3, 8, 16);
 	scene.AddSphere(Sphere(Vector3f(0.0f, -10004.0f, -20.0f), 10000.0f, 
 				Material(Vector3f(0.2f, 0.2f, 0.2f), 0.0f)));
 	scene.AddSphere(Sphere(Vector3f(0.0f, 0.0f, -20.0f), 4.0f,
