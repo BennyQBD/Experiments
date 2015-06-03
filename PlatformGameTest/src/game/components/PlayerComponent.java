@@ -109,7 +109,7 @@ public class PlayerComponent extends EntityComponent {
 		applyJumpAmt(1004.8, moveX, delta);
 		applyGravity(157.0, delta, oldVelY);
 		pickupCollectables();
-		// revealLocalHiddenAreas(64.0);
+		revealLocalHiddenAreas(64.0);
 	}
 
 	private void applyGravity(double gravity, double delta, double oldVelY) {

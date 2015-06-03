@@ -23,14 +23,16 @@ import game.components.PlayerComponent;
 
 public class PlatformScene extends Scene {
 	private Entity player;
+	private IBitmap font;
 
 	private void loadLevel(Config config, IInput input,
 			ISpatialStructure<Entity> structure) throws IOException {
 		IBitmap level = new ArrayBitmap("./res/"
 				+ config.getString("level.data"));
 		BitmapFactory bitmaps = new BitmapFactory();
-
 		IBitmap[] backgrounds = new IBitmap[5];
+		
+		font = bitmaps.get("./res/monospace.png");
 		backgrounds[0] = bitmaps.get("./res/simprock24.png");
 		backgrounds[1] = bitmaps.get("./res/simprockborder.png");
 		backgrounds[2] = bitmaps.get("./res/simprockborder3.png");
@@ -153,5 +155,7 @@ public class PlatformScene extends Scene {
 				(int) Math.round(viewportY));
 
 		renderRange(target, viewportX, viewportY);
+
+		target.drawString("1234567890 HP", font, 10, 10, 0xFF00FF);
 	}
 }
