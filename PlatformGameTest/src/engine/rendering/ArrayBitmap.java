@@ -47,61 +47,6 @@ public class ArrayBitmap implements IBitmap {
 		this.colors = imgPixels;
 	}
 
-	private boolean pixelIsOpaque(int x, int y) {
-		return colors[getIndex(x, y)] < 0;
-	}
-
-	private boolean rowHasOpaque(int y) {
-		for (int x = 0; x < width; x++) {
-			if (pixelIsOpaque(x, y)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	private boolean columnHasOpaque(int x) {
-		for (int y = 0; y < height; y++) {
-			if (pixelIsOpaque(x, y)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	@Override
-	public AABB getAABB() {
-		int minY = 0;
-		int maxY = 0;
-		int minX = 0;
-		int maxX = 0;
-		for (int j = 0; j < height; j++) {
-			if (rowHasOpaque(j)) {
-				minY = j;
-				break;
-			}
-		}
-		for (int j = height - 1; j >= 0; j--) {
-			if (rowHasOpaque(j)) {
-				maxY = j + 1;
-				break;
-			}
-		}
-		for (int i = 0; i < width; i++) {
-			if (columnHasOpaque(i)) {
-				minX = i;
-				break;
-			}
-		}
-		for (int i = width - 1; i >= 0; i--) {
-			if (columnHasOpaque(i)) {
-				maxX = i + 1;
-				break;
-			}
-		}
-		return new AABB(minX, minY, maxX, maxY);
-	}
-
 	@Override
 	public IBitmap clear(int color) {
 		Arrays.fill(colors, color);
@@ -109,7 +54,7 @@ public class ArrayBitmap implements IBitmap {
 	}
 
 	@Override
-	public IBitmap drawPixel(int x, int y, int color) {
+	public IBitmap setPixel(int x, int y, int color) {
 		colors[getIndex(x, y)] = color;
 		return this;
 	}

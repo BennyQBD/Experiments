@@ -17,13 +17,15 @@ import engine.rendering.ARGBColor;
 import engine.rendering.ArrayBitmap;
 import engine.rendering.IBitmap;
 import engine.rendering.IRenderContext;
+import engine.rendering.SpriteSheet;
 import game.components.CollectableComponent;
 import game.components.EnemyComponent;
 import game.components.PlayerComponent;
 
 public class PlatformScene extends Scene {
 	private Entity player;
-	private IBitmap font;
+	private SpriteSheet font;
+	private SpriteSheet tileSheet;
 
 	private void loadLevel(Config config, IInput input,
 			ISpatialStructure<Entity> structure) throws IOException {
@@ -32,7 +34,9 @@ public class PlatformScene extends Scene {
 		BitmapFactory bitmaps = new BitmapFactory();
 		IBitmap[] backgrounds = new IBitmap[5];
 		
-		font = bitmaps.get("./res/monospace.png");
+		tileSheet = new SpriteSheet(bitmaps.get("./res/tilesheet.png"), 16);
+		font = new SpriteSheet(bitmaps.get("./res/monospace.png"), 16);
+		
 		backgrounds[0] = bitmaps.get("./res/simprock24.png");
 		backgrounds[1] = bitmaps.get("./res/simprockborder.png");
 		backgrounds[2] = bitmaps.get("./res/simprockborder3.png");
@@ -56,32 +60,38 @@ public class PlatformScene extends Scene {
 			BitmapFactory bitmaps, int color) throws IOException {
 		if (color == 255) {
 			player = new Entity(structure, x, y, 1, true);
-			new SpriteComponent(player, bitmaps.get("./res/playertest.png"));
-			new PlayerComponent(player, new InputListener(input,
-					new int[] { KeyEvent.VK_LEFT }), new InputListener(input,
-					new int[] { KeyEvent.VK_RIGHT }), new InputListener(input,
-					new int[] { KeyEvent.VK_SHIFT }), new InputListener(input,
-					new int[] { KeyEvent.VK_SPACE }), new InputListener(input,
-					new int[] { KeyEvent.VK_DOWN }));
+			new SpriteComponent(player, new SpriteSheet(
+					bitmaps.get("./res/playertest.png"), 1), 0);
+			new PlayerComponent(player, input.register(new InputListener(
+					new int[] { KeyEvent.VK_LEFT })),
+					input.register(new InputListener(
+							new int[] { KeyEvent.VK_RIGHT })),
+					input.register(new InputListener(
+							new int[] { KeyEvent.VK_SHIFT })),
+					input.register(new InputListener(
+							new int[] { KeyEvent.VK_SPACE })),
+					input.register(new InputListener(
+							new int[] { KeyEvent.VK_DOWN })));
 		} else if (color == 254) {
 			Entity entity = new Entity(structure, x, y, 2, false);
 			new CollectableComponent(entity, 10);
-			new SpriteComponent(entity, bitmaps.get("./res/diamond2.png"));
+			new SpriteComponent(entity, new SpriteSheet(
+					bitmaps.get("./res/diamond2.png"), 1), 0);
 		} else if (color == 253) {
 			Entity entity = new Entity(structure, x, y, 2, false);
 			new CollectableComponent(entity, 100);
-			new SpriteComponent(entity, bitmaps.get("./res/diamond.png"));
+			new SpriteComponent(entity, new SpriteSheet(
+					bitmaps.get("./res/diamond.png"), 1), 0);
 		} else if (color == 250) {
 			Entity entity = new Entity(structure, x, y, 1, true);
-			new SpriteComponent(entity, bitmaps.get("./res/slime.png"));
+			new SpriteComponent(entity, new SpriteSheet(
+					bitmaps.get("./res/slime.png"), 1), 0);
 			new EnemyComponent(entity);
 		} else if (color != 0) {
-			String tileName = "level." + color;
-			IBitmap tex = bitmaps.get("./res/"
-					+ config.getString(tileName + ".tex"));
-			boolean blocking = config.getBoolean(tileName + ".blocking");
-			double layer = config.getDouble(tileName + ".layer");
-			add(structure, x, y, layer, blocking, tex).setDitherable(true);
+			boolean blocking = (color & 0x8000) != 0;
+			double layer = 2.0;
+			add(structure, x, y, layer, blocking, tileSheet, color)
+					.setDitherable(true);
 		}
 	}
 
@@ -89,12 +99,13 @@ public class PlatformScene extends Scene {
 		return ((int) (Math.random() * range)) % range + min;
 	}
 
-	private static void addRandomBackgroundTile(ISpatialStructure<Entity> structure,
-			int x, int y, IBitmap[] backgrounds, int randBackChance) {
+	private static void addRandomBackgroundTile(
+			ISpatialStructure<Entity> structure, int x, int y,
+			IBitmap[] backgrounds, int randBackChance) {
 		if (getRand(0, randBackChance) != 0) {
-			add(structure, x, y, -1, false, backgrounds[0]);
+			add2(structure, x, y, -1, false, backgrounds[0]);
 		} else {
-			add(structure, x, y, -1, false,
+			add2(structure, x, y, -1, false,
 					backgrounds[getRand(1, backgrounds.length - 1)]);
 		}
 	}
@@ -109,10 +120,19 @@ public class PlatformScene extends Scene {
 		}
 	}
 
-	private static Entity add(ISpatialStructure<Entity> structure, double posX,
-			double posY, double posZ, boolean isBlocking, IBitmap sprite) {
+	private static Entity add2(ISpatialStructure<Entity> structure,
+			double posX, double posY, double posZ, boolean isBlocking,
+			IBitmap sprite) {
 		Entity result = new Entity(structure, posX, posY, posZ, isBlocking);
-		new SpriteComponent(result, sprite);
+		new SpriteComponent(result, new SpriteSheet(sprite, 1), 0);
+		return result;
+	}
+
+	private static Entity add(ISpatialStructure<Entity> structure, double posX,
+			double posY, double posZ, boolean isBlocking,
+			SpriteSheet spriteSheet, int spriteIndex) {
+		Entity result = new Entity(structure, posX, posY, posZ, isBlocking);
+		new SpriteComponent(result, spriteSheet, spriteIndex);
 		return result;
 	}
 
@@ -120,8 +140,8 @@ public class PlatformScene extends Scene {
 		updateRange(delta, player.getAABB().expand(200, 200, 0));
 	}
 
-	private static void drawBackground(IRenderContext target, double r, double g,
-			double b, int parallax, int x, int y) {
+	private static void drawBackground(IRenderContext target, double r,
+			double g, double b, int parallax, int x, int y) {
 		int width = target.getWidth();
 		int height = target.getHeight();
 		for (int j = 0; j < height; j++) {
@@ -137,7 +157,7 @@ public class PlatformScene extends Scene {
 			int color = ARGBColor.makeColor(jFract * r, jFract * g, jFract * b);
 
 			for (int i = 0; i < width; i++) {
-				target.drawPixel(i, j, color);
+				target.setPixel(i, j, color);
 			}
 		}
 
@@ -156,6 +176,6 @@ public class PlatformScene extends Scene {
 
 		renderRange(target, viewportX, viewportY);
 
-		target.drawString("1234567890 HP", font, 10, 10, 0xFF00FF);
+		target.drawString("1234567890 HP", font, 10, 10, 0xFFFFFF);
 	}
 }

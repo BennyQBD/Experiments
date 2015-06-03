@@ -1,7 +1,7 @@
 mv res bin/res
 cd bin
 
-java engine/Main
+java game/Main
 
 mv res ../res
 cd ../

@@ -1,7 +1,7 @@
 package engine.rendering;
 
 public interface IRenderContext extends IBitmap {
-	public void drawString(String msg, IBitmap font, int x, int y, int color);
-	public void blit(IBitmap image, int offsetX, int offsetY, double transparency,
-			boolean flipX, boolean flipY);
+	public void drawSprite(SpriteSheet sheet, int index, int x, int y,
+			double transparency, boolean flipX, boolean flipY, int colorMask);
+	public void drawString(String msg, SpriteSheet font, int x, int y, int color);
 }

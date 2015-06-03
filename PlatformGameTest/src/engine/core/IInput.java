@@ -1,7 +1,7 @@
 package engine.core;
 
 public interface IInput {
-	public boolean getKey(int code);
+	public InputListener register(InputListener listener);
 	public boolean getMouse(int button);
 	public int getMouseX();
 	public int getMouseY();

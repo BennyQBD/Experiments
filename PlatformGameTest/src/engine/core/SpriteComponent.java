@@ -1,12 +1,14 @@
 package engine.core;
 
+import engine.core.space.AABB;
 import engine.rendering.IBitmap;
 import engine.rendering.IRenderContext;
-import engine.core.space.AABB;
+import engine.rendering.SpriteSheet;
 
-public class SpriteComponent extends EntityComponent{
+public class SpriteComponent extends EntityComponent {
 	public static final String COMPONENT_NAME = "SpriteComponent";
-	private IBitmap sprite;
+	private SpriteSheet sheet;
+	private int spriteIndex;
 	private int spriteOffsetX;
 	private int spriteOffsetY;
 	private int spriteOffsetFlippedX;
@@ -15,15 +17,19 @@ public class SpriteComponent extends EntityComponent{
 	private boolean flipX;
 	private boolean flipY;
 
-	public SpriteComponent(Entity entity, IBitmap sprite) {
+	public SpriteComponent(Entity entity, SpriteSheet sheet, int spriteIndex) {
 		super(entity, COMPONENT_NAME);
-		this.sprite = sprite;
-		AABB spriteAABB = sprite.getAABB();
+		this.sheet = sheet;
+		this.spriteIndex = spriteIndex;
+		AABB spriteAABB = sheet.getAABB(spriteIndex);
 		entity.fitAABB(spriteAABB);
-		spriteOffsetX = (int)spriteAABB.getMinX();
-		spriteOffsetY = (int)spriteAABB.getMinY();
-		spriteOffsetFlippedX = sprite.getWidth() - (int)spriteAABB.getMaxX();
-		spriteOffsetFlippedY = sprite.getHeight() - (int)spriteAABB.getMaxY();
+		spriteOffsetX = (int) spriteAABB.getMinX();
+		spriteOffsetY = (int) spriteAABB.getMinY();
+		// spriteOffsetFlippedX = sprite.getWidth() - (int)spriteAABB.getMaxX();
+		// spriteOffsetFlippedY = sprite.getHeight() -
+		// (int)spriteAABB.getMaxY();
+		spriteOffsetFlippedX = sheet.getSpriteWidth() - (int) spriteAABB.getMaxX();
+		spriteOffsetFlippedY = sheet.getSpriteHeight() - (int) spriteAABB.getMaxY();
 
 		this.transparency = 1.0;
 		this.flipX = false;
@@ -32,20 +38,21 @@ public class SpriteComponent extends EntityComponent{
 
 	@Override
 	public void render(IRenderContext target, int viewportX, int viewportY) {
-		if(sprite != null) {
+		if (sheet != null) {
 			int spriteOffX = spriteOffsetX;
 			int spriteOffY = spriteOffsetY;
-			if(flipX) {
+			if (flipX) {
 				spriteOffX = spriteOffsetFlippedX;
 			}
-			if(flipY) {
+			if (flipY) {
 				spriteOffY = spriteOffsetFlippedY;
 			}
-			target.blit(sprite, 
-					(int)Math.round(getEntity().getAABB().getMinX()) - viewportX - spriteOffX,
-					(int)Math.round(getEntity().getAABB().getMinY()) - viewportY - spriteOffY,
-					transparency,
-					flipX, flipY);
+			target.drawSprite(sheet, spriteIndex,
+					(int) Math.round(getEntity().getAABB().getMinX())
+							- viewportX - spriteOffX,
+					(int) Math.round(getEntity().getAABB().getMinY())
+							- viewportY - spriteOffY, transparency, flipX,
+					flipY, 0xFFFFFF);
 		}
 	}
 
@@ -62,7 +69,6 @@ public class SpriteComponent extends EntityComponent{
 	}
 
 	public void setTransparency(double transparency) {
-		this.transparency = transparency;	
+		this.transparency = transparency;
 	}
-
 }

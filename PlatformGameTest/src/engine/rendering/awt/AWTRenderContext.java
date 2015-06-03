@@ -4,6 +4,7 @@ import engine.core.Util;
 import engine.rendering.ArrayBitmap;
 import engine.rendering.IBitmap;
 import engine.rendering.IRenderContext;
+import engine.rendering.SpriteSheet;
 
 public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 	public AWTRenderContext(int width, int height) {
@@ -24,50 +25,43 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 		return (int) (Util.saturate(ditherFactor) * 64.0 + 0.5);
 	}
 
-	public void drawString(String msg, IBitmap font, int x, int y, int color) {
-		int widthX = font.getWidth() / 16;
-		int widthY = font.getHeight() / 16;
-		for (int i = 0; i < msg.length(); i++) {
+	public void drawString(String msg, SpriteSheet font, int x, int y, int color) {
+		for (int i = 0; i < msg.length(); i++, x += font.getSpriteWidth()) {
 			char c = msg.charAt(i);
-			int imgX = c & 0xF;
-			int imgY = (c >> 4) & 0xF;
-			blitPart(font, x + i * widthX, y, 1.0, false, false, imgX*widthX, imgY*widthY,
-					widthX, widthY, color);
+			drawSprite(font, (int) c, x, y, 1.0, false, false, color);
 		}
 	}
 
-	public void blit(IBitmap image, int offsetX, int offsetY,
-			double transparency, boolean flipX, boolean flipY) {
-		blitPart(image, offsetX, offsetY, transparency, flipX, flipY, 0, 0,
-				image.getWidth(), image.getHeight(), 0xFFFFFFFF);
+	public void drawSprite(SpriteSheet sheet, int index, int x, int y,
+			double transparency, boolean flipX, boolean flipY, int colorMask) {
+		blit(sheet.getSheet(), x, y, transparency, flipX, flipY,
+				sheet.getStartX(index), sheet.getStartY(index),
+				sheet.getSpriteWidth(), sheet.getSpriteHeight(), colorMask);
 	}
 
-	private void blitPart(IBitmap image, int offsetX, int offsetY,
+	private void blit(IBitmap image, int offsetX, int offsetY,
 			double transparency, boolean flipX, boolean flipY, int imgStartX,
-			int imgStartY, int widthX, int widthY, int colorMask) {
+			int imgStartY, int imgWidth, int imgHeight, int colorMask) {
+		colorMask |= 0xFF000000;
 		int iStart = imgStartX;
 		int jStart = imgStartY;
 		int iStep = 1;
 		int jStep = 1;
 
 		if (flipX) {
-			iStart = widthX - 1;
+			iStart += imgWidth - 1;
 			iStep = -1;
 		}
 		if (flipY) {
-			jStart = widthY - 1;
+			jStart += imgHeight - 1;
 			jStep = -1;
 		}
 
-		int xEnd = widthX + offsetX;
-		int yEnd = widthY + offsetY;
+		int xEnd = imgWidth + offsetX;
+		int yEnd = imgHeight + offsetY;
 
 		if (offsetY < 0) {
-			if (!flipY) {
-				jStart -= offsetY;
-			} else {
-				jStart += offsetY;
-			}
+			jStart -= flipY ? -offsetY : offsetY;
 			offsetY = 0;
 		}
 		if (yEnd > getHeight()) {
@@ -75,11 +69,7 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 		}
 
 		if (offsetX < 0) {
-			if (!flipX) {
-				iStart -= offsetX;
-			} else {
-				iStart += offsetX;
-			}
+			iStart -= flipX ? -offsetX : offsetX;
 			offsetX = 0;
 		}
 		if (xEnd > getWidth()) {
@@ -90,10 +80,39 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 		for (int j = jStart, y = offsetY; y < yEnd; j += jStep, y++) {
 			for (int i = iStart, x = offsetX; x < xEnd; i += iStep, x++) {
 				int color = image.getPixel(i, j);
+//				color = blendColors(color & colorMask, getPixel(x, y), transparency);
+//				setPixel(x, y, color);
 				if (color < 0 && ditherPass(i, j, ditherTransparency)) {
-					drawPixel(x, y, color & colorMask);
+					setPixel(x, y, color & colorMask);
 				}
 			}
 		}
+	}
+	
+	private static int blendColors(int color1, int color2, double amt) {
+		int c1a = (color1 >> 24) & 0xFF;
+		int blendAmt = (int)(c1a * amt);
+		
+		if(blendAmt == 0) {
+			return color2;
+		} else if(blendAmt == 255) {
+			return color1;
+		}
+		
+		int blendAmt2 = 255 - blendAmt;
+		
+		int c1r = (color1 >> 16) & 0xFF;
+		int c1g = (color1 >> 8) & 0xFF;
+		int c1b = (color1 >> 0) & 0xFF;
+		
+		int c2r = (color2 >> 16) & 0xFF;
+		int c2g = (color2 >> 8) & 0xFF;
+		int c2b = (color2 >> 0) & 0xFF;
+		
+		int newR = (c1r * blendAmt + c2r * blendAmt2) >> 8;
+		int newG = (c1g * blendAmt + c2g * blendAmt2) >> 8;
+		int newB = (c1b * blendAmt + c2b * blendAmt2) >> 8;
+		
+		return (newR << 16) | (newG << 8) | (newB);
 	}
 }

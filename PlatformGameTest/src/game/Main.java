@@ -1,4 +1,4 @@
-package engine;
+package game;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -7,7 +7,6 @@ import engine.core.CoreEngine;
 import engine.parsing.Config;
 import engine.rendering.IDisplay;
 import engine.rendering.awt.AWTDisplay;
-import game.PlatformScene;
 
 public class Main {
 	public static void main(String[] args) throws IOException, ParseException {

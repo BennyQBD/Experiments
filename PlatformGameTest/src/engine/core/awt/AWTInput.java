@@ -7,12 +7,16 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 import engine.core.IInput;
+import engine.core.InputListener;
 
 public class AWTInput implements KeyListener, FocusListener,
 		MouseListener, MouseMotionListener, IInput {
-	private final boolean[] keys = new boolean[65536];
+	private final List<InputListener> listeners = new ArrayList<InputListener>();
 	private final boolean[] mouseButtons = new boolean[4];
 	private int mouseX = 0;
 	private int mouseY = 0;
@@ -63,8 +67,9 @@ public class AWTInput implements KeyListener, FocusListener,
 
 	@Override
 	public void focusLost(FocusEvent e) {
-		for(int i = 0; i < keys.length; i++) {
-			keys[i] = false;
+		Iterator<InputListener> it = listeners.iterator();
+		while(it.hasNext()) {
+			it.next().releaseAll();
 		}
 		for(int i = 0; i < mouseButtons.length; i++) {
 			mouseButtons[i] = false;
@@ -74,26 +79,28 @@ public class AWTInput implements KeyListener, FocusListener,
 	@Override
 	public void keyPressed(KeyEvent e) {
 		int code = e.getKeyCode();
-		if (code > 0 && code < keys.length) {
-			keys[code] = true;
+		Iterator<InputListener> it = listeners.iterator();
+		while(it.hasNext()) {
+			it.next().pressed(code);
 		}
 	}
 
 	@Override
 	public void keyReleased(KeyEvent e) {
 		int code = e.getKeyCode();
-		if (code > 0 && code < keys.length) {
-			keys[code] = false;
+		Iterator<InputListener> it = listeners.iterator();
+		while(it.hasNext()) {
+			it.next().released(code);
 		}
 	}
 
 	@Override
 	public void keyTyped(KeyEvent e) {
 	}
-
-	@Override
-	public boolean getKey(int key) {
-		return keys[key];
+	
+	public InputListener register(InputListener listener) {
+		listeners.add(listener);
+		return listener;
 	}
 
 	@Override
