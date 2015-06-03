@@ -8,8 +8,6 @@ import java.util.Arrays;
 
 import javax.imageio.ImageIO;
 
-import engine.core.space.AABB;
-
 public class ArrayBitmap implements IBitmap {
 	private final int width;
 	private final int height;

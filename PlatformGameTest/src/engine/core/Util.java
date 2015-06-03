@@ -1,23 +1,6 @@
 package engine.core;
 
 public class Util {
-//	public static int fillConv(double val) {
-//		return (int)Math.floor(val);
-//	}
-//
-//	public static int fillRound(double val) {
-//		return fillConv(val + 0.5);
-//	}
-//
-//	public static int clamp(int val, int min, int max) {
-//		if(val < min) {
-//			val = min;
-//		} else if(val > max) {
-//			val = max;
-//		}
-//		return val;
-//	}
-
 	public static double saturate(double val) {
 		return clamp(val, 0.0, 1.0);
 	}
@@ -34,7 +17,7 @@ public class Util {
 	public static int floorMod(int num, int den) {
 		if(den < 0) {
 			throw new IllegalArgumentException(
-					"floorMod does not support negative" +
+					"floorMod does not currently support negative" +
 					"denominators");
 		}
 		if(num > 0) {
@@ -45,6 +28,15 @@ public class Util {
 				mod = den - mod;
 			}
 			return mod;
+		}
+	}
+
+	public static void boundsCheck(int index, int min, int max) {
+		if(index > max) {
+			throw new IndexOutOfBoundsException(index + " is more than " + max);
+		}
+		if(index < min) {
+			throw new IndexOutOfBoundsException(index + " is less than " + min);
 		}
 	}
 

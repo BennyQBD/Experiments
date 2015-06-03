@@ -25,23 +25,22 @@ import game.components.PlayerComponent;
 public class PlatformScene extends Scene {
 	private Entity player;
 	private SpriteSheet font;
-	private SpriteSheet tileSheet;
 
 	private void loadLevel(Config config, IInput input,
 			ISpatialStructure<Entity> structure) throws IOException {
 		IBitmap level = new ArrayBitmap("./res/"
 				+ config.getString("level.data"));
 		BitmapFactory bitmaps = new BitmapFactory();
-		IBitmap[] backgrounds = new IBitmap[5];
+		int[] backgrounds = new int[5];
 		
-		tileSheet = new SpriteSheet(bitmaps.get("./res/tilesheet.png"), 16);
+		SpriteSheet tileSheet = new SpriteSheet(bitmaps.get("./res/tilesheet.png"), 16);
 		font = new SpriteSheet(bitmaps.get("./res/monospace.png"), 16);
 		
-		backgrounds[0] = bitmaps.get("./res/simprock24.png");
-		backgrounds[1] = bitmaps.get("./res/simprockborder.png");
-		backgrounds[2] = bitmaps.get("./res/simprockborder3.png");
-		backgrounds[3] = bitmaps.get("./res/simprockborder4.png");
-		backgrounds[4] = bitmaps.get("./res/simprockborder5.png");
+		backgrounds[0] = 41;
+		backgrounds[1] = 14;
+		backgrounds[2] = 30;
+		backgrounds[3] = 46;
+		backgrounds[4] = 62;
 
 		int tileSize = 16;
 		for (int j = 0; j < level.getHeight(); j++) {
@@ -49,15 +48,15 @@ public class PlatformScene extends Scene {
 				int color = level.getPixel(i, j) & 0x00FFFFFF;
 				int x = i * tileSize;
 				int y = j * tileSize;
-				addRandomBackgroundTile(structure, x, y, backgrounds, 10);
-				addEntity(config, input, structure, x, y, bitmaps, color);
+				addRandomBackgroundTile(structure, x, y, backgrounds, tileSheet, 10);
+				addEntity(config, input, structure, x, y, bitmaps, tileSheet, color);
 			}
 		}
 	}
 
 	private void addEntity(Config config, IInput input,
 			ISpatialStructure<Entity> structure, int x, int y,
-			BitmapFactory bitmaps, int color) throws IOException {
+			BitmapFactory bitmaps, SpriteSheet tileSheet, int color) throws IOException {
 		if (color == 255) {
 			player = new Entity(structure, x, y, 1, true);
 			new SpriteComponent(player, new SpriteSheet(
@@ -90,7 +89,7 @@ public class PlatformScene extends Scene {
 		} else if (color != 0) {
 			boolean blocking = (color & 0x8000) != 0;
 			double layer = 2.0;
-			add(structure, x, y, layer, blocking, tileSheet, color)
+			add(structure, x, y, layer, blocking, tileSheet, color&0xFF)
 					.setDitherable(true);
 		}
 	}
@@ -101,11 +100,11 @@ public class PlatformScene extends Scene {
 
 	private static void addRandomBackgroundTile(
 			ISpatialStructure<Entity> structure, int x, int y,
-			IBitmap[] backgrounds, int randBackChance) {
+			int[] backgrounds, SpriteSheet tileSheet, int randBackChance) {
 		if (getRand(0, randBackChance) != 0) {
-			add2(structure, x, y, -1, false, backgrounds[0]);
+			add(structure, x, y, -1, false, tileSheet, backgrounds[0]);
 		} else {
-			add2(structure, x, y, -1, false,
+			add(structure, x, y, -1, false, tileSheet,
 					backgrounds[getRand(1, backgrounds.length - 1)]);
 		}
 	}
@@ -118,14 +117,6 @@ public class PlatformScene extends Scene {
 			e.printStackTrace();
 			// TODO: Proper exception handling
 		}
-	}
-
-	private static Entity add2(ISpatialStructure<Entity> structure,
-			double posX, double posY, double posZ, boolean isBlocking,
-			IBitmap sprite) {
-		Entity result = new Entity(structure, posX, posY, posZ, isBlocking);
-		new SpriteComponent(result, new SpriteSheet(sprite, 1), 0);
-		return result;
 	}
 
 	private static Entity add(ISpatialStructure<Entity> structure, double posX,

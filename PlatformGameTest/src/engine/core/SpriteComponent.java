@@ -1,7 +1,6 @@
 package engine.core;
 
 import engine.core.space.AABB;
-import engine.rendering.IBitmap;
 import engine.rendering.IRenderContext;
 import engine.rendering.SpriteSheet;
 
@@ -25,9 +24,6 @@ public class SpriteComponent extends EntityComponent {
 		entity.fitAABB(spriteAABB);
 		spriteOffsetX = (int) spriteAABB.getMinX();
 		spriteOffsetY = (int) spriteAABB.getMinY();
-		// spriteOffsetFlippedX = sprite.getWidth() - (int)spriteAABB.getMaxX();
-		// spriteOffsetFlippedY = sprite.getHeight() -
-		// (int)spriteAABB.getMaxY();
 		spriteOffsetFlippedX = sheet.getSpriteWidth() - (int) spriteAABB.getMaxX();
 		spriteOffsetFlippedY = sheet.getSpriteHeight() - (int) spriteAABB.getMaxY();
 

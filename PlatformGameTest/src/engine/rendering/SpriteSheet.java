@@ -1,5 +1,6 @@
 package engine.rendering;
 
+import engine.core.Util;
 import engine.core.space.AABB;
 
 public class SpriteSheet {
@@ -26,12 +27,14 @@ public class SpriteSheet {
 	public IBitmap getSheet() {
 		return sheet;
 	}
-
+	
 	public int getStartX(int index) {
+		Util.boundsCheck(index, 0, spritesPerAxis*spritesPerAxis-1);
 		return (index % spritesPerAxis) * spriteWidth;
 	}
 
 	public int getStartY(int index) {
+		Util.boundsCheck(index, 0, spritesPerAxis*spritesPerAxis-1);
 		return ((index / spritesPerAxis) % spritesPerAxis) * spriteHeight;
 	}
 	

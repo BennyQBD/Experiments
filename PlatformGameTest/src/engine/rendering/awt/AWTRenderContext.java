@@ -89,6 +89,7 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 		}
 	}
 	
+	@SuppressWarnings("unused")
 	private static int blendColors(int color1, int color2, double amt) {
 		int c1a = (color1 >> 24) & 0xFF;
 		int blendAmt = (int)(c1a * amt);
