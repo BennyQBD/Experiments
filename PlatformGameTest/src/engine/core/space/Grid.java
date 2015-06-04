@@ -122,4 +122,11 @@ public class Grid<T extends ISpatialObject> implements ISpatialStructure<T> {
 
 		return result;
 	}
+
+	@Override
+	public void clear() {
+		for(int i = 0; i < tiles.length; i++) {
+			tiles[i].clear();
+		}
+	}
 }

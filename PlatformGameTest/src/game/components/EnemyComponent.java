@@ -13,6 +13,7 @@ public class EnemyComponent extends EntityComponent {
 	private static final int STATE_WALK = 0;
 	private static final int STATE_DYING = 1;
 	private int state;
+	private int points;
 	private double velY;
 	private double speedX;
 	private double lastRenderCounter;
@@ -28,12 +29,13 @@ public class EnemyComponent extends EntityComponent {
 		return spriteComponent;
 	}
 
-	public EnemyComponent(Entity entity) {
+	public EnemyComponent(Entity entity, int points) {
 		super(entity, COMPONENT_NAME);
 		this.velY = 0.0;
 		this.speedX = 30.0;
 		this.state = STATE_WALK;
 		this.lastRenderCounter = 0.0;
+		this.points = points;
 	}
 
 	@Override
@@ -94,14 +96,15 @@ public class EnemyComponent extends EntityComponent {
 		return false;
 	}
 
-	public void kill() {
+	public boolean kill() {
 		if(!isLiving()) {
-			return;
+			return false;
 		}
 		state = STATE_DYING;
 		velY = -100;
 		getEntity().setBlocking(false);
 		getSpriteComponent().setFlipY(true);
+		return true;
 	}
 
 	private boolean isLiving() {
@@ -130,5 +133,9 @@ public class EnemyComponent extends EntityComponent {
 	@Override
 	public void render(IRenderContext target, int viewportX, int viewportY) {
 		lastRenderCounter = 0.0;
+	}
+	
+	public int getPoints() {
+		return points;
 	}
 }

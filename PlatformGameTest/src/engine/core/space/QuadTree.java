@@ -182,4 +182,15 @@ public class QuadTree<T extends ISpatialObject> implements ISpatialStructure<T> 
 
 		return result;
 	}
+
+	@Override
+	public void clear() {
+		for(int i = 0; i < numObjects; i++) {
+			objects[i] = null;
+		}
+		numObjects = 0;
+		for (int i = 0; i < nodes.length; i++) {
+			nodes[i] = null;
+		}
+	}
 }

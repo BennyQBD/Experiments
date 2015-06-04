@@ -11,7 +11,6 @@ import engine.rendering.awt.AWTDisplay;
 public class Main {
 	public static void main(String[] args) throws IOException, ParseException {
 		Config test = new Config("./res/test.cfg");
-
 		IDisplay display = new AWTDisplay(256, 224, 3.0, "My Game");
 		CoreEngine engine = new CoreEngine(display, new PlatformScene(test,
 				display.getInput()), 60.0);

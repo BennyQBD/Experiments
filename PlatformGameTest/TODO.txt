@@ -7,17 +7,19 @@
 + Points
 + Enemies
 + Damage enemies by jumping on them
-- Hit invulnerability period
-- Health
-- GUI
++ Sprite Sheets
++ Hit invulnerability period
++ Health
++ GUI
++ Lives
+- Menu
+- Animation
 - Flying powerup
-- Lives
 - Lives from getting a certain number of points
 - Environmental hazards (spikes, lava, lasers, etc.)
 - Locked areas
 - Items to unlock locked areas
 - Secret locked areas
-- Sprite Sheet?
 
 - Weapons?
 

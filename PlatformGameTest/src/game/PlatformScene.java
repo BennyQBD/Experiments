@@ -24,18 +24,27 @@ import game.components.PlayerComponent;
 
 public class PlatformScene extends Scene {
 	private Entity player;
+	private PlayerComponent playerComponent;
 	private SpriteSheet font;
+	private SpriteSheet livesIcon;
+
+	private IInput input;
+	private Config config;
+
+	private int lives;
 
 	private void loadLevel(Config config, IInput input,
-			ISpatialStructure<Entity> structure) throws IOException {
+			ISpatialStructure<Entity> structure, int points) throws IOException {
 		IBitmap level = new ArrayBitmap("./res/"
 				+ config.getString("level.data"));
 		BitmapFactory bitmaps = new BitmapFactory();
 		int[] backgrounds = new int[5];
-		
-		SpriteSheet tileSheet = new SpriteSheet(bitmaps.get("./res/tilesheet.png"), 16);
+
+		SpriteSheet tileSheet = new SpriteSheet(
+				bitmaps.get("./res/tilesheet.png"), 16);
 		font = new SpriteSheet(bitmaps.get("./res/monospace.png"), 16);
-		
+		livesIcon = new SpriteSheet(bitmaps.get("./res/livesicon.png"), 1);
+
 		backgrounds[0] = 41;
 		backgrounds[1] = 14;
 		backgrounds[2] = 30;
@@ -48,21 +57,25 @@ public class PlatformScene extends Scene {
 				int color = level.getPixel(i, j) & 0x00FFFFFF;
 				int x = i * tileSize;
 				int y = j * tileSize;
-				addRandomBackgroundTile(structure, x, y, backgrounds, tileSheet, 10);
-				addEntity(config, input, structure, x, y, bitmaps, tileSheet, color);
+				addRandomBackgroundTile(structure, x, y, backgrounds,
+						tileSheet, 10);
+				addEntity(config, input, structure, x, y, bitmaps, tileSheet,
+						color, points);
 			}
 		}
 	}
 
 	private void addEntity(Config config, IInput input,
 			ISpatialStructure<Entity> structure, int x, int y,
-			BitmapFactory bitmaps, SpriteSheet tileSheet, int color) throws IOException {
+			BitmapFactory bitmaps, SpriteSheet tileSheet, int color, int points)
+			throws IOException {
 		if (color == 255) {
 			player = new Entity(structure, x, y, 1, true);
 			new SpriteComponent(player, new SpriteSheet(
 					bitmaps.get("./res/playertest.png"), 1), 0);
-			new PlayerComponent(player, input.register(new InputListener(
-					new int[] { KeyEvent.VK_LEFT })),
+			playerComponent = new PlayerComponent(player, points, 2,
+					input.register(new InputListener(
+							new int[] { KeyEvent.VK_LEFT })),
 					input.register(new InputListener(
 							new int[] { KeyEvent.VK_RIGHT })),
 					input.register(new InputListener(
@@ -85,11 +98,11 @@ public class PlatformScene extends Scene {
 			Entity entity = new Entity(structure, x, y, 1, true);
 			new SpriteComponent(entity, new SpriteSheet(
 					bitmaps.get("./res/slime.png"), 1), 0);
-			new EnemyComponent(entity);
+			new EnemyComponent(entity, 20);
 		} else if (color != 0) {
 			boolean blocking = (color & 0x8000) != 0;
 			double layer = 2.0;
-			add(structure, x, y, layer, blocking, tileSheet, color&0xFF)
+			add(structure, x, y, layer, blocking, tileSheet, color & 0xFF)
 					.setDitherable(true);
 		}
 	}
@@ -109,14 +122,12 @@ public class PlatformScene extends Scene {
 		}
 	}
 
-	public PlatformScene(Config config, IInput input) {
+	public PlatformScene(Config config, IInput input) throws IOException {
 		super(new Grid<Entity>(16, 256, 256));
-		try {
-			loadLevel(config, input, getStructure());
-		} catch (IOException e) {
-			e.printStackTrace();
-			// TODO: Proper exception handling
-		}
+		this.input = input;
+		this.config = config;
+		lives = 3;
+		loadLevel(config, input, getStructure(), 0);
 	}
 
 	private static Entity add(ISpatialStructure<Entity> structure, double posX,
@@ -129,6 +140,17 @@ public class PlatformScene extends Scene {
 
 	public void update(double delta) {
 		updateRange(delta, player.getAABB().expand(200, 200, 0));
+		if (playerComponent.getHealth() == 0) {
+			getStructure().clear();
+			lives--;
+			// TODO: If lives == 0, do something different.
+			try {
+				loadLevel(config, input, getStructure(),
+						playerComponent.getPoints());
+			} catch (IOException e) {
+				// TODO: Create error screen
+			}
+		}
 	}
 
 	private static void drawBackground(IRenderContext target, double r,
@@ -167,6 +189,14 @@ public class PlatformScene extends Scene {
 
 		renderRange(target, viewportX, viewportY);
 
-		target.drawString("1234567890 HP", font, 10, 10, 0xFFFFFF);
+		target.drawString(String.format("%07d", playerComponent.getPoints()),
+				font, 0, 0, 0xFFFFFF);
+		target.drawString(playerComponent.getHealth() + "", font,
+				target.getWidth() - font.getSpriteWidth(), 0, 0xFFFFFF);
+		target.drawSprite(livesIcon, 0, 0,
+				target.getHeight() - livesIcon.getSpriteHeight(), 1.0, false,
+				false, 0xFFFFFF);
+		target.drawString(lives + "", font, livesIcon.getSpriteWidth(),
+				target.getHeight() - font.getSpriteHeight(), 0xFFFFFF);
 	}
 }

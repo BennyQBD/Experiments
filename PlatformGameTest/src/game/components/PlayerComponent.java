@@ -1,6 +1,5 @@
 package game.components;
 
-import engine.core.Debug;
 import engine.core.Entity;
 import engine.core.EntityComponent;
 import engine.core.IEntityVisitor;
@@ -10,6 +9,7 @@ import engine.core.SpriteComponent;
 public class PlayerComponent extends EntityComponent {
 	public static final String COMPONENT_NAME = "PlayerComponent";
 	private static final double MAX_BOUNCE_VELOCITY = -200.0;
+	private static final double INVULNERABILITY_LENGTH = 3.0;
 	private InputListener leftKey;
 	private InputListener rightKey;
 	private InputListener runKey;
@@ -20,6 +20,8 @@ public class PlayerComponent extends EntityComponent {
 	private double velY;
 	private double jumpCounter;
 	private int points;
+	private int health;
+	private double invulnerabilityTimer;
 	private SpriteComponent spriteComponent;
 
 	private SpriteComponent getSpriteComponent() {
@@ -32,9 +34,9 @@ public class PlayerComponent extends EntityComponent {
 		return spriteComponent;
 	}
 
-	public PlayerComponent(Entity entity, InputListener leftKey,
-			InputListener rightKey, InputListener runKey,
-			InputListener jumpKey, InputListener slamKey) {
+	public PlayerComponent(Entity entity, int points, int health,
+			InputListener leftKey, InputListener rightKey,
+			InputListener runKey, InputListener jumpKey, InputListener slamKey) {
 		super(entity, COMPONENT_NAME);
 		this.leftKey = leftKey;
 		this.rightKey = rightKey;
@@ -45,7 +47,9 @@ public class PlayerComponent extends EntityComponent {
 		hasJumped = false;
 		velY = 0.0;
 		jumpCounter = 0.0;
-		this.points = 0;
+		this.points = points;
+		this.health = health;
+		this.invulnerabilityTimer = INVULNERABILITY_LENGTH;
 		spriteComponent = null;
 	}
 
@@ -97,19 +101,43 @@ public class PlayerComponent extends EntityComponent {
 		}
 	}
 
+	private boolean isInvulnerable() {
+		return invulnerabilityTimer < INVULNERABILITY_LENGTH;
+	}
 	public void damage() {
-		Debug.log("Player hit!");
+		if(!isInvulnerable()) {
+			health--;
+			invulnerabilityTimer = 0.0;
+		}
 	}
 
 	@Override
 	public void update(double delta) {
+		if(isInvulnerable()) {
+			invulnerabilityTimer += delta;
+			double invulnerabilityFlasher = invulnerabilityTimer * 15;
+//			invulnerabilityFlasher -= (int)invulnerabilityFlasher;
+//			invulnerabilityFlasher *= 2;
+//			if(invulnerabilityFlasher > 1) {
+//				invulnerabilityFlasher = 1.0 - (invulnerabilityFlasher - 1.0);
+//			}
+//			invulnerabilityFlasher = 1.0 - invulnerabilityFlasher;
+//			getSpriteComponent().setTransparency(invulnerabilityFlasher);
+			if((int)(invulnerabilityFlasher) % 2 == 0) {
+				getSpriteComponent().setTransparency(1.0);
+			} else {
+				getSpriteComponent().setTransparency(0.0);
+			}
+		} else { 
+			getSpriteComponent().setTransparency(1.0);
+		}
 		double oldVelY = velY;
 		float moveX = getEntity()
 				.move(findLateralMovement(90.0, 2.0, delta), 0);
 		applyJumpAmt(1004.8, moveX, delta);
 		applyGravity(157.0, delta, oldVelY);
 		pickupCollectables();
-		revealLocalHiddenAreas(64.0);
+		//revealLocalHiddenAreas(64.0);
 	}
 
 	private void applyGravity(double gravity, double delta, double oldVelY) {
@@ -146,9 +174,6 @@ public class PlayerComponent extends EntityComponent {
 					}
 				});
 		points += (int) val.val;
-		if (val.val != 0.0) {
-			Debug.log(points);
-		}
 	}
 
 	private boolean tryHitEnemy() {
@@ -157,11 +182,13 @@ public class PlayerComponent extends EntityComponent {
 				getEntity().getAABB().expand(0, 1, 0), new IEntityVisitor() {
 					@Override
 					public void visit(Entity entity, EntityComponent component) {
-						((EnemyComponent) component).kill();
-						result.val = 1.0;
+						if(((EnemyComponent) component).kill()) {
+							result.val += ((EnemyComponent) component).getPoints();
+						}
 					}
 				});
-		return result.val == 1.0;
+		points += (int)(result.val);
+		return result.val != 0.0;
 	}
 
 	private void revealLocalHiddenAreas(final double range) {
@@ -189,5 +216,13 @@ public class PlayerComponent extends EntityComponent {
 						}
 					}
 				});
+	}
+
+	public int getPoints() {
+		return points;
+	}
+	
+	public int getHealth() {
+		return health;
 	}
 }
