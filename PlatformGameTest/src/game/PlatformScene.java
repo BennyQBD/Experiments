@@ -2,8 +2,12 @@ package game;
 
 import java.awt.event.KeyEvent;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.StringTokenizer;
 
 import engine.core.BitmapFactory;
+import engine.core.Delay;
 import engine.core.Entity;
 import engine.core.IInput;
 import engine.core.InputListener;
@@ -22,6 +26,9 @@ import game.components.EnemyComponent;
 import game.components.PlayerComponent;
 
 public class PlatformScene extends Scene {
+	private static final int STATE_RUNNING = 0;
+	private static final int STATE_LOST_LIFE = 1;
+	private static final int STATE_ERROR = 2;
 	private Entity player;
 	private PlayerComponent playerComponent;
 	private BitmapFactory bitmaps;
@@ -32,6 +39,9 @@ public class PlatformScene extends Scene {
 	private Config config;
 
 	private int lives;
+	private int state;
+	private Delay lostLifeDelay;
+	private String errorMessage;
 
 	private void loadLevel(Config config, IInput input,
 			ISpatialStructure<Entity> structure, int points) throws IOException {
@@ -120,11 +130,20 @@ public class PlatformScene extends Scene {
 		}
 	}
 
+	private static String getStackTrace(Exception e) {
+		StringWriter sw = new StringWriter();
+		e.printStackTrace(new PrintWriter(sw));
+		return sw.toString();
+	}
+
 	public PlatformScene(Config config, IInput input) throws IOException {
 		super(new Grid<Entity>(16, 256, 256));
 		this.input = input;
 		this.config = config;
 		this.bitmaps = new BitmapFactory();
+		this.state = STATE_RUNNING;
+		this.lostLifeDelay = new Delay(3.0);
+		this.errorMessage = "";
 		lives = 3;
 		loadLevel(config, input, getStructure(), 0);
 	}
@@ -138,20 +157,36 @@ public class PlatformScene extends Scene {
 	}
 
 	public void update(double delta) {
-		updateRange(delta, player.getAABB().expand(200, 200, 0));
 		if (playerComponent.getHealth() == 0) {
 			getStructure().clear();
 			lives--;
 			int points = playerComponent.getPoints();
 			if (lives <= 0) {
-				lives = 3;
 				points = 0;
 			}
 			try {
 				loadLevel(config, input, getStructure(), points);
 			} catch (IOException e) {
-				// TODO: Create error screen
+				state = STATE_ERROR;
+				errorMessage = getStackTrace(e);
+				return;
 			}
+			state = STATE_LOST_LIFE;
+			lostLifeDelay.reset();
+		}
+
+		switch (state) {
+		case STATE_RUNNING:
+			updateRange(delta, player.getAABB().expand(200, 200, 0));
+			break;
+		case STATE_LOST_LIFE:
+			if (lostLifeDelay.over(delta)) {
+				state = STATE_RUNNING;
+				if (lives == 0) {
+					lives = 3;
+				}
+			}
+			break;
 		}
 	}
 
@@ -175,7 +210,62 @@ public class PlatformScene extends Scene {
 				target.setPixel(i, j, color);
 			}
 		}
+	}
 
+	private void renderScene(IRenderContext target, double viewportX,
+			double viewportY) {
+		drawBackground(target, 1.0, 0.0, 0.0, 4, (int) Math.round(viewportX),
+				(int) Math.round(viewportY));
+		renderRange(target, viewportX, viewportY);
+	}
+
+	private void drawHUD(IRenderContext target) {
+		target.drawString(String.format("%07d", playerComponent.getPoints()),
+				font, 0, 0, 0xFFFFFF);
+		target.drawString(playerComponent.getHealth() + "", font,
+				target.getWidth() - font.getSpriteWidth(), 0, 0xFFFFFF);
+		target.drawSprite(livesIcon, 0, 0,
+				target.getHeight() - livesIcon.getSpriteHeight(), 1.0, false,
+				false, 0xFFFFFF);
+		target.drawString(lives + "", font, livesIcon.getSpriteWidth(),
+				target.getHeight() - font.getSpriteHeight(), 0xFFFFFF);
+	}
+	
+	private static String wrapString(String str, int maxLength) {
+		StringTokenizer st=new StringTokenizer(str);
+		int spaceLeft=maxLength;
+		int spaceWidth=1;
+		StringBuilder sb = new StringBuilder();
+		while(st.hasMoreTokens())
+		{
+			String word=st.nextToken();
+			if((word.length()+spaceWidth)>spaceLeft)
+			{
+				sb.append("\n"+word+" ");
+				spaceLeft=maxLength-word.length();
+			}
+			else
+			{
+				sb.append(word+" ");
+				spaceLeft-=(word.length()+spaceWidth);
+			}
+		}
+		return sb.toString();
+	}
+
+	private static void drawMessage(IRenderContext target, String str, int x,
+			int y, SpriteSheet font) {
+		int maxLength = target.getWidth() / font.getSpriteWidth();
+		str = wrapString(str, maxLength);
+		String[] strs = str.split("\n");
+		for (int i = 0; i < strs.length; i++) {
+			String[] wrappedStrings = strs[i].split("(?<=\\G.{" + maxLength
+					+ "})");
+			for (int j = 0; j < wrappedStrings.length; j++, y += font
+					.getSpriteHeight()) {
+				target.drawString(wrappedStrings[j], font, x, y, 0xFFFFFF);
+			}
+		}
 	}
 
 	public void render(IRenderContext target) {
@@ -186,24 +276,38 @@ public class PlatformScene extends Scene {
 		double viewportX = player.getAABB().getMinX() - viewportOffsetX;
 		double viewportY = player.getAABB().getMinY() - viewportOffsetY;
 
-		drawBackground(target, 1.0, 0.0, 0.0, 4, (int) Math.round(viewportX),
-				(int) Math.round(viewportY));
-
-		renderRange(target, viewportX, viewportY);
-//		target.clear(0x000000);
-//		player.render(target, (int) Math.round(viewportX), (int) Math.round(viewportY));
-		
-		target.drawString(String.format("%07d", playerComponent.getPoints()),
-				font, 0, 0, 0xFFFFFF);
-		target.drawString(playerComponent.getHealth() + "", font,
-				target.getWidth() - font.getSpriteWidth(), 0, 0xFFFFFF);
-		target.drawSprite(livesIcon, 0, 0,
-				target.getHeight() - livesIcon.getSpriteHeight(), 1.0, false,
-				false, 0xFFFFFF);
-		target.drawString(lives + "", font, livesIcon.getSpriteWidth(),
-				target.getHeight() - font.getSpriteHeight(), 0xFFFFFF);
-
-//		target.drawString("Game Over", font, target.getWidth() / 2
-//				- (int) ((4.5) * font.getSpriteWidth()), 0, 0xFFFFFF);
+		switch (state) {
+		case STATE_RUNNING:
+			renderScene(target, viewportX, viewportY);
+			break;
+		case STATE_LOST_LIFE:
+			target.clear(0x000000);
+			player.render(target, (int) Math.round(viewportX),
+					(int) Math.round(viewportY));
+			String gameOverString = "Game Over";
+			if (lives == 0) {
+				target.drawString(
+						gameOverString,
+						font,
+						target.getWidth()
+								/ 2
+								- (int) ((gameOverString.length() / 2.0) * font
+										.getSpriteWidth()), 0, 0xFFFFFF);
+			}
+			break;
+		case STATE_ERROR:
+			target.clear(0x880000);
+			String errorHeader = "Error";
+			target.drawString(
+					errorHeader,
+					font,
+					target.getWidth()
+							/ 2
+							- (int) ((errorHeader.length() / 2.0) * font
+									.getSpriteWidth()), 0, 0xFFFFFF);
+			drawMessage(target, errorMessage, 0, font.getSpriteHeight(), font);
+			return;
+		}
+		drawHUD(target);
 	}
 }

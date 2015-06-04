@@ -13,12 +13,13 @@
 + GUI
 + Lives
 + State based Player
++ Game Over screen
++ Error screen
+- Text rendering utilities
 - Menu
-- Game Over screen
-- Error screen
 - Animation
 - Sound
-- Flying powerup
+- Flying powerup?
 - Lives from getting a certain number of points
 - Environmental hazards (spikes, lava, lasers, etc.)
 - Locked areas
