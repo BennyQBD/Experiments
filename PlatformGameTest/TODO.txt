@@ -12,8 +12,12 @@
 + Health
 + GUI
 + Lives
++ State based Player
 - Menu
+- Game Over screen
+- Error screen
 - Animation
+- Sound
 - Flying powerup
 - Lives from getting a certain number of points
 - Environmental hazards (spikes, lava, lasers, etc.)

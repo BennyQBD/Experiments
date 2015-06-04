@@ -14,7 +14,6 @@ import engine.core.space.Grid;
 import engine.core.space.ISpatialStructure;
 import engine.parsing.Config;
 import engine.rendering.ARGBColor;
-import engine.rendering.ArrayBitmap;
 import engine.rendering.IBitmap;
 import engine.rendering.IRenderContext;
 import engine.rendering.SpriteSheet;
@@ -25,6 +24,7 @@ import game.components.PlayerComponent;
 public class PlatformScene extends Scene {
 	private Entity player;
 	private PlayerComponent playerComponent;
+	private BitmapFactory bitmaps;
 	private SpriteSheet font;
 	private SpriteSheet livesIcon;
 
@@ -35,9 +35,7 @@ public class PlatformScene extends Scene {
 
 	private void loadLevel(Config config, IInput input,
 			ISpatialStructure<Entity> structure, int points) throws IOException {
-		IBitmap level = new ArrayBitmap("./res/"
-				+ config.getString("level.data"));
-		BitmapFactory bitmaps = new BitmapFactory();
+		IBitmap level = bitmaps.get("./res/" + config.getString("level.data"));
 		int[] backgrounds = new int[5];
 
 		SpriteSheet tileSheet = new SpriteSheet(
@@ -126,6 +124,7 @@ public class PlatformScene extends Scene {
 		super(new Grid<Entity>(16, 256, 256));
 		this.input = input;
 		this.config = config;
+		this.bitmaps = new BitmapFactory();
 		lives = 3;
 		loadLevel(config, input, getStructure(), 0);
 	}
@@ -143,10 +142,13 @@ public class PlatformScene extends Scene {
 		if (playerComponent.getHealth() == 0) {
 			getStructure().clear();
 			lives--;
-			// TODO: If lives == 0, do something different.
+			int points = playerComponent.getPoints();
+			if (lives <= 0) {
+				lives = 3;
+				points = 0;
+			}
 			try {
-				loadLevel(config, input, getStructure(),
-						playerComponent.getPoints());
+				loadLevel(config, input, getStructure(), points);
 			} catch (IOException e) {
 				// TODO: Create error screen
 			}
@@ -188,7 +190,9 @@ public class PlatformScene extends Scene {
 				(int) Math.round(viewportY));
 
 		renderRange(target, viewportX, viewportY);
-
+//		target.clear(0x000000);
+//		player.render(target, (int) Math.round(viewportX), (int) Math.round(viewportY));
+		
 		target.drawString(String.format("%07d", playerComponent.getPoints()),
 				font, 0, 0, 0xFFFFFF);
 		target.drawString(playerComponent.getHealth() + "", font,
@@ -198,5 +202,8 @@ public class PlatformScene extends Scene {
 				false, 0xFFFFFF);
 		target.drawString(lives + "", font, livesIcon.getSpriteWidth(),
 				target.getHeight() - font.getSpriteHeight(), 0xFFFFFF);
+
+//		target.drawString("Game Over", font, target.getWidth() / 2
+//				- (int) ((4.5) * font.getSpriteWidth()), 0, 0xFFFFFF);
 	}
 }

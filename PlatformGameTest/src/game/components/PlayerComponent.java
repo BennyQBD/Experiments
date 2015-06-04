@@ -7,22 +7,35 @@ import engine.core.InputListener;
 import engine.core.SpriteComponent;
 
 public class PlayerComponent extends EntityComponent {
+	private class DoubleVal {
+		public double val = 0.0;
+	}
+	
 	public static final String COMPONENT_NAME = "PlayerComponent";
-	private static final double MAX_BOUNCE_VELOCITY = -200.0;
-	private static final double INVULNERABILITY_LENGTH = 3.0;
+	private static final int STATE_MOVING = 0;
+	private static final int STATE_IN_AIR = 1;
 	private InputListener leftKey;
 	private InputListener rightKey;
 	private InputListener runKey;
 	private InputListener jumpKey;
 	private InputListener slamKey;
+	private int state;
 
-	private boolean hasJumped;
 	private double velY;
 	private double jumpCounter;
 	private int points;
 	private int health;
 	private double invulnerabilityTimer;
 	private SpriteComponent spriteComponent;
+	private final double moveSpeed = 90.0;
+	private final double maxBounceVelocity = -200.0;
+	private final double invulnerabilityLength = 3.0;
+	private final double jumpTime;
+	private final double runModifier;
+	private final double jumpSpeed;
+	private final double gravity;
+	private final double jumpModifier;
+	private final double flashFrequency;
 
 	private SpriteComponent getSpriteComponent() {
 		if (spriteComponent != null) {
@@ -43,14 +56,80 @@ public class PlayerComponent extends EntityComponent {
 		this.runKey = runKey;
 		this.jumpKey = jumpKey;
 		this.slamKey = slamKey;
+		this.state = STATE_MOVING;
 
-		hasJumped = false;
 		velY = 0.0;
 		jumpCounter = 0.0;
 		this.points = points;
 		this.health = health;
-		this.invulnerabilityTimer = INVULNERABILITY_LENGTH;
+		this.invulnerabilityTimer = invulnerabilityLength;
 		spriteComponent = null;
+
+		this.jumpTime = 0.1375;
+		this.jumpSpeed = 1004.8;
+		this.runModifier = 2.0;
+		this.gravity = 157.0;
+		this.jumpModifier = 1.15;
+		this.flashFrequency = 15.0;
+	}
+	
+	public void damage() {
+		if (!isInvulnerable()) {
+			health--;
+			invulnerabilityTimer = 0.0;
+		}
+	}
+	
+	public int getPoints() {
+		return points;
+	}
+
+	public int getHealth() {
+		return health;
+	}
+	
+	@Override
+	public void update(double delta) {
+		boolean jumped = commonUpdate(delta);
+		switch (state) {
+		case STATE_MOVING:
+			movingUpdate(delta, jumped);
+			break;
+		case STATE_IN_AIR:
+			inAirUpdate(delta);
+			break;
+		default:
+			throw new AssertionError("State " + state
+					+ " is an invalid enemy state");
+		}
+		
+		// revealLocalHiddenAreas(64.0);
+	}
+	
+	private boolean commonUpdate(double delta) {
+		invulnerabilityFlash(delta);
+		pickupCollectables();
+		float moveX = applyLateralMovement(moveSpeed, runModifier, delta);
+		applySlam(delta, jumpSpeed);
+		applyGravity(gravity, delta);
+		return applyJumpAmt(jumpSpeed, moveX, delta);
+	}
+	
+	private void movingUpdate(double delta, boolean jumped) {
+		if (applyMovementY(delta)) {
+			state = STATE_IN_AIR;
+			jumpCounter = jumped ? delta : jumpTime;
+		} else {
+			velY = 0.0;
+			jumpCounter = 0.0;
+		}
+	}
+
+	private void inAirUpdate(double delta) {
+		if (!applyMovementY(delta) && !tryHitEnemy()) {
+			velY = 0.0;
+			state = STATE_MOVING;
+		}
 	}
 
 	private float findLateralMovement(double moveSpeed, double runModifier,
@@ -72,94 +151,77 @@ public class PlayerComponent extends EntityComponent {
 		return moveX;
 	}
 
-	private void applyJumpAmt(double jumpSpeed, float moveX, double delta) {
+	private boolean isInvulnerable() {
+		return invulnerabilityTimer < invulnerabilityLength;
+	}
+
+	private void invulnerabilityFlash(double delta) {
+		if (isInvulnerable()) {
+			invulnerabilityTimer += delta;
+			double invulnerabilityFlasher = invulnerabilityTimer * flashFrequency;
+			if ((int) (invulnerabilityFlasher) % 2 == 0) {
+				getSpriteComponent().setTransparency(1.0);
+			} else {
+				getSpriteComponent().setTransparency(0.0);
+			}
+		} else {
+			getSpriteComponent().setTransparency(1.0);
+		}
+	}
+
+	private boolean applyJumpAmt(double jumpSpeed, float moveX, double delta) {
+		delta = updateJumpCounter(delta);
+		if (delta == 0.0) {
+			return false;
+		}
+
+		if (runKey.isDown() && moveX != 0.0f) {
+			jumpSpeed *= jumpModifier;
+		}
+
+		if (jumpKey.isDown() && !slamKey.isDown()) {
+			velY -= jumpSpeed * delta;
+			return true;
+		}
+		return false;
+	}
+
+	private float applyLateralMovement(double moveSpeed, double runModifier,
+			double delta) {
+		return getEntity().move(
+				findLateralMovement(moveSpeed, runModifier, delta), 0);
+	}
+
+	private double updateJumpCounter(double amt) {
+		double newJumpCounter = jumpCounter + amt;
+		double jumpDelta = amt;
+		if (newJumpCounter >= jumpTime) {
+			jumpDelta = jumpTime - jumpCounter;
+			if (jumpDelta < 0.0) {
+				jumpDelta = 0.0;
+			}
+		}
+		jumpCounter = newJumpCounter;
+		return jumpDelta;
+	}
+	
+	private void applySlam(double jumpSpeed, double delta) {
 		if (slamKey.isDown()) {
 			velY += jumpSpeed * 0.8 * delta;
 			getSpriteComponent().setFlipY(true);
 		} else {
 			getSpriteComponent().setFlipY(false);
 		}
-
-		if (runKey.isDown() && moveX != 0.0f) {
-			jumpSpeed *= 1.15;
-		}
-
-		if (jumpKey.isDown() && !slamKey.isDown()) {
-			if (velY == 0.0 && !hasJumped) {
-				velY -= jumpSpeed * delta;
-				hasJumped = true;
-				jumpCounter = 0.0;
-			}
-
-			if (hasJumped && jumpCounter < 0.1) {
-				velY -= jumpSpeed * delta;
-			}
-		}
-
-		if (hasJumped) {
-			jumpCounter += delta;
-		}
 	}
 
-	private boolean isInvulnerable() {
-		return invulnerabilityTimer < INVULNERABILITY_LENGTH;
-	}
-	public void damage() {
-		if(!isInvulnerable()) {
-			health--;
-			invulnerabilityTimer = 0.0;
-		}
-	}
-
-	@Override
-	public void update(double delta) {
-		if(isInvulnerable()) {
-			invulnerabilityTimer += delta;
-			double invulnerabilityFlasher = invulnerabilityTimer * 15;
-//			invulnerabilityFlasher -= (int)invulnerabilityFlasher;
-//			invulnerabilityFlasher *= 2;
-//			if(invulnerabilityFlasher > 1) {
-//				invulnerabilityFlasher = 1.0 - (invulnerabilityFlasher - 1.0);
-//			}
-//			invulnerabilityFlasher = 1.0 - invulnerabilityFlasher;
-//			getSpriteComponent().setTransparency(invulnerabilityFlasher);
-			if((int)(invulnerabilityFlasher) % 2 == 0) {
-				getSpriteComponent().setTransparency(1.0);
-			} else {
-				getSpriteComponent().setTransparency(0.0);
-			}
-		} else { 
-			getSpriteComponent().setTransparency(1.0);
-		}
-		double oldVelY = velY;
-		float moveX = getEntity()
-				.move(findLateralMovement(90.0, 2.0, delta), 0);
-		applyJumpAmt(1004.8, moveX, delta);
-		applyGravity(157.0, delta, oldVelY);
-		pickupCollectables();
-		//revealLocalHiddenAreas(64.0);
-	}
-
-	private void applyGravity(double gravity, double delta, double oldVelY) {
-		velY += gravity * delta;
+	private boolean applyMovementY(double delta) {
 		float newMoveY = (float) (velY * delta);
 		float moveY = getEntity().move(0, newMoveY);
-		if (newMoveY != moveY) {
-			if (oldVelY != 0.0 && tryHitEnemy()) {
-				velY = -velY;
-				if (velY < MAX_BOUNCE_VELOCITY) {
-					velY = MAX_BOUNCE_VELOCITY;
-				}
-			} else {
-				velY = 0;
-				hasJumped = false;
-				jumpCounter = 0.0;
-			}
-		}
+		return newMoveY == moveY;
 	}
 
-	private class DoubleVal {
-		public double val = 0.0;
+	private void applyGravity(double gravity, double delta) {
+		velY += gravity * delta;
 	}
 
 	private void pickupCollectables() {
@@ -182,16 +244,28 @@ public class PlayerComponent extends EntityComponent {
 				getEntity().getAABB().expand(0, 1, 0), new IEntityVisitor() {
 					@Override
 					public void visit(Entity entity, EntityComponent component) {
-						if(((EnemyComponent) component).kill()) {
-							result.val += ((EnemyComponent) component).getPoints();
+						if (((EnemyComponent) component).kill()) {
+							result.val += ((EnemyComponent) component)
+									.getPoints();
 						}
 					}
 				});
-		points += (int)(result.val);
-		return result.val != 0.0;
+		points += (int) (result.val);
+		boolean hitEnemy = result.val != 0.0;
+		if (hitEnemy) {
+			velY = -velY;
+			if (velY < maxBounceVelocity) {
+				velY = maxBounceVelocity;
+			}
+		}
+		return hitEnemy;
 	}
 
+	@SuppressWarnings("unused")
 	private void revealLocalHiddenAreas(final double range) {
+		if(range == 0.0) {
+			return;
+		}
 		getEntity().visitInRange(SpriteComponent.COMPONENT_NAME,
 				getEntity().getAABB().expand(range, range, 0),
 				new IEntityVisitor() {
@@ -216,13 +290,5 @@ public class PlayerComponent extends EntityComponent {
 						}
 					}
 				});
-	}
-
-	public int getPoints() {
-		return points;
-	}
-	
-	public int getHealth() {
-		return health;
 	}
 }

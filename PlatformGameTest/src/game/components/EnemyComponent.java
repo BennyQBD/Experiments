@@ -7,16 +7,22 @@ import engine.core.SpriteComponent;
 import engine.rendering.IRenderContext;
 
 public class EnemyComponent extends EntityComponent {
+	private class DoubleVal {
+		public double val = 0.0;
+	}
+	
 	public static final String COMPONENT_NAME = "EnemyComponent";
-	private static final double REMOVE_DELAY = 0.1;
-	private static final int CLIFF_LOOKDOWN_DIST = 4;
 	private static final int STATE_WALK = 0;
 	private static final int STATE_DYING = 1;
 	private int state;
 	private int points;
 	private double velY;
-	private double speedX;
 	private double lastRenderCounter;
+	private double speedX;
+	private final double removeDelay;
+	private final double gravity;
+	private final double cliffLookDownDistance;
+	private final double killBounceSpeed;
 	private SpriteComponent spriteComponent;
 
 	private SpriteComponent getSpriteComponent() {
@@ -32,10 +38,29 @@ public class EnemyComponent extends EntityComponent {
 	public EnemyComponent(Entity entity, int points) {
 		super(entity, COMPONENT_NAME);
 		this.velY = 0.0;
-		this.speedX = 30.0;
 		this.state = STATE_WALK;
 		this.lastRenderCounter = 0.0;
 		this.points = points;
+		this.speedX = 30.0;
+		this.gravity = 157.0;
+		this.removeDelay = 0.1;
+		this.cliffLookDownDistance = 4;
+		this.killBounceSpeed = -100;
+	}
+	
+	public int getPoints() {
+		return points;
+	}
+	
+	public boolean kill() {
+		if (!isLiving()) {
+			return false;
+		}
+		state = STATE_DYING;
+		velY = killBounceSpeed;
+		getEntity().setBlocking(false);
+		getSpriteComponent().setFlipY(true);
+		return true;
 	}
 
 	@Override
@@ -48,13 +73,20 @@ public class EnemyComponent extends EntityComponent {
 			if (dyingUpdate(delta)) {
 				return;
 			}
-			;
 			break;
 		default:
 			throw new AssertionError("State " + state
 					+ " is an invalid enemy state");
 		}
-		applyGravity(157.0, delta);
+		applyGravity(gravity, delta);
+		if(!applyMovementY(delta)) {
+			velY = 0.0;
+		}
+	}
+	
+	@Override
+	public void render(IRenderContext target, int viewportX, int viewportY) {
+		lastRenderCounter = 0.0;
 	}
 
 	private void walkUpdate(double delta) {
@@ -62,15 +94,34 @@ public class EnemyComponent extends EntityComponent {
 		float moveX = getEntity().move(newMoveX, 0.0f);
 		if (moveX != newMoveX
 				|| aboutToWalkOffCliff(getEntity().getAABB().getWidth()
-						* speedX / Math.abs(speedX), CLIFF_LOOKDOWN_DIST)) {
+						* speedX / Math.abs(speedX), cliffLookDownDistance)) {
 			speedX = -speedX;
 			getSpriteComponent().setFlipX(speedX < 0);
 		}
 		tryHitPlayer();
 	}
+	
+	private boolean dyingUpdate(double delta) {
+		if (this.lastRenderCounter > removeDelay) {
+			getEntity().remove();
+			return true;
+		}
+		lastRenderCounter += delta;
+		return false;
+	}
+	
+	private boolean applyMovementY(double delta) {
+		float newMoveY = (float) (velY * delta);
+		float moveY = getEntity().move(0, newMoveY);
+		return newMoveY == moveY;
+	}
 
-	private class DoubleVal {
-		public double val = 0.0;
+	private void applyGravity(double gravity, double delta) {
+		velY += gravity * delta;
+	}
+	
+	private boolean isLiving() {
+		return state != STATE_DYING;
 	}
 
 	private boolean aboutToWalkOffCliff(double distX, double distY) {
@@ -87,30 +138,6 @@ public class EnemyComponent extends EntityComponent {
 		return val.val != 1.0;
 	}
 
-	private boolean dyingUpdate(double delta) {
-		if (this.lastRenderCounter > REMOVE_DELAY) {
-			getEntity().remove();
-			return true;
-		}
-		lastRenderCounter += delta;
-		return false;
-	}
-
-	public boolean kill() {
-		if(!isLiving()) {
-			return false;
-		}
-		state = STATE_DYING;
-		velY = -100;
-		getEntity().setBlocking(false);
-		getSpriteComponent().setFlipY(true);
-		return true;
-	}
-
-	private boolean isLiving() {
-		return state != STATE_DYING;
-	}
-
 	private void tryHitPlayer() {
 		getEntity().visitInRange(PlayerComponent.COMPONENT_NAME,
 				getEntity().getAABB().expand(1, 0, 0), new IEntityVisitor() {
@@ -119,23 +146,5 @@ public class EnemyComponent extends EntityComponent {
 						((PlayerComponent) component).damage();
 					}
 				});
-	}
-
-	private void applyGravity(double gravity, double delta) {
-		velY += gravity * delta;
-		float newMoveY = (float) (velY * delta);
-		float moveY = getEntity().move(0, newMoveY);
-		if (newMoveY != moveY) {
-			velY = 0;
-		}
-	}
-
-	@Override
-	public void render(IRenderContext target, int viewportX, int viewportY) {
-		lastRenderCounter = 0.0;
-	}
-	
-	public int getPoints() {
-		return points;
 	}
 }
