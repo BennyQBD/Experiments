@@ -1,5 +1,7 @@
 package engine.core;
 
+import java.util.StringTokenizer;
+
 public class Util {
 	public static double saturate(double val) {
 		return clamp(val, 0.0, 1.0);
@@ -38,6 +40,28 @@ public class Util {
 		if(index < min) {
 			throw new IndexOutOfBoundsException(index + " is less than " + min);
 		}
+	}
+
+	public static String wrapString(String str, int maxLength) {
+		StringTokenizer st=new StringTokenizer(str);
+		int spaceLeft=maxLength;
+		int spaceWidth=1;
+		StringBuilder sb = new StringBuilder();
+		while(st.hasMoreTokens())
+		{
+			String word=st.nextToken();
+			if((word.length()+spaceWidth)>spaceLeft)
+			{
+				sb.append("\n"+word+" ");
+				spaceLeft=maxLength-word.length();
+			}
+			else
+			{
+				sb.append(word+" ");
+				spaceLeft-=(word.length()+spaceWidth);
+			}
+		}
+		return sb.toString();
 	}
 
 //	public static int floorDiv(int num, int den) {

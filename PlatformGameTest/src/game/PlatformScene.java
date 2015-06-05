@@ -4,7 +4,6 @@ import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.StringTokenizer;
 
 import engine.core.BitmapFactory;
 import engine.core.Delay;
@@ -26,6 +25,7 @@ import game.components.EnemyComponent;
 import game.components.PlayerComponent;
 
 public class PlatformScene extends Scene {
+	private static final int DEFAULT_LIVES = 3;
 	private static final int STATE_RUNNING = 0;
 	private static final int STATE_LOST_LIFE = 1;
 	private static final int STATE_ERROR = 2;
@@ -34,17 +34,18 @@ public class PlatformScene extends Scene {
 	private BitmapFactory bitmaps;
 	private SpriteSheet font;
 	private SpriteSheet livesIcon;
+	private SpriteSheet healthIcon;
 
 	private IInput input;
 	private Config config;
 
-	private int lives;
 	private int state;
 	private Delay lostLifeDelay;
 	private String errorMessage;
 
 	private void loadLevel(Config config, IInput input,
-			ISpatialStructure<Entity> structure, int points) throws IOException {
+			ISpatialStructure<Entity> structure, int points, int lives)
+			throws IOException {
 		IBitmap level = bitmaps.get("./res/" + config.getString("level.data"));
 		int[] backgrounds = new int[5];
 
@@ -52,6 +53,7 @@ public class PlatformScene extends Scene {
 				bitmaps.get("./res/tilesheet.png"), 16);
 		font = new SpriteSheet(bitmaps.get("./res/monospace.png"), 16);
 		livesIcon = new SpriteSheet(bitmaps.get("./res/livesicon.png"), 1);
+		healthIcon = new SpriteSheet(bitmaps.get("./res/healthicon.png"), 1);
 
 		backgrounds[0] = 41;
 		backgrounds[1] = 14;
@@ -68,20 +70,20 @@ public class PlatformScene extends Scene {
 				addRandomBackgroundTile(structure, x, y, backgrounds,
 						tileSheet, 10);
 				addEntity(config, input, structure, x, y, bitmaps, tileSheet,
-						color, points);
+						color, points, lives);
 			}
 		}
 	}
 
 	private void addEntity(Config config, IInput input,
 			ISpatialStructure<Entity> structure, int x, int y,
-			BitmapFactory bitmaps, SpriteSheet tileSheet, int color, int points)
-			throws IOException {
+			BitmapFactory bitmaps, SpriteSheet tileSheet, int color,
+			int points, int lives) throws IOException {
 		if (color == 255) {
 			player = new Entity(structure, x, y, 1, true);
 			new SpriteComponent(player, new SpriteSheet(
 					bitmaps.get("./res/playertest.png"), 1), 0);
-			playerComponent = new PlayerComponent(player, points, 2,
+			playerComponent = new PlayerComponent(player, points, 2, lives,
 					input.register(new InputListener(
 							new int[] { KeyEvent.VK_LEFT })),
 					input.register(new InputListener(
@@ -144,8 +146,7 @@ public class PlatformScene extends Scene {
 		this.state = STATE_RUNNING;
 		this.lostLifeDelay = new Delay(3.0);
 		this.errorMessage = "";
-		lives = 3;
-		loadLevel(config, input, getStructure(), 0);
+		loadLevel(config, input, getStructure(), 0, DEFAULT_LIVES);
 	}
 
 	private static Entity add(ISpatialStructure<Entity> structure, double posX,
@@ -159,13 +160,13 @@ public class PlatformScene extends Scene {
 	public void update(double delta) {
 		if (playerComponent.getHealth() == 0) {
 			getStructure().clear();
-			lives--;
+			int lives = playerComponent.getLives() - 1;
 			int points = playerComponent.getPoints();
 			if (lives <= 0) {
 				points = 0;
 			}
 			try {
-				loadLevel(config, input, getStructure(), points);
+				loadLevel(config, input, getStructure(), points, lives);
 			} catch (IOException e) {
 				state = STATE_ERROR;
 				errorMessage = getStackTrace(e);
@@ -182,8 +183,8 @@ public class PlatformScene extends Scene {
 		case STATE_LOST_LIFE:
 			if (lostLifeDelay.over(delta)) {
 				state = STATE_RUNNING;
-				if (lives == 0) {
-					lives = 3;
+				if (playerComponent.getLives() <= 0) {
+					playerComponent.addLives(DEFAULT_LIVES);
 				}
 			}
 			break;
@@ -221,51 +222,19 @@ public class PlatformScene extends Scene {
 
 	private void drawHUD(IRenderContext target) {
 		target.drawString(String.format("%07d", playerComponent.getPoints()),
-				font, 0, 0, 0xFFFFFF);
-		target.drawString(playerComponent.getHealth() + "", font,
-				target.getWidth() - font.getSpriteWidth(), 0, 0xFFFFFF);
+				font, 0, 0, 0xFFFFFF, false);
+		// target.drawString(playerComponent.getHealth() + "", font,
+		// target.getWidth() - font.getSpriteWidth(), 0, 0xFFFFFF, false);
+		for (int i = 0, x = target.getWidth() - healthIcon.getSpriteWidth() - 1; i < playerComponent
+				.getHealth(); i++, x -= (healthIcon.getSpriteWidth() + 1)) {
+			target.drawSprite(healthIcon, 0, x, 0, 1.0, false, false, 0xFFFFFF);
+		}
 		target.drawSprite(livesIcon, 0, 0,
 				target.getHeight() - livesIcon.getSpriteHeight(), 1.0, false,
 				false, 0xFFFFFF);
-		target.drawString(lives + "", font, livesIcon.getSpriteWidth(),
-				target.getHeight() - font.getSpriteHeight(), 0xFFFFFF);
-	}
-	
-	private static String wrapString(String str, int maxLength) {
-		StringTokenizer st=new StringTokenizer(str);
-		int spaceLeft=maxLength;
-		int spaceWidth=1;
-		StringBuilder sb = new StringBuilder();
-		while(st.hasMoreTokens())
-		{
-			String word=st.nextToken();
-			if((word.length()+spaceWidth)>spaceLeft)
-			{
-				sb.append("\n"+word+" ");
-				spaceLeft=maxLength-word.length();
-			}
-			else
-			{
-				sb.append(word+" ");
-				spaceLeft-=(word.length()+spaceWidth);
-			}
-		}
-		return sb.toString();
-	}
-
-	private static void drawMessage(IRenderContext target, String str, int x,
-			int y, SpriteSheet font) {
-		int maxLength = target.getWidth() / font.getSpriteWidth();
-		str = wrapString(str, maxLength);
-		String[] strs = str.split("\n");
-		for (int i = 0; i < strs.length; i++) {
-			String[] wrappedStrings = strs[i].split("(?<=\\G.{" + maxLength
-					+ "})");
-			for (int j = 0; j < wrappedStrings.length; j++, y += font
-					.getSpriteHeight()) {
-				target.drawString(wrappedStrings[j], font, x, y, 0xFFFFFF);
-			}
-		}
+		target.drawString(playerComponent.getLives() + "", font,
+				livesIcon.getSpriteWidth(),
+				target.getHeight() - font.getSpriteHeight(), 0xFFFFFF, false);
 	}
 
 	public void render(IRenderContext target) {
@@ -285,14 +254,14 @@ public class PlatformScene extends Scene {
 			player.render(target, (int) Math.round(viewportX),
 					(int) Math.round(viewportY));
 			String gameOverString = "Game Over";
-			if (lives == 0) {
+			if (playerComponent.getLives() <= 0) {
 				target.drawString(
 						gameOverString,
 						font,
 						target.getWidth()
 								/ 2
 								- (int) ((gameOverString.length() / 2.0) * font
-										.getSpriteWidth()), 0, 0xFFFFFF);
+										.getSpriteWidth()), 0, 0xFFFFFF, false);
 			}
 			break;
 		case STATE_ERROR:
@@ -304,8 +273,9 @@ public class PlatformScene extends Scene {
 					target.getWidth()
 							/ 2
 							- (int) ((errorHeader.length() / 2.0) * font
-									.getSpriteWidth()), 0, 0xFFFFFF);
-			drawMessage(target, errorMessage, 0, font.getSpriteHeight(), font);
+									.getSpriteWidth()), 0, 0xFFFFFF, false);
+			target.drawString(errorMessage, font, 0, font.getSpriteHeight(),
+					0xFFFFFF, true);
 			return;
 		}
 		drawHUD(target);

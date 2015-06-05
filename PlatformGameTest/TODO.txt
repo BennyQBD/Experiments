@@ -15,7 +15,7 @@
 + State based Player
 + Game Over screen
 + Error screen
-- Text rendering utilities
++ Text rendering utilities
 - Menu
 - Animation
 - Sound

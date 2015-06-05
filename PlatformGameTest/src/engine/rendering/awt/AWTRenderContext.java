@@ -25,9 +25,29 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 		return (int) (Util.saturate(ditherFactor) * 64.0 + 0.5);
 	}
 
-	public void drawString(String msg, SpriteSheet font, int x, int y, int color) {
-		for (int i = 0; i < msg.length(); i++, x += font.getSpriteWidth()) {
-			char c = msg.charAt(i);
+	public void drawString(String str, SpriteSheet font, int x, int y,
+			int color, boolean wrap) {
+		if (!wrap) {
+			drawStringLine(str, font, x, y, color);
+			return;
+		}
+		int maxLength = getWidth() / font.getSpriteWidth();
+		str = Util.wrapString(str, maxLength);
+		String[] strs = str.split("\n");
+		for (int i = 0; i < strs.length; i++) {
+			String[] wrappedStrings = strs[i].split("(?<=\\G.{" + maxLength
+					+ "})");
+			for (int j = 0; j < wrappedStrings.length; j++, y += font
+					.getSpriteHeight()) {
+				drawStringLine(wrappedStrings[j], font, x, y, color);
+			}
+		}
+	}
+
+	private void drawStringLine(String str, SpriteSheet font, int x, int y,
+			int color) {
+		for (int i = 0; i < str.length(); i++, x += font.getSpriteWidth()) {
+			char c = str.charAt(i);
 			drawSprite(font, (int) c, x, y, 1.0, false, false, color);
 		}
 	}
@@ -80,40 +100,41 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 		for (int j = jStart, y = offsetY; y < yEnd; j += jStep, y++) {
 			for (int i = iStart, x = offsetX; x < xEnd; i += iStep, x++) {
 				int color = image.getPixel(i, j);
-//				color = blendColors(color & colorMask, getPixel(x, y), transparency);
-//				setPixel(x, y, color);
+				// color = blendColors(color & colorMask, getPixel(x, y),
+				// transparency);
+				// setPixel(x, y, color);
 				if (color < 0 && ditherPass(i, j, ditherTransparency)) {
 					setPixel(x, y, color & colorMask);
 				}
 			}
 		}
 	}
-	
+
 	@SuppressWarnings("unused")
 	private static int blendColors(int color1, int color2, double amt) {
 		int c1a = (color1 >> 24) & 0xFF;
-		int blendAmt = (int)(c1a * amt);
-		
-		if(blendAmt == 0) {
+		int blendAmt = (int) (c1a * amt);
+
+		if (blendAmt == 0) {
 			return color2;
-		} else if(blendAmt == 255) {
+		} else if (blendAmt == 255) {
 			return color1;
 		}
-		
+
 		int blendAmt2 = 255 - blendAmt;
-		
+
 		int c1r = (color1 >> 16) & 0xFF;
 		int c1g = (color1 >> 8) & 0xFF;
 		int c1b = (color1 >> 0) & 0xFF;
-		
+
 		int c2r = (color2 >> 16) & 0xFF;
 		int c2g = (color2 >> 8) & 0xFF;
 		int c2b = (color2 >> 0) & 0xFF;
-		
+
 		int newR = (c1r * blendAmt + c2r * blendAmt2) >> 8;
 		int newG = (c1g * blendAmt + c2g * blendAmt2) >> 8;
 		int newB = (c1b * blendAmt + c2b * blendAmt2) >> 8;
-		
+
 		return (newR << 16) | (newG << 8) | (newB);
 	}
 }

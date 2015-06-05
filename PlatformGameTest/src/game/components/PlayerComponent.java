@@ -25,6 +25,7 @@ public class PlayerComponent extends EntityComponent {
 	private double jumpCounter;
 	private int points;
 	private int health;
+	private int lives;
 	private double invulnerabilityTimer;
 	private SpriteComponent spriteComponent;
 	private final double moveSpeed = 90.0;
@@ -47,7 +48,7 @@ public class PlayerComponent extends EntityComponent {
 		return spriteComponent;
 	}
 
-	public PlayerComponent(Entity entity, int points, int health,
+	public PlayerComponent(Entity entity, int points, int health, int lives,
 			InputListener leftKey, InputListener rightKey,
 			InputListener runKey, InputListener jumpKey, InputListener slamKey) {
 		super(entity, COMPONENT_NAME);
@@ -62,6 +63,7 @@ public class PlayerComponent extends EntityComponent {
 		jumpCounter = 0.0;
 		this.points = points;
 		this.health = health;
+		this.lives = lives;
 		this.invulnerabilityTimer = invulnerabilityLength;
 		spriteComponent = null;
 
@@ -86,6 +88,14 @@ public class PlayerComponent extends EntityComponent {
 
 	public int getHealth() {
 		return health;
+	}
+	
+	public int getLives() {
+		return lives;
+	}
+	
+	public void addLives(int numLives) {
+		lives += numLives;
 	}
 	
 	@Override
