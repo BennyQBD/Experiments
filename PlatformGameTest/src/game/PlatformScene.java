@@ -4,31 +4,38 @@ import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.text.ParseException;
+import java.util.HashMap;
+import java.util.Map;
 
-import engine.core.BitmapFactory;
-import engine.core.Delay;
-import engine.core.Entity;
-import engine.core.IInput;
-import engine.core.InputListener;
 import engine.core.Scene;
-import engine.core.SpriteComponent;
-import engine.core.Util;
-import engine.core.space.Grid;
-import engine.core.space.ISpatialStructure;
-import engine.parsing.Config;
+import engine.core.entity.Entity;
+import engine.input.IInput;
+import engine.input.InputListener;
 import engine.rendering.ARGBColor;
 import engine.rendering.IBitmap;
 import engine.rendering.IRenderContext;
 import engine.rendering.SpriteSheet;
+import engine.space.Grid;
+import engine.space.ISpatialStructure;
+import engine.util.BitmapFactory;
+import engine.util.Delay;
+import engine.util.SpriteComponent;
+import engine.util.Util;
+import engine.util.menu.IMenuHandler;
+import engine.util.menu.Menu;
+import engine.util.menu.MenuStack;
+import engine.util.parsing.Config;
 import game.components.CollectableComponent;
 import game.components.EnemyComponent;
 import game.components.PlayerComponent;
 
 public class PlatformScene extends Scene {
+	private enum State {
+		RUNNING, LOST_LIFE, ERROR;
+	}
+
 	private static final int DEFAULT_LIVES = 3;
-	private static final int STATE_RUNNING = 0;
-	private static final int STATE_LOST_LIFE = 1;
-	private static final int STATE_ERROR = 2;
 	private Entity player;
 	private PlayerComponent playerComponent;
 	private BitmapFactory bitmaps;
@@ -39,9 +46,11 @@ public class PlatformScene extends Scene {
 	private IInput input;
 	private Config config;
 
-	private int state;
+	private State state;
 	private Delay lostLifeDelay;
 	private String errorMessage;
+	private MenuStack menu;
+	private boolean shouldExit;
 
 	private void loadLevel(Config config, IInput input,
 			ISpatialStructure<Entity> structure, int points, int lives)
@@ -138,15 +147,78 @@ public class PlatformScene extends Scene {
 		return sw.toString();
 	}
 
+	private void startNewGame() throws IOException {
+		startNewGame(0, DEFAULT_LIVES);
+	}
+	
+	private IMenuHandler getMenuHandler() {
+		return new IMenuHandler() {
+			@Override
+			public void handleMenu(int option,
+					MenuStack stack) {
+				try {
+					switch (option) {
+					case 0:
+						startNewGame();
+						break;
+					case 1:
+						saveGame();
+						break;
+					case 2:
+						loadGame();
+						break;
+					case 3:
+						stack.push(new Menu(new String[] { "Test1", "Test2", "Test3",
+								"Back" }, new IMenuHandler() {
+							@Override
+							public void handleMenu(int option, MenuStack stack) {
+								switch (option) {
+								case 3:
+									stack.pop();
+									break;
+								}
+							}
+						}));
+						break;
+					case 4:
+						shouldExit = true;
+						break;
+					}
+				} catch (Exception e) {
+					enterErrorState(e);
+				}
+			}
+		};
+	}
+
+	private void startNewGame(int points, int lives) throws IOException {
+		this.state = State.RUNNING;
+		this.lostLifeDelay = new Delay(3.0);
+		this.errorMessage = "";
+		getStructure().clear();
+		loadLevel(config, input, getStructure(), points, lives);
+		this.menu = new MenuStack(
+				font,
+				0xFFFFFF,
+				0xFF0000,
+				20,
+				20,
+				input.register(new InputListener(new int[] { KeyEvent.VK_UP })),
+				input.register(new InputListener(new int[] { KeyEvent.VK_DOWN })),
+				input.register(new InputListener(
+						new int[] { KeyEvent.VK_ENTER })), input
+						.register(new InputListener(
+								new int[] { KeyEvent.VK_ESCAPE })), 0.1, new Menu(
+						new String[] { "New Game", "Save Game", "Load Game",
+								"Options", "Exit" }, getMenuHandler()));
+	}
+
 	public PlatformScene(Config config, IInput input) throws IOException {
 		super(new Grid<Entity>(16, 256, 256));
 		this.input = input;
 		this.config = config;
 		this.bitmaps = new BitmapFactory();
-		this.state = STATE_RUNNING;
-		this.lostLifeDelay = new Delay(3.0);
-		this.errorMessage = "";
-		loadLevel(config, input, getStructure(), 0, DEFAULT_LIVES);
+		startNewGame();
 	}
 
 	private static Entity add(ISpatialStructure<Entity> structure, double posX,
@@ -157,7 +229,64 @@ public class PlatformScene extends Scene {
 		return result;
 	}
 
-	public void update(double delta) {
+	private void enterErrorState(Exception e) {
+		state = State.ERROR;
+		errorMessage = getStackTrace(e);
+	}
+
+	public void handleMenu(int selection, MenuStack menuStack) {
+		try {
+			switch (selection) {
+			case 0:
+				startNewGame();
+				break;
+			case 1:
+				saveGame();
+				break;
+			case 2:
+				loadGame();
+				break;
+			case 3:
+				menu.push(new Menu(new String[] { "Test1", "Test2", "Test3",
+						"Back" }, new IMenuHandler() {
+					@Override
+					public void handleMenu(int option, MenuStack stack) {
+						switch (option) {
+						case 3:
+							stack.pop();
+							break;
+						}
+					}
+				}));
+				break;
+			case 4:
+				shouldExit = true;
+				break;
+			}
+		} catch (Exception e) {
+			enterErrorState(e);
+		}
+	}
+
+	private void saveGame() throws IOException {
+		Map<String, String> saveData = new HashMap<String, String>();
+		saveData.put("points", playerComponent.getPoints() + "");
+		saveData.put("lives", playerComponent.getLives() + "");
+		Config.write("./res/save.cfg", saveData);
+	}
+
+	private void loadGame() throws IOException, ParseException {
+		Config saveFile = new Config("./res/save.cfg");
+		startNewGame(saveFile.getInt("points"), saveFile.getInt("lives"));
+	}
+
+	public boolean update(double delta) {
+		shouldExit = false;
+		menu.update(delta);
+		if (shouldExit || menu.isShowing()) {
+			return shouldExit;
+		}
+
 		if (playerComponent.getHealth() == 0) {
 			getStructure().clear();
 			int lives = playerComponent.getLives() - 1;
@@ -168,27 +297,30 @@ public class PlatformScene extends Scene {
 			try {
 				loadLevel(config, input, getStructure(), points, lives);
 			} catch (IOException e) {
-				state = STATE_ERROR;
-				errorMessage = getStackTrace(e);
-				return;
+				enterErrorState(e);
+				return shouldExit;
 			}
-			state = STATE_LOST_LIFE;
+			state = State.LOST_LIFE;
 			lostLifeDelay.reset();
 		}
 
 		switch (state) {
-		case STATE_RUNNING:
+		case RUNNING:
 			updateRange(delta, player.getAABB().expand(200, 200, 0));
 			break;
-		case STATE_LOST_LIFE:
+		case LOST_LIFE:
 			if (lostLifeDelay.over(delta)) {
-				state = STATE_RUNNING;
+				state = State.RUNNING;
 				if (playerComponent.getLives() <= 0) {
 					playerComponent.addLives(DEFAULT_LIVES);
 				}
 			}
 			break;
+		case ERROR:
+			// Nothing to do
+			break;
 		}
+		return shouldExit;
 	}
 
 	private static void drawBackground(IRenderContext target, double r,
@@ -220,21 +352,23 @@ public class PlatformScene extends Scene {
 		renderRange(target, viewportX, viewportY);
 	}
 
-	private void drawHUD(IRenderContext target) {
-		target.drawString(String.format("%07d", playerComponent.getPoints()),
-				font, 0, 0, 0xFFFFFF, false);
-		// target.drawString(playerComponent.getHealth() + "", font,
-		// target.getWidth() - font.getSpriteWidth(), 0, 0xFFFFFF, false);
+	private void drawPlayerHealth(IRenderContext target) {
 		for (int i = 0, x = target.getWidth() - healthIcon.getSpriteWidth() - 1; i < playerComponent
 				.getHealth(); i++, x -= (healthIcon.getSpriteWidth() + 1)) {
 			target.drawSprite(healthIcon, 0, x, 0, 1.0, false, false, 0xFFFFFF);
 		}
+	}
+
+	private void drawHUD(IRenderContext target) {
+		target.drawString(String.format("%07d", playerComponent.getPoints()),
+				font, 0, 0, 0xFFFFFF, 0);
+		drawPlayerHealth(target);
 		target.drawSprite(livesIcon, 0, 0,
 				target.getHeight() - livesIcon.getSpriteHeight(), 1.0, false,
 				false, 0xFFFFFF);
 		target.drawString(playerComponent.getLives() + "", font,
 				livesIcon.getSpriteWidth(),
-				target.getHeight() - font.getSpriteHeight(), 0xFFFFFF, false);
+				target.getHeight() - font.getSpriteHeight(), 0xFFFFFF, 0);
 	}
 
 	public void render(IRenderContext target) {
@@ -246,10 +380,10 @@ public class PlatformScene extends Scene {
 		double viewportY = player.getAABB().getMinY() - viewportOffsetY;
 
 		switch (state) {
-		case STATE_RUNNING:
+		case RUNNING:
 			renderScene(target, viewportX, viewportY);
 			break;
-		case STATE_LOST_LIFE:
+		case LOST_LIFE:
 			target.clear(0x000000);
 			player.render(target, (int) Math.round(viewportX),
 					(int) Math.round(viewportY));
@@ -261,10 +395,10 @@ public class PlatformScene extends Scene {
 						target.getWidth()
 								/ 2
 								- (int) ((gameOverString.length() / 2.0) * font
-										.getSpriteWidth()), 0, 0xFFFFFF, false);
+										.getSpriteWidth()), 0, 0xFFFFFF, 0);
 			}
 			break;
-		case STATE_ERROR:
+		case ERROR:
 			target.clear(0x880000);
 			String errorHeader = "Error";
 			target.drawString(
@@ -273,11 +407,12 @@ public class PlatformScene extends Scene {
 					target.getWidth()
 							/ 2
 							- (int) ((errorHeader.length() / 2.0) * font
-									.getSpriteWidth()), 0, 0xFFFFFF, false);
+									.getSpriteWidth()), 0, 0xFFFFFF, 0);
 			target.drawString(errorMessage, font, 0, font.getSpriteHeight(),
-					0xFFFFFF, true);
+					0xFFFFFF, target.getWidth());
 			return;
 		}
 		drawHUD(target);
+		menu.render(target);
 	}
 }

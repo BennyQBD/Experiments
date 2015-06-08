@@ -6,9 +6,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import engine.core.space.AABB;
-import engine.core.space.ISpatialStructure;
+import engine.core.entity.Entity;
 import engine.rendering.IRenderContext;
+import engine.space.AABB;
+import engine.space.ISpatialStructure;
 
 public abstract class Scene {
 	private ISpatialStructure<Entity> structure;
@@ -32,7 +33,7 @@ public abstract class Scene {
 		return structure;
 	}
 
-	public abstract void update(double delta);
+	public abstract boolean update(double delta);
 
 	protected void renderRange(IRenderContext target, double viewportX,
 			double viewportY) {

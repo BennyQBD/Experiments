@@ -1,10 +1,10 @@
 package game.components;
 
-import engine.core.Entity;
-import engine.core.EntityComponent;
-import engine.core.IEntityVisitor;
-import engine.core.SpriteComponent;
+import engine.core.entity.Entity;
+import engine.core.entity.EntityComponent;
+import engine.core.entity.IEntityVisitor;
 import engine.rendering.IRenderContext;
+import engine.util.SpriteComponent;
 
 public class EnemyComponent extends EntityComponent {
 	private class DoubleVal {

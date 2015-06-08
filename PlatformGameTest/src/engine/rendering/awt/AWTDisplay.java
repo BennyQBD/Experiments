@@ -11,8 +11,8 @@ import java.awt.image.DataBufferInt;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
-import engine.core.IInput;
-import engine.core.awt.AWTInput;
+import engine.input.IInput;
+import engine.input.awt.AWTInput;
 import engine.rendering.IDisplay;
 import engine.rendering.IRenderContext;
 

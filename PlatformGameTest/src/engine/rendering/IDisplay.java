@@ -1,6 +1,6 @@
 package engine.rendering;
 
-import engine.core.IInput;
+import engine.input.IInput;
 
 public interface IDisplay {
 	public void swapBuffers();

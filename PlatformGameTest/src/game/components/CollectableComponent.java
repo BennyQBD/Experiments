@@ -1,7 +1,7 @@
 package game.components;
 
-import engine.core.Entity;
-import engine.core.EntityComponent;
+import engine.core.entity.Entity;
+import engine.core.entity.EntityComponent;
 
 public class CollectableComponent extends EntityComponent {
 	public static final String COMPONENT_NAME = "CollectableComponent";

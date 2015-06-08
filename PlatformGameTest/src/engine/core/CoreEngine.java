@@ -1,6 +1,7 @@
 package engine.core;
 
 import engine.rendering.IDisplay;
+import engine.util.Debug;
 
 public class CoreEngine {
 	private final IDisplay display;
@@ -26,7 +27,8 @@ public class CoreEngine {
 		long previousTime = System.nanoTime();
 		String fpsString = "0 ms per frame (0 fps)";
 
-		while(!display.isClosed()) {
+		boolean isRunning = true;
+		while(!display.isClosed() && isRunning) {
 			boolean render = false;
 
 			long currentTime = System.nanoTime();
@@ -47,7 +49,10 @@ public class CoreEngine {
 
 			while (unprocessedTime > frameTime) {
 				render = true;
-				scene.update(frameTime);
+				boolean shouldExit = scene.update(frameTime);
+				if(shouldExit) {
+					isRunning = false;
+				}
 				unprocessedTime -= frameTime;
 			}
 

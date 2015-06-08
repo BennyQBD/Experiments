@@ -1,7 +1,7 @@
 package engine.rendering;
 
-import engine.core.Util;
-import engine.core.space.AABB;
+import engine.space.AABB;
+import engine.util.Util;
 
 public class SpriteSheet {
 	private IBitmap sheet;

@@ -1,10 +1,10 @@
 package game.components;
 
-import engine.core.Entity;
-import engine.core.EntityComponent;
-import engine.core.IEntityVisitor;
-import engine.core.InputListener;
-import engine.core.SpriteComponent;
+import engine.core.entity.Entity;
+import engine.core.entity.EntityComponent;
+import engine.core.entity.IEntityVisitor;
+import engine.input.InputListener;
+import engine.util.SpriteComponent;
 
 public class PlayerComponent extends EntityComponent {
 	private class DoubleVal {
@@ -137,8 +137,10 @@ public class PlayerComponent extends EntityComponent {
 
 	private void inAirUpdate(double delta) {
 		if (!applyMovementY(delta) && !tryHitEnemy()) {
+			if(velY > 0) {
+				state = STATE_MOVING;
+			}
 			velY = 0.0;
-			state = STATE_MOVING;
 		}
 	}
 

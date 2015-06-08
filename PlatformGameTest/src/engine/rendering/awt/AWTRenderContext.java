@@ -1,10 +1,10 @@
 package engine.rendering.awt;
 
-import engine.core.Util;
 import engine.rendering.ArrayBitmap;
 import engine.rendering.IBitmap;
 import engine.rendering.IRenderContext;
 import engine.rendering.SpriteSheet;
+import engine.util.Util;
 
 public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 	public AWTRenderContext(int width, int height) {
@@ -26,12 +26,12 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 	}
 
 	public void drawString(String str, SpriteSheet font, int x, int y,
-			int color, boolean wrap) {
-		if (!wrap) {
+			int color, int wrapX) {
+		if (wrapX <= x || wrapX <= 0) {
 			drawStringLine(str, font, x, y, color);
 			return;
 		}
-		int maxLength = getWidth() / font.getSpriteWidth();
+		int maxLength = (wrapX - x) / font.getSpriteWidth();
 		str = Util.wrapString(str, maxLength);
 		String[] strs = str.split("\n");
 		for (int i = 0; i < strs.length; i++) {

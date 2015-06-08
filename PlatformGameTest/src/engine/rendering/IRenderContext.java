@@ -5,5 +5,5 @@ public interface IRenderContext extends IBitmap {
 			double transparency, boolean flipX, boolean flipY, int colorMask);
 
 	public void drawString(String msg, SpriteSheet font, int x, int y,
-			int color, boolean wrap);
+			int color, int wrapX);
 }
