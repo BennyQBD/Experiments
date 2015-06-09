@@ -1,5 +1,6 @@
 package engine.rendering.awt;
 
+import engine.rendering.ARGBColor;
 import engine.rendering.ArrayBitmap;
 import engine.rendering.IBitmap;
 import engine.rendering.IRenderContext;
@@ -100,9 +101,9 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 		for (int j = jStart, y = offsetY; y < yEnd; j += jStep, y++) {
 			for (int i = iStart, x = offsetX; x < xEnd; i += iStep, x++) {
 				int color = image.getPixel(i, j);
-//				 color = blendColors(color & colorMask, getPixel(x, y),
-//				 transparency);
-//				 setPixel(x, y, color);
+				// color = blendColors(color & colorMask, getPixel(x, y),
+				// transparency);
+				// setPixel(x, y, color);
 				if (color < 0 && ditherPass(i, j, ditherTransparency)) {
 					setPixel(x, y, color & colorMask);
 				}
@@ -110,31 +111,29 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 		}
 	}
 
+	private static int blendComponent(int comp1, int comp2, int amt1, int amt2) {
+		return (comp1 * amt1 + comp2 * amt2) >> 8;
+	}
+
 	@SuppressWarnings("unused")
 	private static int blendColors(int color1, int color2, double amt) {
-		int c1a = (color1 >> 24) & 0xFF;
-		int blendAmt = (int) (c1a * amt);
-
-		if (blendAmt == 0) {
+		int blendAmt1 = (int) (ARGBColor.getComponent(color1, 0) * amt);
+		if (blendAmt1 == 0) {
 			return color2;
-		} else if (blendAmt == 255) {
+		} else if (blendAmt1 == 255) {
 			return color1;
 		}
-
-		int blendAmt2 = 255 - blendAmt;
-
-		int c1r = (color1 >> 16) & 0xFF;
-		int c1g = (color1 >> 8) & 0xFF;
-		int c1b = (color1 >> 0) & 0xFF;
-
-		int c2r = (color2 >> 16) & 0xFF;
-		int c2g = (color2 >> 8) & 0xFF;
-		int c2b = (color2 >> 0) & 0xFF;
-
-		int newR = (c1r * blendAmt + c2r * blendAmt2) >> 8;
-		int newG = (c1g * blendAmt + c2g * blendAmt2) >> 8;
-		int newB = (c1b * blendAmt + c2b * blendAmt2) >> 8;
-
-		return (newR << 16) | (newG << 8) | (newB);
+		int blendAmt2 = 255 - blendAmt1;
+		return ARGBColor
+				.makeColor(
+						blendComponent(ARGBColor.getComponent(color1, 1),
+								ARGBColor.getComponent(color2, 1), blendAmt1,
+								blendAmt2),
+						blendComponent(ARGBColor.getComponent(color1, 2),
+								ARGBColor.getComponent(color2, 2), blendAmt1,
+								blendAmt2),
+						blendComponent(ARGBColor.getComponent(color1, 3),
+								ARGBColor.getComponent(color2, 3), blendAmt1,
+								blendAmt2));
 	}
 }
