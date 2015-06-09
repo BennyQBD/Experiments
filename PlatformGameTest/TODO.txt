@@ -19,6 +19,7 @@
 + Menu
 + Help menu
 + Lives from getting a certain number of points
++ Multiple Save Files
 - Animation
 - Sound
 - Flying powerup?

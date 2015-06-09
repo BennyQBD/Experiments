@@ -32,10 +32,9 @@ public class Menu {
 
 	public void render(IRenderContext target, SpriteSheet font, int offsetX,
 			int offsetY, int selectionColor, int fontColor) {
-		for (int i = 0, y = offsetY; i < options.length; i++, y += font
-				.getSpriteHeight()) {
+		for (int i = 0, y = offsetY; i < options.length; i++) {
 			int color = i == selectionIndex ? selectionColor : fontColor;
-			target.drawString(options[i], font, offsetX, y, color, target.getWidth());
+			y += target.drawString(options[i], font, offsetX, y, color, target.getWidth());
 		}
 	}
 }

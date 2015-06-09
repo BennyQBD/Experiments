@@ -1,10 +1,12 @@
 package game;
 
 import java.awt.event.KeyEvent;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.ParseException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,6 +38,7 @@ public class PlatformScene extends Scene {
 	}
 
 	private static final int DEFAULT_LIVES = 3;
+	private static final int NUM_SAVE_FILES = 5;
 	private Entity player;
 	private PlayerComponent playerComponent;
 	private BitmapFactory bitmaps;
@@ -54,8 +57,8 @@ public class PlatformScene extends Scene {
 	private InputListener helpMenuKey;
 
 	private void loadLevel(Config config, IInput input,
-			ISpatialStructure<Entity> structure, int points, int lives, int lifeDeficit)
-			throws IOException {
+			ISpatialStructure<Entity> structure, int points, int lives,
+			int lifeDeficit) throws IOException {
 		IBitmap level = bitmaps.get("./res/" + config.getString("level.data"));
 		int[] backgrounds = new int[5];
 
@@ -93,9 +96,10 @@ public class PlatformScene extends Scene {
 			player = new Entity(structure, x, y, 1, true);
 			new SpriteComponent(player, new SpriteSheet(
 					bitmaps.get("./res/playertest.png"), 1), 0);
-			playerComponent = new PlayerComponent(player, points, 2, lives, lifeDeficit,
-					new InputListener(input, new int[] { KeyEvent.VK_LEFT }),
-					new InputListener(input, new int[] { KeyEvent.VK_RIGHT }),
+			playerComponent = new PlayerComponent(player, points, 2, lives,
+					lifeDeficit, new InputListener(input,
+							new int[] { KeyEvent.VK_LEFT }), new InputListener(
+							input, new int[] { KeyEvent.VK_RIGHT }),
 					new InputListener(input, new int[] { KeyEvent.VK_SHIFT }),
 					new InputListener(input, new int[] { KeyEvent.VK_SPACE }),
 					new InputListener(input, new int[] { KeyEvent.VK_DOWN }));
@@ -147,6 +151,18 @@ public class PlatformScene extends Scene {
 		startNewGame(0, DEFAULT_LIVES, 0);
 	}
 
+	private static String[] getSaveFiles(int num) {
+		String[] result = new String[num];
+		for (int i = 0; i < num; i++) {
+			result[i] = getSaveName(i);
+			File tester = new File(getSavePath(i));
+			if (tester.exists() && !tester.isDirectory()) {
+				result[i] += "(" + new Date(tester.lastModified()) + ")";
+			}
+		}
+		return result;
+	}
+
 	private Menu getDefaultMenu() {
 		return new Menu(new String[] { "New Game", "Save Game", "Load Game",
 				"Options", "Help", "Exit" }, new IMenuHandler() {
@@ -158,10 +174,33 @@ public class PlatformScene extends Scene {
 						startNewGame();
 						break;
 					case 1:
-						saveGame();
+						stack.push(new Menu(getSaveFiles(NUM_SAVE_FILES),
+								new IMenuHandler() {
+									@Override
+									public void handleMenu(int option,
+											MenuStack stack) {
+										try {
+											saveGame(option);
+										} catch (IOException e) {
+											enterErrorState(e);
+										}
+									}
+								}));
 						break;
 					case 2:
-						loadGame();
+						stack.push(new Menu(getSaveFiles(NUM_SAVE_FILES),
+								new IMenuHandler() {
+									@Override
+									public void handleMenu(int option,
+											MenuStack stack) {
+										try {
+											loadGame(option);
+										} catch (IOException | ParseException e) {
+											// Do nothing; the user will see the
+											// game hasn't loaded.
+										}
+									}
+								}));
 						break;
 					case 3:
 						stack.push(new Menu(new String[] { "Test1", "Test2",
@@ -206,7 +245,8 @@ public class PlatformScene extends Scene {
 		getStructure().clear();
 	}
 
-	private void startNewGame(int points, int lives, int lifeDeficit) throws IOException {
+	private void startNewGame(int points, int lives, int lifeDeficit)
+			throws IOException {
 		initVariables();
 		loadLevel(config, input, getStructure(), points, lives, lifeDeficit);
 		initMenu();
@@ -235,21 +275,26 @@ public class PlatformScene extends Scene {
 		errorMessage = getStackTrace(e);
 	}
 
-	private void saveGame() throws IOException {
+	private static String getSaveName(int saveNum) {
+		return "save" + saveNum + ".cfg";
+	}
+
+	private static String getSavePath(int saveNum) {
+		return "./res/" + getSaveName(saveNum);
+	}
+
+	private void saveGame(int saveNum) throws IOException {
 		Map<String, String> saveData = new HashMap<String, String>();
 		saveData.put("points", playerComponent.getPoints() + "");
 		saveData.put("lives", playerComponent.getLives() + "");
 		saveData.put("lifeDeficit", playerComponent.getLifeDeficit() + "");
-		Config.write("./res/save.cfg", saveData);
+		Config.write(getSavePath(saveNum), saveData);
 	}
 
-	private void loadGame() throws IOException, ParseException {
-		Config saveFile = new Config("./res/save.cfg");
-		int lifeDeficit = 0;
-		if(saveFile.getString("lifeDeficit") != null) {
-			lifeDeficit = saveFile.getInt("lifeDeficit");
-		}
-		startNewGame(saveFile.getInt("points"), saveFile.getInt("lives"), lifeDeficit);
+	private void loadGame(int saveNum) throws IOException, ParseException {
+		Config saveFile = new Config(getSavePath(saveNum));
+		startNewGame(saveFile.getInt("points"), saveFile.getInt("lives"),
+				saveFile.getInt("lifeDeficit"));
 	}
 
 	private static void addHelpMenu(MenuStack stack) {
@@ -285,7 +330,8 @@ public class PlatformScene extends Scene {
 				lifeDeficit = 0;
 			}
 			try {
-				loadLevel(config, input, getStructure(), points, lives, lifeDeficit);
+				loadLevel(config, input, getStructure(), points, lives,
+						lifeDeficit);
 			} catch (IOException e) {
 				enterErrorState(e);
 				return shouldExit;

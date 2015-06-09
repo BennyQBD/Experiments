@@ -26,13 +26,14 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 		return (int) (Util.saturate(ditherFactor) * 64.0 + 0.5);
 	}
 
-	public void drawString(String str, SpriteSheet font, int x, int y,
+	public int drawString(String str, SpriteSheet font, int x, int y,
 			int color, int wrapX) {
 		int maxLength = (wrapX - x) / font.getSpriteWidth();
 		if (wrapX <= x || wrapX <= 0 || str.length() < maxLength) {
 			drawStringLine(str, font, x, y, color);
-			return;
+			return font.getSpriteHeight();
 		}
+		int yStart = y;
 		str = Util.wrapString(str, maxLength);
 		String[] strs = str.split("\n");
 		for (int i = 0; i < strs.length; i++) {
@@ -43,6 +44,7 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 				drawStringLine(wrappedStrings[j], font, x, y, color);
 			}
 		}
+		return y - yStart;
 	}
 
 	private void drawStringLine(String str, SpriteSheet font, int x, int y,
