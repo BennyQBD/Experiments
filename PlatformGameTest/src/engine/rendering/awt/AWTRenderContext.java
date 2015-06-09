@@ -27,11 +27,11 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 
 	public void drawString(String str, SpriteSheet font, int x, int y,
 			int color, int wrapX) {
-		if (wrapX <= x || wrapX <= 0) {
+		int maxLength = (wrapX - x) / font.getSpriteWidth();
+		if (wrapX <= x || wrapX <= 0 || str.length() < maxLength) {
 			drawStringLine(str, font, x, y, color);
 			return;
 		}
-		int maxLength = (wrapX - x) / font.getSpriteWidth();
 		str = Util.wrapString(str, maxLength);
 		String[] strs = str.split("\n");
 		for (int i = 0; i < strs.length; i++) {
@@ -100,9 +100,9 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 		for (int j = jStart, y = offsetY; y < yEnd; j += jStep, y++) {
 			for (int i = iStart, x = offsetX; x < xEnd; i += iStep, x++) {
 				int color = image.getPixel(i, j);
-				// color = blendColors(color & colorMask, getPixel(x, y),
-				// transparency);
-				// setPixel(x, y, color);
+//				 color = blendColors(color & colorMask, getPixel(x, y),
+//				 transparency);
+//				 setPixel(x, y, color);
 				if (color < 0 && ditherPass(i, j, ditherTransparency)) {
 					setPixel(x, y, color & colorMask);
 				}

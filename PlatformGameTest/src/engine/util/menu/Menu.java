@@ -35,7 +35,7 @@ public class Menu {
 		for (int i = 0, y = offsetY; i < options.length; i++, y += font
 				.getSpriteHeight()) {
 			int color = i == selectionIndex ? selectionColor : fontColor;
-			target.drawString(options[i], font, offsetX, y, color, 0);
+			target.drawString(options[i], font, offsetX, y, color, target.getWidth());
 		}
 	}
 }

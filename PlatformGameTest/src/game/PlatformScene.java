@@ -51,6 +51,7 @@ public class PlatformScene extends Scene {
 	private String errorMessage;
 	private MenuStack menu;
 	private boolean shouldExit;
+	private InputListener helpMenuKey;
 
 	private void loadLevel(Config config, IInput input,
 			ISpatialStructure<Entity> structure, int points, int lives)
@@ -93,16 +94,11 @@ public class PlatformScene extends Scene {
 			new SpriteComponent(player, new SpriteSheet(
 					bitmaps.get("./res/playertest.png"), 1), 0);
 			playerComponent = new PlayerComponent(player, points, 2, lives,
-					input.register(new InputListener(
-							new int[] { KeyEvent.VK_LEFT })),
-					input.register(new InputListener(
-							new int[] { KeyEvent.VK_RIGHT })),
-					input.register(new InputListener(
-							new int[] { KeyEvent.VK_SHIFT })),
-					input.register(new InputListener(
-							new int[] { KeyEvent.VK_SPACE })),
-					input.register(new InputListener(
-							new int[] { KeyEvent.VK_DOWN })));
+					new InputListener(input, new int[] { KeyEvent.VK_LEFT }),
+					new InputListener(input, new int[] { KeyEvent.VK_RIGHT }),
+					new InputListener(input, new int[] { KeyEvent.VK_SHIFT }),
+					new InputListener(input, new int[] { KeyEvent.VK_SPACE }),
+					new InputListener(input, new int[] { KeyEvent.VK_DOWN }));
 		} else if (color == 254) {
 			Entity entity = new Entity(structure, x, y, 2, false);
 			new CollectableComponent(entity, 10);
@@ -150,12 +146,12 @@ public class PlatformScene extends Scene {
 	private void startNewGame() throws IOException {
 		startNewGame(0, DEFAULT_LIVES);
 	}
-	
-	private IMenuHandler getMenuHandler() {
-		return new IMenuHandler() {
+
+	private Menu getDefaultMenu() {
+		return new Menu(new String[] { "New Game", "Save Game", "Load Game",
+				"Options", "Help", "Exit" }, new IMenuHandler() {
 			@Override
-			public void handleMenu(int option,
-					MenuStack stack) {
+			public void handleMenu(int option, MenuStack stack) {
 				try {
 					switch (option) {
 					case 0:
@@ -168,8 +164,8 @@ public class PlatformScene extends Scene {
 						loadGame();
 						break;
 					case 3:
-						stack.push(new Menu(new String[] { "Test1", "Test2", "Test3",
-								"Back" }, new IMenuHandler() {
+						stack.push(new Menu(new String[] { "Test1", "Test2",
+								"Test3", "Back" }, new IMenuHandler() {
 							@Override
 							public void handleMenu(int option, MenuStack stack) {
 								switch (option) {
@@ -181,6 +177,9 @@ public class PlatformScene extends Scene {
 						}));
 						break;
 					case 4:
+						addHelpMenu(stack);
+						break;
+					case 5:
 						shouldExit = true;
 						break;
 					}
@@ -188,29 +187,29 @@ public class PlatformScene extends Scene {
 					enterErrorState(e);
 				}
 			}
-		};
+		});
 	}
 
-	private void startNewGame(int points, int lives) throws IOException {
+	private void initMenu() {
+		this.menu = new MenuStack(font, 0xFFFFFF, 0xFF88FF, 20, 20,
+				new InputListener(input, new int[] { KeyEvent.VK_UP }),
+				new InputListener(input, new int[] { KeyEvent.VK_DOWN }),
+				new InputListener(input, new int[] { KeyEvent.VK_ENTER }),
+				new InputListener(input, new int[] { KeyEvent.VK_ESCAPE }),
+				0.1, getDefaultMenu());
+	}
+
+	private void initVariables() {
 		this.state = State.RUNNING;
 		this.lostLifeDelay = new Delay(3.0);
 		this.errorMessage = "";
 		getStructure().clear();
+	}
+
+	private void startNewGame(int points, int lives) throws IOException {
+		initVariables();
 		loadLevel(config, input, getStructure(), points, lives);
-		this.menu = new MenuStack(
-				font,
-				0xFFFFFF,
-				0xFF0000,
-				20,
-				20,
-				input.register(new InputListener(new int[] { KeyEvent.VK_UP })),
-				input.register(new InputListener(new int[] { KeyEvent.VK_DOWN })),
-				input.register(new InputListener(
-						new int[] { KeyEvent.VK_ENTER })), input
-						.register(new InputListener(
-								new int[] { KeyEvent.VK_ESCAPE })), 0.1, new Menu(
-						new String[] { "New Game", "Save Game", "Load Game",
-								"Options", "Exit" }, getMenuHandler()));
+		initMenu();
 	}
 
 	public PlatformScene(Config config, IInput input) throws IOException {
@@ -218,6 +217,8 @@ public class PlatformScene extends Scene {
 		this.input = input;
 		this.config = config;
 		this.bitmaps = new BitmapFactory();
+		this.helpMenuKey = new InputListener(input,
+				new int[] { KeyEvent.VK_F1 });
 		startNewGame();
 	}
 
@@ -234,40 +235,6 @@ public class PlatformScene extends Scene {
 		errorMessage = getStackTrace(e);
 	}
 
-	public void handleMenu(int selection, MenuStack menuStack) {
-		try {
-			switch (selection) {
-			case 0:
-				startNewGame();
-				break;
-			case 1:
-				saveGame();
-				break;
-			case 2:
-				loadGame();
-				break;
-			case 3:
-				menu.push(new Menu(new String[] { "Test1", "Test2", "Test3",
-						"Back" }, new IMenuHandler() {
-					@Override
-					public void handleMenu(int option, MenuStack stack) {
-						switch (option) {
-						case 3:
-							stack.pop();
-							break;
-						}
-					}
-				}));
-				break;
-			case 4:
-				shouldExit = true;
-				break;
-			}
-		} catch (Exception e) {
-			enterErrorState(e);
-		}
-	}
-
 	private void saveGame() throws IOException {
 		Map<String, String> saveData = new HashMap<String, String>();
 		saveData.put("points", playerComponent.getPoints() + "");
@@ -280,11 +247,27 @@ public class PlatformScene extends Scene {
 		startNewGame(saveFile.getInt("points"), saveFile.getInt("lives"));
 	}
 
+	private static void addHelpMenu(MenuStack stack) {
+		stack.push(new Menu(
+				new String[] { "Use arrow keys to move and space to jump. Collect gems for points and "
+						+ "jump on the heads of your enemies to destory them." },
+				new IMenuHandler() {
+					@Override
+					public void handleMenu(int option, MenuStack stack) {
+						stack.pop();
+					}
+				}));
+	}
+
 	public boolean update(double delta) {
 		shouldExit = false;
+
 		menu.update(delta);
 		if (shouldExit || menu.isShowing()) {
 			return shouldExit;
+		}
+		if (helpMenuKey.isDown() && !menu.isShowing()) {
+			addHelpMenu(menu);
 		}
 
 		if (playerComponent.getHealth() == 0) {

@@ -43,14 +43,17 @@ public class MenuStack {
 		this.activateDelay = new Delay(usageDelayLength);
 	}
 
+	public void toggleVisibility() {
+		if (isShowing()) {
+			pop();
+		} else {
+			push(defaultMenu);
+		}
+	}
 	public void update(double delta) {
 		if (toggleDelay.over(delta) && toggleKey.isDown()) {
 			toggleDelay.reset();
-			if (isShowing()) {
-				menuStack.pop();
-			} else {
-				menuStack.push(defaultMenu);
-			}
+			toggleVisibility();
 		}
 
 		if (!isShowing()) {
@@ -82,8 +85,8 @@ public class MenuStack {
 	}
 
 	public void push(Menu menu) {
-		menuStack.push(menu);
 		menu.setMenuStack(this);
+		menuStack.push(menu);
 	}
 
 	public void render(IRenderContext target) {

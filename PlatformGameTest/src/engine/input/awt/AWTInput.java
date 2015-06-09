@@ -7,17 +7,16 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.Arrays;
 
 import engine.input.IInput;
-import engine.input.InputListener;
 
 public class AWTInput implements KeyListener, FocusListener,
 		MouseListener, MouseMotionListener, IInput {
-	private final List<InputListener> listeners = new ArrayList<InputListener>();
-	private final boolean[] mouseButtons = new boolean[4];
+	private static final int NUM_MOUSE_BUTTONS = 4;
+	private static final int NUM_KEYS = 65536;
+	private final boolean[] keys = new boolean[NUM_KEYS];
+	private final boolean[] mouseButtons = new boolean[NUM_MOUSE_BUTTONS];
 	private int mouseX = 0;
 	private int mouseY = 0;
 
@@ -67,40 +66,33 @@ public class AWTInput implements KeyListener, FocusListener,
 
 	@Override
 	public void focusLost(FocusEvent e) {
-		Iterator<InputListener> it = listeners.iterator();
-		while(it.hasNext()) {
-			it.next().releaseAll();
-		}
-		for(int i = 0; i < mouseButtons.length; i++) {
-			mouseButtons[i] = false;
+		Arrays.fill(keys, false);
+		Arrays.fill(mouseButtons, false);
+	}
+	
+	private void setKey(int code, boolean val) {
+		if(code >= 0 && code < keys.length) {
+			keys[code] = val;
 		}
 	}
 
 	@Override
 	public void keyPressed(KeyEvent e) {
-		int code = e.getKeyCode();
-		Iterator<InputListener> it = listeners.iterator();
-		while(it.hasNext()) {
-			it.next().pressed(code);
-		}
+		setKey(e.getKeyCode(), true);
 	}
 
 	@Override
 	public void keyReleased(KeyEvent e) {
-		int code = e.getKeyCode();
-		Iterator<InputListener> it = listeners.iterator();
-		while(it.hasNext()) {
-			it.next().released(code);
-		}
+		setKey(e.getKeyCode(), false);
 	}
 
 	@Override
 	public void keyTyped(KeyEvent e) {
 	}
 	
-	public InputListener register(InputListener listener) {
-		listeners.add(listener);
-		return listener;
+	@Override
+	public boolean getKey(int code) {
+		return keys[code];
 	}
 
 	@Override

@@ -16,7 +16,8 @@
 + Game Over screen
 + Error screen
 + Text rendering utilities
-- Menu
++ Menu
++ Help menu
 - Animation
 - Sound
 - Flying powerup?

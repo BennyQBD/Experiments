@@ -1,40 +1,17 @@
 package engine.input;
 
-import java.util.Arrays;
-
 public class InputListener {
 	private int[] keyCodes;
-	private boolean[] downKeys;
+	private IInput input;
 
-	public InputListener(int[] keyCodes) {
+	public InputListener(IInput input, int[] keyCodes) {
 		this.keyCodes = keyCodes;
-		downKeys = new boolean[keyCodes.length];
-		releaseAll();
-	}
-	
-	public void pressed(int keyCode) {
-		setKey(keyCode, true);
-	}
-	
-	public void released(int keyCode) {
-		setKey(keyCode, false);
-	}
-	
-	public void releaseAll() {
-		Arrays.fill(downKeys, false);
-	}
-	
-	private void setKey(int keyCode, boolean value) {
-		for(int i = 0; i < keyCodes.length; i++) {
-			if(keyCodes[i] == keyCode) {
-				downKeys[i] = value;
-			}
-		}
+		this.input = input;
 	}
 
 	public boolean isDown() {
 		for(int i = 0; i < keyCodes.length; i++) {
-			if(downKeys[i]) {
+			if(input.getKey(keyCodes[i])) {
 				return true;
 			}
 		}
