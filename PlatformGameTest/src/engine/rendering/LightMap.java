@@ -8,7 +8,7 @@ public class LightMap {
 	private final int width;
 	private final int height;
 	private final double scale;
-	private final float[] lighting;
+	private final byte[] lighting;
 
 	public LightMap(int radius) {
 		this(radius * 2, radius * 2, 1);
@@ -16,18 +16,18 @@ public class LightMap {
 	}
 
 	public LightMap(int width, int height, double scale) {
-		lighting = new float[width * height];
+		lighting = new byte[width * height];
 		this.width = width;
 		this.height = height;
 		this.scale = scale;
 	}
 
 	public void clear() {
-		Arrays.fill(lighting, 0.0f);
+		Arrays.fill(lighting, (byte) 0);
 	}
 
 	public double getLight(int x, int y) {
-		return (double)(lighting[x + y * width]);
+		return (double) ((lighting[x + y * width] & 0xFF));
 	}
 
 	public int getWidth() {
@@ -42,6 +42,10 @@ public class LightMap {
 		return scale;
 	}
 
+	private static byte toData(double val) {
+		return (byte) (Util.saturate(val) * 255.0 + 0.5);
+	}
+
 	private void generate(int radius) {
 		clear();
 		int centerX = width / 2;
@@ -53,8 +57,7 @@ public class LightMap {
 				if (distCenterSq > radiusSq) {
 					continue;
 				}
-				lighting[i + j * width] = (float)((double) radius
-						/ (double) (distCenterSq));
+				lighting[i + j * width] = toData(((double) radius / (double) (distCenterSq)));
 			}
 		}
 	}
@@ -78,32 +81,51 @@ public class LightMap {
 		xEnd = Util.clamp((int) Math.ceil(xEnd / scale), 0, getWidth());
 		yEnd = Util.clamp((int) Math.ceil(yEnd / scale), 0, getHeight());
 		double step = scale / light.getScale();
+
+		int xDist = xEnd - xStart;
+		int yDist = yEnd - yStart;
+		double jEnd = (jStart + yDist * step);
+		if (jEnd > light.height - 1) {
+			yEnd = (int) (((light.height - 1) - jStart) / step) + yStart;
+		}
+
+		double iEnd = (iStart + xDist * step);
+		if (iEnd > light.width - 1) {
+			xEnd = (int) (((light.width - 1) - iStart) / step) + xStart;
+		}
+
 		double j = jStart;
 		for (int y = yStart; y < yEnd; y++, j += step) {
-			if (j >= light.getHeight() - 1) {
-				continue;
-			}
 			double i = iStart;
 			for (int x = xStart; x < xEnd; x++, i += step) {
-				if (i >= light.getWidth() - 1) {
-					continue;
-				}
-				// if(step >= 1.0) {
-				lighting[x + y * getWidth()] += (float)(light.getLight((int) i, (int) j));
-				// } else {
-				// double light1 = light.getLight((int)i, (int)j);
-				// double light2 = light.getLight((int)i + 1, (int)j);
-				// double light3 = light.getLight((int)i, (int)j + 1);
-				// double light4 = light.getLight((int)i + 1, (int)j + 1);
-				//
-				// double amt1 = i - (int)i;
-				// double amt2 = j - (int)j;
-				//
-				// double lerpX1 = light1 * (1.0 - amt1) + light2 * amt1;
-				// double lerpX2 = light3 * (1.0 - amt1) + light4 * amt1;
-				// double lightAmt = lerpX1 * (1.0 - amt2) + lerpX2 * amt2;
-				// lighting[x + y * getWidth()] += (float)lightAmt;
-				// }
+//				if (step >= 1.0) {
+					int index = x + y * this.width;
+					int light1 = lighting[index] & 0xFF;
+					int light2 = light.lighting[(int) (i+0.5) + ((int) (j+0.5))
+							* light.width] & 0xFF;
+					lighting[index] = (byte) Util
+							.clamp(light1 + light2, 0, 255);
+//				} else {
+//					int iInt = (int) i;
+//					int jInt = (int) j;
+//
+//					int light1 = light.lighting[iInt + (jInt) * light.width] & 0xFF;
+//					int light2 = light.lighting[iInt + 1 + (jInt) * light.width] & 0xFF;
+//					int light3 = light.lighting[iInt + (jInt + 1) * light.width] & 0xFF;
+//					int light4 = light.lighting[iInt + 1 + (jInt + 1)
+//							* light.width] & 0xFF;
+//
+//					int amt1 = (int) ((i - iInt) * 255.0);
+//					int amt2 = (int) ((j - jInt) * 255.0);
+//
+//					int lerpX1 = (light1 * (255 - amt1) + light2 * amt1) >> 8;
+//					int lerpX2 = (light3 * (255 - amt1) + light4 * amt1) >> 8;
+//					int lightAmt = (lerpX1 * (255 - amt2) + lerpX2 * amt2) >> 8;
+//					
+//					int index = x + y * this.width;
+//					lighting[index] = (byte) Util
+//							.clamp(lighting[index] + lightAmt, 0, 255);
+//				}
 			}
 		}
 	}

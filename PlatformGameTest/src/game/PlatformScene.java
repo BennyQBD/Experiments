@@ -15,7 +15,6 @@ import engine.core.entity.Entity;
 import engine.input.IInput;
 import engine.input.InputListener;
 import engine.rendering.ARGBColor;
-import engine.rendering.IBitmap;
 import engine.rendering.IRenderContext;
 import engine.rendering.LightMap;
 import engine.rendering.SpriteSheet;

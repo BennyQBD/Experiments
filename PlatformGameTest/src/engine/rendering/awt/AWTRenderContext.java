@@ -1,7 +1,5 @@
 package engine.rendering.awt;
 
-import java.util.Arrays;
-
 import engine.rendering.ARGBColor;
 import engine.rendering.ArrayBitmap;
 import engine.rendering.IBitmap;
@@ -110,9 +108,9 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 		for (int j = jStart, y = offsetY; y < yEnd; j += jStep, y++) {
 			for (int i = iStart, x = offsetX; x < xEnd; i += iStep, x++) {
 				int color = image.getPixel(i, j);
-				// color = blendColors(color & colorMask, getPixel(x, y),
-				// transparency);
-				// setPixel(x, y, color);
+//				 color = blendColors(color & colorMask, getPixel(x, y),
+//				 transparency);
+//				 setPixel(x, y, color);
 				if (color < 0 && ditherPass(i, j, ditherTransparency)) {
 					setPixel(x, y, color & colorMask);
 				}
@@ -124,7 +122,6 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 		return (comp1 * amt1 + comp2 * amt2) >> 8;
 	}
 
-	@SuppressWarnings("unused")
 	private static int blendColors(int color1, int color2, double amt) {
 		int blendAmt1 = (int) (ARGBColor.getComponent(color1, 0) * amt + 0.5);
 		if (blendAmt1 == 0) {
@@ -159,10 +156,11 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 
 	@Override
 	public void applyLighting(double ambientLightAmt) {
+		double ambientLightScale = (1.0 - ambientLightAmt) / 255.0;
 		for (int j = 0; j < getHeight(); j++) {
 			for (int i = 0; i < getWidth(); i++) {
-				double lightAmt = Util.saturate(lightMap.getLight(i, j)
-						* (1.0 - ambientLightAmt) + ambientLightAmt);
+				double lightAmt = lightMap.getLight(i, j) * ambientLightScale
+						+ ambientLightAmt;
 				setPixel(i, j, blendColors(getPixel(i, j), 0x000000, lightAmt));
 			}
 		}
