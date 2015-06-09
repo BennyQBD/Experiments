@@ -26,8 +26,10 @@ public class SpriteComponent extends EntityComponent {
 		entity.fitAABB(spriteAABB);
 		spriteOffsetX = (int) spriteAABB.getMinX();
 		spriteOffsetY = (int) spriteAABB.getMinY();
-		spriteOffsetFlippedX = sheet.getSpriteWidth() - (int) spriteAABB.getMaxX();
-		spriteOffsetFlippedY = sheet.getSpriteHeight() - (int) spriteAABB.getMaxY();
+		spriteOffsetFlippedX = sheet.getSpriteWidth()
+				- (int) spriteAABB.getMaxX();
+		spriteOffsetFlippedY = sheet.getSpriteHeight()
+				- (int) spriteAABB.getMaxY();
 
 		this.transparency = 1.0;
 		this.flipX = false;
@@ -45,12 +47,12 @@ public class SpriteComponent extends EntityComponent {
 			if (flipY) {
 				spriteOffY = spriteOffsetFlippedY;
 			}
-			target.drawSprite(sheet, spriteIndex,
-					(int) Math.round(getEntity().getAABB().getMinX())
-							- viewportX - spriteOffX,
-					(int) Math.round(getEntity().getAABB().getMinY())
-							- viewportY - spriteOffY, transparency, flipX,
-					flipY, 0xFFFFFF);
+			int xStart = (int) Math.round(getEntity().getAABB().getMinX())
+					- viewportX - spriteOffX;
+			int yStart = (int) Math.round(getEntity().getAABB().getMinY())
+					- viewportY - spriteOffY;
+			target.drawSprite(sheet, spriteIndex, xStart, yStart, transparency,
+					flipX, flipY, 0xFFFFFF);
 		}
 	}
 

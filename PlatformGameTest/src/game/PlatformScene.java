@@ -17,6 +17,7 @@ import engine.input.InputListener;
 import engine.rendering.ARGBColor;
 import engine.rendering.IBitmap;
 import engine.rendering.IRenderContext;
+import engine.rendering.LightMap;
 import engine.rendering.SpriteSheet;
 import engine.space.Grid;
 import engine.space.ISpatialStructure;
@@ -55,10 +56,12 @@ public class PlatformScene extends Scene {
 	private MenuStack menu;
 	private boolean shouldExit;
 	private InputListener helpMenuKey;
+	private LightMap bigLightMapTest;
 
 	private void loadLevel(Config config, IInput input,
 			ISpatialStructure<Entity> structure, int points, int lives,
 			int lifeDeficit) throws IOException {
+		this.bigLightMapTest = new LightMap(2048, 2048, 2);
 		IBitmap level = bitmaps.get("./res/" + config.getString("level.data"));
 		int[] backgrounds = new int[5];
 
@@ -81,7 +84,7 @@ public class PlatformScene extends Scene {
 				int x = i * tileSize;
 				int y = j * tileSize;
 				addRandomBackgroundTile(structure, x, y, backgrounds,
-						tileSheet, 10);
+						tileSheet, 10, bigLightMapTest);
 				addEntity(config, input, structure, x, y, bitmaps, tileSheet,
 						color, points, lives, lifeDeficit);
 			}
@@ -130,14 +133,24 @@ public class PlatformScene extends Scene {
 		return ((int) (Math.random() * range)) % range + min;
 	}
 
+	private static LightMap lightMapTest = new LightMap(100);
+
 	private static void addRandomBackgroundTile(
 			ISpatialStructure<Entity> structure, int x, int y,
-			int[] backgrounds, SpriteSheet tileSheet, int randBackChance) {
+			int[] backgrounds, SpriteSheet tileSheet, int randBackChance, LightMap lightMap) {
 		if (getRand(0, randBackChance) != 0) {
 			add(structure, x, y, -1, false, tileSheet, backgrounds[0]);
 		} else {
-			add(structure, x, y, -1, false, tileSheet,
+			Entity e = add(structure, x, y, -1, false, tileSheet,
 					backgrounds[getRand(1, backgrounds.length - 1)]);
+			lightMap.addLight(lightMapTest, x - lightMapTest.getWidth()
+					/ 2 + (int)e.getAABB().getWidth() / 2,
+					y - lightMapTest.getHeight() / 2 + (int)e.getAABB().getHeight()
+							/ 2, 0, 0, lightMapTest.getWidth(),
+					lightMapTest.getHeight());
+			// new LightComponent(new Entity(structure, x +
+			// e.getAABB().getWidth()
+			// / 2, y + e.getAABB().getHeight() / 2, -1, false), lightMapTest);
 		}
 	}
 
@@ -414,10 +427,18 @@ public class PlatformScene extends Scene {
 				.getAABB().getHeight()) / 2);
 		double viewportX = player.getAABB().getMinX() - viewportOffsetX;
 		double viewportY = player.getAABB().getMinY() - viewportOffsetY;
+		int viewportXInt = (int) Math.round(viewportX);
+		int viewportYInt = (int) Math.round(viewportY);
 
 		switch (state) {
 		case RUNNING:
+			target.clearLighting();
 			renderScene(target, viewportX, viewportY);
+			// target.drawLight((int)Math.round(player.getAABB().getCenterX()-viewportX),
+			// (int)Math.round(player.getAABB().getCenterY()-viewportY), 200);
+			target.drawLight(bigLightMapTest, 0, 0, viewportXInt, viewportYInt,
+					target.getWidth(), target.getHeight());
+			target.applyLighting(16.0 / 256.0);
 			break;
 		case LOST_LIFE:
 			target.clear(0x000000);

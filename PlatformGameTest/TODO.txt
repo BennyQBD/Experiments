@@ -20,6 +20,7 @@
 + Help menu
 + Lives from getting a certain number of points
 + Multiple Save Files
++ 2D Lighting
 - Animation
 - Sound
 - Flying powerup?

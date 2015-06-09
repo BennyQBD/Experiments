@@ -6,6 +6,15 @@ public class Util {
 	public static double saturate(double val) {
 		return clamp(val, 0.0, 1.0);
 	}
+	
+	public static int clamp(int val, int min, int max) {
+		if(val < min) {
+			val = min;
+		} else if(val > max) {
+			val = max;
+		}
+		return val;
+	}
 
 	public static double clamp(double val, double min, double max) {
 		if(val < min) {

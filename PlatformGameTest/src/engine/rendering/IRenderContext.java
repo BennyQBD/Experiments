@@ -6,4 +6,11 @@ public interface IRenderContext extends IBitmap {
 
 	public int drawString(String msg, SpriteSheet font, int x, int y,
 			int color, int wrapX);
+
+	public void clearLighting();
+
+	public void drawLight(LightMap light, int x, int y, int mapStartX,
+			int mapStartY, int width, int height);
+
+	public void applyLighting(double ambientLightAmt);
 }

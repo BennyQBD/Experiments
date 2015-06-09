@@ -1,15 +1,22 @@
 package engine.rendering.awt;
 
+import java.util.Arrays;
+
 import engine.rendering.ARGBColor;
 import engine.rendering.ArrayBitmap;
 import engine.rendering.IBitmap;
 import engine.rendering.IRenderContext;
+import engine.rendering.LightMap;
 import engine.rendering.SpriteSheet;
 import engine.util.Util;
 
 public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
+	private LightMap lightMap;
+
 	public AWTRenderContext(int width, int height) {
 		super(width, height);
+		lightMap = new LightMap(width, height, 1);
+		lightMap.clear();
 	}
 
 	private static final int[] dither = new int[] { 1, 49, 13, 61, 4, 52, 16,
@@ -119,7 +126,7 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 
 	@SuppressWarnings("unused")
 	private static int blendColors(int color1, int color2, double amt) {
-		int blendAmt1 = (int) (ARGBColor.getComponent(color1, 0) * amt);
+		int blendAmt1 = (int) (ARGBColor.getComponent(color1, 0) * amt + 0.5);
 		if (blendAmt1 == 0) {
 			return color2;
 		} else if (blendAmt1 == 255) {
@@ -137,5 +144,27 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 						blendComponent(ARGBColor.getComponent(color1, 3),
 								ARGBColor.getComponent(color2, 3), blendAmt1,
 								blendAmt2));
+	}
+
+	@Override
+	public void clearLighting() {
+		lightMap.clear();
+	}
+
+	@Override
+	public void drawLight(LightMap light, int xIn, int yIn, int mapStartX,
+			int mapStartY, int width, int height) {
+		lightMap.addLight(light, xIn, yIn, mapStartX, mapStartY, width, height);
+	}
+
+	@Override
+	public void applyLighting(double ambientLightAmt) {
+		for (int j = 0; j < getHeight(); j++) {
+			for (int i = 0; i < getWidth(); i++) {
+				double lightAmt = Util.saturate(lightMap.getLight(i, j)
+						* (1.0 - ambientLightAmt) + ambientLightAmt);
+				setPixel(i, j, blendColors(getPixel(i, j), 0x000000, lightAmt));
+			}
+		}
 	}
 }
