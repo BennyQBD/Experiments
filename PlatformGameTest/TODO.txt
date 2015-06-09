@@ -21,6 +21,7 @@
 + Lives from getting a certain number of points
 + Multiple Save Files
 + 2D Lighting
++ Layers in Level
 - Animation
 - Sound
 - Flying powerup?

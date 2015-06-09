@@ -62,7 +62,8 @@ public class PlatformScene extends Scene {
 			ISpatialStructure<Entity> structure, int points, int lives,
 			int lifeDeficit) throws IOException {
 		this.bigLightMapTest = new LightMap(2048, 2048, 2);
-		IBitmap level = bitmaps.get("./res/" + config.getString("level.data"));
+		SpriteSheet level = new SpriteSheet(bitmaps.get("./res/"
+				+ config.getString("level.data")), 4, 2);
 		int[] backgrounds = new int[5];
 
 		SpriteSheet tileSheet = new SpriteSheet(
@@ -77,26 +78,31 @@ public class PlatformScene extends Scene {
 		backgrounds[3] = 46;
 		backgrounds[4] = 62;
 
+		LightMap backgroundLight = new LightMap(100);
 		int tileSize = 16;
-		for (int j = 0; j < level.getHeight(); j++) {
-			for (int i = 0; i < level.getWidth(); i++) {
-				int color = level.getPixel(i, j) & 0x00FFFFFF;
-				int x = i * tileSize;
-				int y = j * tileSize;
-				addRandomBackgroundTile(structure, x, y, backgrounds,
-						tileSheet, 10, bigLightMapTest);
-				addEntity(config, input, structure, x, y, bitmaps, tileSheet,
-						color, points, lives, lifeDeficit);
+		for (int j = 0; j < level.getSpriteHeight(); j++) {
+			for (int i = 0; i < level.getSpriteWidth(); i++) {
+				for (int k = 0; k < level.getNumSprites(); k++) {
+					int color = level.getPixel(i, j, k) & 0x00FFFFFF;
+					int x = i * tileSize;
+					int y = j * tileSize;
+					// addRandomBackgroundTile(structure, x, y, backgrounds,
+					// tileSheet, 10, bigLightMapTest);
+					addEntity(config, input, structure, x, y, k, bitmaps,
+							tileSheet, color, bigLightMapTest, backgroundLight,
+							points, lives, lifeDeficit);
+				}
 			}
 		}
 	}
 
 	private void addEntity(Config config, IInput input,
-			ISpatialStructure<Entity> structure, int x, int y,
+			ISpatialStructure<Entity> structure, int x, int y, int layer,
 			BitmapFactory bitmaps, SpriteSheet tileSheet, int color,
-			int points, int lives, int lifeDeficit) throws IOException {
+			LightMap staticLightMap, LightMap lightToAdd, int points,
+			int lives, int lifeDeficit) throws IOException {
 		if (color == 255) {
-			player = new Entity(structure, x, y, 1, true);
+			player = new Entity(structure, x, y, layer, true);
 			new SpriteComponent(player, new SpriteSheet(
 					bitmaps.get("./res/playertest.png"), 1), 0);
 			playerComponent = new PlayerComponent(player, points, 2, lives,
@@ -107,52 +113,58 @@ public class PlatformScene extends Scene {
 					new InputListener(input, new int[] { KeyEvent.VK_SPACE }),
 					new InputListener(input, new int[] { KeyEvent.VK_DOWN }));
 		} else if (color == 254) {
-			Entity entity = new Entity(structure, x, y, 2, false);
+			Entity entity = new Entity(structure, x, y, layer, false);
 			new CollectableComponent(entity, 10);
 			new SpriteComponent(entity, new SpriteSheet(
 					bitmaps.get("./res/diamond2.png"), 1), 0);
 		} else if (color == 253) {
-			Entity entity = new Entity(structure, x, y, 2, false);
+			Entity entity = new Entity(structure, x, y, layer, false);
 			new CollectableComponent(entity, 100);
 			new SpriteComponent(entity, new SpriteSheet(
 					bitmaps.get("./res/diamond.png"), 1), 0);
 		} else if (color == 250) {
-			Entity entity = new Entity(structure, x, y, 1, true);
+			Entity entity = new Entity(structure, x, y, layer, true);
 			new SpriteComponent(entity, new SpriteSheet(
 					bitmaps.get("./res/slime.png"), 1), 0);
 			new EnemyComponent(entity, 20);
 		} else if (color != 0) {
 			boolean blocking = (color & 0x8000) != 0;
-			double layer = 2.0;
-			add(structure, x, y, layer, blocking, tileSheet, color & 0xFF)
-					.setDitherable(true);
+			Entity e = add(structure, x, y, layer, blocking, tileSheet,
+					color & 0xFF);
+			e.setDitherable(true);
+			if (color == 14 || color == 30 || color == 46 || color == 62) {
+				staticLightMap.addLight(lightToAdd, x - lightToAdd.getWidth()
+						/ 2 + (int) e.getAABB().getWidth() / 2,
+						y - lightToAdd.getHeight() / 2
+								+ (int) e.getAABB().getHeight() / 2, 0, 0,
+						lightToAdd.getWidth(), lightToAdd.getHeight());
+			}
 		}
 	}
 
-	private static int getRand(int min, int range) {
-		return ((int) (Math.random() * range)) % range + min;
-	}
+	// private static int getRand(int min, int range) {
+	// return ((int) (Math.random() * range)) % range + min;
+	// }
 
-	private static LightMap lightMapTest = new LightMap(100);
-
-	private static void addRandomBackgroundTile(
-			ISpatialStructure<Entity> structure, int x, int y,
-			int[] backgrounds, SpriteSheet tileSheet, int randBackChance, LightMap lightMap) {
-		if (getRand(0, randBackChance) != 0) {
-			add(structure, x, y, -1, false, tileSheet, backgrounds[0]);
-		} else {
-			Entity e = add(structure, x, y, -1, false, tileSheet,
-					backgrounds[getRand(1, backgrounds.length - 1)]);
-			lightMap.addLight(lightMapTest, x - lightMapTest.getWidth()
-					/ 2 + (int)e.getAABB().getWidth() / 2,
-					y - lightMapTest.getHeight() / 2 + (int)e.getAABB().getHeight()
-							/ 2, 0, 0, lightMapTest.getWidth(),
-					lightMapTest.getHeight());
-			// new LightComponent(new Entity(structure, x +
-			// e.getAABB().getWidth()
-			// / 2, y + e.getAABB().getHeight() / 2, -1, false), lightMapTest);
-		}
-	}
+	// private static void addRandomBackgroundTile(
+	// ISpatialStructure<Entity> structure, int x, int y,
+	// int[] backgrounds, SpriteSheet tileSheet, int randBackChance, LightMap
+	// lightMap) {
+	// if (getRand(0, randBackChance) != 0) {
+	// add(structure, x, y, -1, false, tileSheet, backgrounds[0]);
+	// } else {
+	// Entity e = add(structure, x, y, -1, false, tileSheet,
+	// backgrounds[getRand(1, backgrounds.length - 1)]);
+	// lightMap.addLight(lightMapTest, x - lightMapTest.getWidth()
+	// / 2 + (int)e.getAABB().getWidth() / 2,
+	// y - lightMapTest.getHeight() / 2 + (int)e.getAABB().getHeight()
+	// / 2, 0, 0, lightMapTest.getWidth(),
+	// lightMapTest.getHeight());
+	// // new LightComponent(new Entity(structure, x +
+	// // e.getAABB().getWidth()
+	// // / 2, y + e.getAABB().getHeight() / 2, -1, false), lightMapTest);
+	// }
+	// }
 
 	private static String getStackTrace(Exception e) {
 		StringWriter sw = new StringWriter();
