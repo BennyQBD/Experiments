@@ -12,6 +12,7 @@ public class PlayerComponent extends EntityComponent {
 	}
 	
 	public static final String COMPONENT_NAME = "PlayerComponent";
+	private static final int POINTS_FOR_EXTRA_LIFE = 1000;
 	private static final int STATE_MOVING = 0;
 	private static final int STATE_IN_AIR = 1;
 	private InputListener leftKey;
@@ -26,6 +27,7 @@ public class PlayerComponent extends EntityComponent {
 	private int points;
 	private int health;
 	private int lives;
+	private int lifeDeficit;
 	private double invulnerabilityTimer;
 	private SpriteComponent spriteComponent;
 	private final double moveSpeed = 90.0;
@@ -48,7 +50,7 @@ public class PlayerComponent extends EntityComponent {
 		return spriteComponent;
 	}
 
-	public PlayerComponent(Entity entity, int points, int health, int lives,
+	public PlayerComponent(Entity entity, int points, int health, int lives, int lifeDeficit,
 			InputListener leftKey, InputListener rightKey,
 			InputListener runKey, InputListener jumpKey, InputListener slamKey) {
 		super(entity, COMPONENT_NAME);
@@ -64,6 +66,7 @@ public class PlayerComponent extends EntityComponent {
 		this.points = points;
 		this.health = health;
 		this.lives = lives;
+		this.lifeDeficit = lifeDeficit;
 		this.invulnerabilityTimer = invulnerabilityLength;
 		spriteComponent = null;
 
@@ -82,6 +85,10 @@ public class PlayerComponent extends EntityComponent {
 		}
 	}
 	
+	public int getLifeDeficit() {
+		return lifeDeficit;
+	}
+	
 	public int getPoints() {
 		return points;
 	}
@@ -95,7 +102,11 @@ public class PlayerComponent extends EntityComponent {
 	}
 	
 	public void addLives(int numLives) {
-		lives += numLives;
+		lifeDeficit += numLives;
+		if(lifeDeficit > 0) {
+			lives += lifeDeficit;
+			lifeDeficit = 0;
+		}
 	}
 	
 	@Override
@@ -247,7 +258,7 @@ public class PlayerComponent extends EntityComponent {
 						entity.remove();
 					}
 				});
-		points += (int) val.val;
+		addPoints((int) val.val);
 	}
 
 	private boolean tryHitEnemy() {
@@ -262,7 +273,7 @@ public class PlayerComponent extends EntityComponent {
 						}
 					}
 				});
-		points += (int) (result.val);
+		addPoints((int) (result.val));
 		boolean hitEnemy = result.val != 0.0;
 		if (hitEnemy) {
 			velY = -velY;
@@ -271,6 +282,17 @@ public class PlayerComponent extends EntityComponent {
 			}
 		}
 		return hitEnemy;
+	}
+
+	private void addPoints(int amt) {
+		int livesFromPointsBefore = points/POINTS_FOR_EXTRA_LIFE;
+		points += amt;
+		int extraLives = points/POINTS_FOR_EXTRA_LIFE - livesFromPointsBefore;
+		if(extraLives > 0) {
+			addLives(extraLives);
+		} else {
+			lifeDeficit += extraLives;
+		}
 	}
 
 	@SuppressWarnings("unused")

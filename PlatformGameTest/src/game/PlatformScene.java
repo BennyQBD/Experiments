@@ -54,7 +54,7 @@ public class PlatformScene extends Scene {
 	private InputListener helpMenuKey;
 
 	private void loadLevel(Config config, IInput input,
-			ISpatialStructure<Entity> structure, int points, int lives)
+			ISpatialStructure<Entity> structure, int points, int lives, int lifeDeficit)
 			throws IOException {
 		IBitmap level = bitmaps.get("./res/" + config.getString("level.data"));
 		int[] backgrounds = new int[5];
@@ -80,7 +80,7 @@ public class PlatformScene extends Scene {
 				addRandomBackgroundTile(structure, x, y, backgrounds,
 						tileSheet, 10);
 				addEntity(config, input, structure, x, y, bitmaps, tileSheet,
-						color, points, lives);
+						color, points, lives, lifeDeficit);
 			}
 		}
 	}
@@ -88,12 +88,12 @@ public class PlatformScene extends Scene {
 	private void addEntity(Config config, IInput input,
 			ISpatialStructure<Entity> structure, int x, int y,
 			BitmapFactory bitmaps, SpriteSheet tileSheet, int color,
-			int points, int lives) throws IOException {
+			int points, int lives, int lifeDeficit) throws IOException {
 		if (color == 255) {
 			player = new Entity(structure, x, y, 1, true);
 			new SpriteComponent(player, new SpriteSheet(
 					bitmaps.get("./res/playertest.png"), 1), 0);
-			playerComponent = new PlayerComponent(player, points, 2, lives,
+			playerComponent = new PlayerComponent(player, points, 2, lives, lifeDeficit,
 					new InputListener(input, new int[] { KeyEvent.VK_LEFT }),
 					new InputListener(input, new int[] { KeyEvent.VK_RIGHT }),
 					new InputListener(input, new int[] { KeyEvent.VK_SHIFT }),
@@ -144,7 +144,7 @@ public class PlatformScene extends Scene {
 	}
 
 	private void startNewGame() throws IOException {
-		startNewGame(0, DEFAULT_LIVES);
+		startNewGame(0, DEFAULT_LIVES, 0);
 	}
 
 	private Menu getDefaultMenu() {
@@ -206,9 +206,9 @@ public class PlatformScene extends Scene {
 		getStructure().clear();
 	}
 
-	private void startNewGame(int points, int lives) throws IOException {
+	private void startNewGame(int points, int lives, int lifeDeficit) throws IOException {
 		initVariables();
-		loadLevel(config, input, getStructure(), points, lives);
+		loadLevel(config, input, getStructure(), points, lives, lifeDeficit);
 		initMenu();
 	}
 
@@ -239,12 +239,17 @@ public class PlatformScene extends Scene {
 		Map<String, String> saveData = new HashMap<String, String>();
 		saveData.put("points", playerComponent.getPoints() + "");
 		saveData.put("lives", playerComponent.getLives() + "");
+		saveData.put("lifeDeficit", playerComponent.getLifeDeficit() + "");
 		Config.write("./res/save.cfg", saveData);
 	}
 
 	private void loadGame() throws IOException, ParseException {
 		Config saveFile = new Config("./res/save.cfg");
-		startNewGame(saveFile.getInt("points"), saveFile.getInt("lives"));
+		int lifeDeficit = 0;
+		if(saveFile.getString("lifeDeficit") != null) {
+			lifeDeficit = saveFile.getInt("lifeDeficit");
+		}
+		startNewGame(saveFile.getInt("points"), saveFile.getInt("lives"), lifeDeficit);
 	}
 
 	private static void addHelpMenu(MenuStack stack) {
@@ -274,11 +279,13 @@ public class PlatformScene extends Scene {
 			getStructure().clear();
 			int lives = playerComponent.getLives() - 1;
 			int points = playerComponent.getPoints();
+			int lifeDeficit = playerComponent.getLifeDeficit();
 			if (lives <= 0) {
 				points = 0;
+				lifeDeficit = 0;
 			}
 			try {
-				loadLevel(config, input, getStructure(), points, lives);
+				loadLevel(config, input, getStructure(), points, lives, lifeDeficit);
 			} catch (IOException e) {
 				enterErrorState(e);
 				return shouldExit;

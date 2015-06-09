@@ -18,10 +18,10 @@
 + Text rendering utilities
 + Menu
 + Help menu
++ Lives from getting a certain number of points
 - Animation
 - Sound
 - Flying powerup?
-- Lives from getting a certain number of points
 - Environmental hazards (spikes, lava, lasers, etc.)
 - Locked areas
 - Items to unlock locked areas
