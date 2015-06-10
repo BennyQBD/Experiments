@@ -82,7 +82,7 @@ public class OpenGLRenderContext implements IRenderContext {
 		ByteBuffer buffer = BufferUtils.createByteBuffer(image.getHeight()
 				* image.getWidth() * 4);
 
-		int[] pixels = image.getPixels(null, 0, 0, image.getWidth(), image.getHeight());
+		int[] pixels = image.getPixels(null);
 		for (int i = 0; i < pixels.length; i++) {
 			int pixel = pixels[i];
 			buffer.put((byte) ((pixel >> 16) & 0xFF));

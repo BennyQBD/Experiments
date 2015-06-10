@@ -59,18 +59,18 @@ public class ArrayBitmap implements IBitmap {
 	}
 
 	@Override
+	public int[] getPixels(int[] dest) {
+		return getPixels(dest, 0, 0, width, height);
+	}
+	
+	@Override
 	public int[] getPixels(int[] dest, int x, int y, int width, int height) {
 		if (dest == null || dest.length < width*height) {
 			dest = new int[width*height];
 		}
-		int xIn = x;
-		int yIn = y;
-
-		y = yIn;
-		for(int j = 0; j < height; j++, y++) {
-			x = xIn;
-			for(int i = 0; i < width; i++, x++) {
-				dest[i + j * width] = colors[x + this.width * y];
+		for(int j = 0, srcY = y; j < height; j++, srcY++) {
+			for(int i = 0, srcX = x; i < width; i++, srcX++) {
+				dest[i + j * width] = colors[srcX + srcY * this.width];
 			}
 		}
 		return dest;
@@ -91,7 +91,7 @@ public class ArrayBitmap implements IBitmap {
 				BufferedImage.TYPE_INT_ARGB);
 		int[] displayComponents = ((DataBufferInt) output.getRaster()
 				.getDataBuffer()).getData();
-		getPixels(displayComponents, 0, 0, width, height);
+		getPixels(displayComponents);
 
 		ImageIO.write(output, filetype, file);
 	}

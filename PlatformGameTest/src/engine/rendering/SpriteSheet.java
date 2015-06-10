@@ -4,11 +4,12 @@ import engine.space.AABB;
 import engine.util.Util;
 
 public class SpriteSheet {
-	private IBitmap sheet;
-	private int spritesPerX;
-	private int spritesPerY;
-	private int spriteWidth;
-	private int spriteHeight;
+	private final IBitmap sheet;
+	private final int spritesPerX;
+	private final int spritesPerY;
+	private final int spriteWidth;
+	private final int spriteHeight;
+	private final AABB[] spriteAABBs;
 
 	public SpriteSheet(IBitmap spriteSheet, int spritesPerAxis) {
 		this(spriteSheet, spritesPerAxis, spritesPerAxis);
@@ -20,6 +21,11 @@ public class SpriteSheet {
 		this.spritesPerY = spritesPerY;
 		this.spriteWidth = spriteSheet.getWidth() / spritesPerX;
 		this.spriteHeight = spriteSheet.getHeight() / spritesPerY;
+		spriteAABBs = new AABB[getNumSprites()];
+		int[] pixels = sheet.getPixels(null);
+		for (int i = 0; i < getNumSprites(); i++) {
+			spriteAABBs[i] = generateAABB(i, pixels);
+		}
 	}
 
 	public int getSpriteWidth() {
@@ -35,79 +41,81 @@ public class SpriteSheet {
 	}
 
 	public int getNumSprites() {
-		return spritesPerX * spritesPerY - 1;
+		return spritesPerX * spritesPerY;
 	}
 
-	public int[] getPixels(int[] dest, int x, int y, int width, int height,
-			int spriteIndex) {
-		return sheet.getPixels(dest, getStartX(spriteIndex) + x,
-				getStartY(spriteIndex) + y, width, height);
-		// return sheet.getPixel(getStartX(spriteIndex) + x,
-		// getStartY(spriteIndex) + y);
+	public int getPixelIndex(int spriteIndex, int x, int y) {
+		return (getStartX(spriteIndex) + x + (getStartY(spriteIndex) + y)
+				* sheet.getWidth());
 	}
 
 	public int getStartX(int index) {
-		Util.boundsCheck(index, 0, getNumSprites());
+		Util.boundsCheck(index, 0, getNumSprites() - 1);
 		return (index % spritesPerX) * spriteWidth;
 	}
 
 	public int getStartY(int index) {
-		Util.boundsCheck(index, 0, getNumSprites());
+		Util.boundsCheck(index, 0, getNumSprites() - 1);
 		return ((index / spritesPerX) % spritesPerY) * spriteHeight;
 	}
 
-	private boolean rowHasOpaque(int y, int[] pixels) {
-		for (int x = 0; x < spriteWidth; x++) {
-			if (pixels[x + y * spriteWidth] < 0) {
+	private boolean rowHasOpaque(int y, int imgStartX, int imgEndX, int[] pixels) {
+		for (int x = imgStartX; x < imgEndX; x++) {
+			if (pixels[x + y * sheet.getWidth()] < 0) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-	private boolean columnHasOpaque(int x, int[] pixels) {
-		for (int y = 0; y < spriteHeight; y++) {
-			if (pixels[x + y * spriteWidth] < 0) {
+	private boolean columnHasOpaque(int x, int imgStartY, int imgEndY,
+			int[] pixels) {
+		for (int y = imgStartY; y < imgEndY; y++) {
+			if (pixels[x + y * sheet.getWidth()] < 0) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-	public AABB getAABB(int index) {
+	private AABB generateAABB(int index, int[] pixels) {
 		int imgStartX = getStartX(index);
 		int imgStartY = getStartY(index);
+		int imgEndX = imgStartX + spriteWidth;
+		int imgEndY = imgStartY + spriteHeight;
 
 		int minY = 0;
 		int maxY = 0;
 		int minX = 0;
 		int maxX = 0;
-		int[] pixels = sheet.getPixels(null, imgStartX, imgStartY, spriteWidth,
-				spriteHeight);
-		for (int j = 0; j < spriteHeight; j++) {
-			if (rowHasOpaque(j, pixels)) {
-				minY = j;
+		for (int j = imgStartY; j < imgEndY; j++) {
+			if (rowHasOpaque(j, imgStartX, imgEndX, pixels)) {
+				minY = j - imgStartY;
 				break;
 			}
 		}
-		for (int j = spriteHeight - 1; j >= 0; j--) {
-			if (rowHasOpaque(j, pixels)) {
-				maxY = j + 1;
+		for (int j = imgEndY - 1; j >= imgStartY; j--) {
+			if (rowHasOpaque(j, imgStartX, imgEndX, pixels)) {
+				maxY = j + 1 - imgStartY;
 				break;
 			}
 		}
-		for (int i = 0; i < spriteWidth; i++) {
-			if (columnHasOpaque(i, pixels)) {
-				minX = i;
+		for (int i = imgStartX; i < imgEndX; i++) {
+			if (columnHasOpaque(i, imgStartY, imgEndY, pixels)) {
+				minX = i - imgStartX;
 				break;
 			}
 		}
-		for (int i = spriteWidth - 1; i >= 0; i--) {
-			if (columnHasOpaque(i, pixels)) {
-				maxX = i + 1;
+		for (int i = imgEndX - 1; i >= imgStartX; i--) {
+			if (columnHasOpaque(i, imgStartY, imgEndY, pixels)) {
+				maxX = i + 1 - imgStartX;
 				break;
 			}
 		}
 		return new AABB(minX, minY, maxX, maxY);
+	}
+
+	public AABB getAABB(int index) {
+		return spriteAABBs[index];
 	}
 }

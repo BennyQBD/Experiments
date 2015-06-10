@@ -3,6 +3,7 @@ package engine.rendering.opengl;
 import static org.lwjgl.opengl.GL11.*;
 
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -86,20 +87,6 @@ public class OpenGLBitmap implements IBitmap {
 		return height;
 	}
 
-	// @Override
-	// public int getPixel(int x, int y) {
-	// ByteBuffer buffer = BufferUtils.createByteBuffer(4);
-	// glBindTexture(GL_TEXTURE_2D, id);
-	// glReadPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
-	//
-	// int r = buffer.get() & 0xFF;
-	// int g = buffer.get() & 0xFF;
-	// int b = buffer.get() & 0xFF;
-	// int a = buffer.get() & 0xFF;
-	// return ARGBColor.makeColor(a, r, g, b);
-	// // return 0;
-	// }
-
 	@Override
 	public void clear(int color) {
 		ByteBuffer buffer = BufferUtils.createByteBuffer(height * width * 4);
@@ -117,59 +104,55 @@ public class OpenGLBitmap implements IBitmap {
 		setTex(buffer);
 	}
 
-	// @Override
-	// public void setPixel(int x, int y, int color) {
-	// // TODO Auto-generated method stub
-	//
-	// }
-
 	@Override
-	public int[] getPixels(int[] dest, int x, int y, int width, int height) {
+	public int[] getPixels(int[] dest) {
 		if (dest == null || dest.length < width * height) {
 			dest = new int[width * height];
 		}
 
 		ByteBuffer buffer = BufferUtils.createByteBuffer(width * height * 4);
 		glBindTexture(GL_TEXTURE_2D, id);
-		glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+		glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 
-		for (x = 0; x < width; x++) {
-			for (y = 0; y < height; y++) {
-				int i = (x + (width * y)) * 4;
-				int r = buffer.get(i) & 0xFF;
-				int g = buffer.get(i + 1) & 0xFF;
-				int b = buffer.get(i + 2) & 0xFF;
-				int a = buffer.get(i + 3) & 0xFF;
-				dest[x + (height - (y + 1)) * width] = ARGBColor.makeColor(a,
-						r, g, b);
-			}
+		for (int i = 0; i < width * height; i++) {
+			int r = buffer.get() & 0xFF;
+			int g = buffer.get() & 0xFF;
+			int b = buffer.get() & 0xFF;
+			int a = buffer.get() & 0xFF;
+			dest[i] = ARGBColor.makeColor(a, r, g, b);
 		}
-		
-		
-		// int xEnd = x + width;
-		// int yEnd = y + height;
-		// for(int j = 0; j < height; j++) {
-		// for(int i = 0; i < width; i++) {
-		// int r = buffer.get() & 0xFF;
-		// int g = buffer.get() & 0xFF;
-		// int b = buffer.get() & 0xFF;
-		// int a = buffer.get() & 0xFF;
-		// dest[i + (height - j - 1) * width] = ARGBColor.makeColor(a, r, g, b);
-		// }
-		// }
 
 		return dest;
 	}
-
+	
+	@Override 
+	public int[] getPixels(int[] dest, int x, int y, int width, int height) {
+		if (dest == null || dest.length < width * height) {
+			dest = new int[width * height];
+		}
+		int[] pixels = getPixels(null);
+		for(int j = 0, srcY = 0; j < height; j++, srcY++) {
+			for(int i = 0, srcX = 0; i < width; i++, srcX++) {
+				dest[i + j * width] = pixels[srcX + srcY * this.width];
+			}
+		}
+		return dest;
+	}
+	
 	@Override
 	public void save(String filetype, File file) throws IOException {
-		// TODO Auto-generated method stub
+		BufferedImage output = new BufferedImage(width, height,
+				BufferedImage.TYPE_INT_ARGB);
+		int[] displayComponents = ((DataBufferInt) output.getRaster()
+				.getDataBuffer()).getData();
+		getPixels(displayComponents);
 
+		ImageIO.write(output, filetype, file);
 	}
 
 	@Override
 	public void setPixels(int[] colors, int x, int y, int width, int height) {
 		// TODO Auto-generated method stub
-		
+
 	}
 }

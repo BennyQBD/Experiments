@@ -146,7 +146,7 @@ public class AWTDisplay extends Canvas implements IDisplay {
 	// }
 
 	public void swapBuffers() {
-		frameBuffer.getPixels(displayComponents, 0, 0, frameBuffer.getWidth(), frameBuffer.getHeight());
+		frameBuffer.getPixels(displayComponents);
 		// initDitheredComponents();
 		// dither();
 		graphics.drawImage(displayImage, 0, 0, scaledWidth, scaledHeight, null);

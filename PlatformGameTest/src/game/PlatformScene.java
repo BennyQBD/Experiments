@@ -80,12 +80,11 @@ public class PlatformScene extends Scene {
 
 		LightMap backgroundLight = new LightMap(100);
 		int tileSize = 16;
+		int[] pixels = level.getSheet().getPixels(null);
 		for (int k = 0; k < level.getNumSprites(); k++) {
-			int[] pixels = level.getPixels(null, 0, 0, level.getSpriteWidth(),
-					level.getSpriteHeight(), k);
 			for (int j = 0; j < level.getSpriteHeight(); j++) {
 				for (int i = 0; i < level.getSpriteWidth(); i++) {
-					int color = pixels[i + j * level.getSpriteWidth()] & 0x00FFFFFF;
+					int color = pixels[level.getPixelIndex(k, i, j)] & 0x00FFFFFF;
 					int x = i * tileSize;
 					int y = j * tileSize;
 					// addRandomBackgroundTile(structure, x, y, backgrounds,
@@ -281,11 +280,11 @@ public class PlatformScene extends Scene {
 		initMenu();
 	}
 
-	public PlatformScene(Config config, IInput input) throws IOException {
+	public PlatformScene(Config config, IInput input, int suggestedBitmapType) throws IOException {
 		super(new Grid<Entity>(16, 256, 256));
 		this.input = input;
 		this.config = config;
-		this.bitmaps = new BitmapFactory();
+		this.bitmaps = new BitmapFactory(suggestedBitmapType);
 		this.helpMenuKey = new InputListener(input, new int[] { IInput.KEY_F1 });
 		startNewGame();
 	}
@@ -399,7 +398,7 @@ public class PlatformScene extends Scene {
 		}
 		int width = target.getWidth();
 		int height = target.getHeight();
-		int[] result = new int[width*height];
+		int[] result = new int[width * height];
 		for (int j = 0; j < height; j++) {
 			int adjustedJ = Util.floorMod(j + (y / parallax), height);
 			double jFract = ((double) (adjustedJ) / (double) (height - 1));
