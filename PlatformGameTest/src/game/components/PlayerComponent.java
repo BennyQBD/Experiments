@@ -123,8 +123,6 @@ public class PlayerComponent extends EntityComponent {
 			throw new AssertionError("State " + state
 					+ " is an invalid enemy state");
 		}
-		
-		// revealLocalHiddenAreas(64.0);
 	}
 	
 	private boolean commonUpdate(double delta) {
@@ -293,36 +291,5 @@ public class PlayerComponent extends EntityComponent {
 		} else {
 			lifeDeficit += extraLives;
 		}
-	}
-
-	@SuppressWarnings("unused")
-	private void revealLocalHiddenAreas(final double range) {
-		if(range == 0.0) {
-			return;
-		}
-		getEntity().visitInRange(SpriteComponent.COMPONENT_NAME,
-				getEntity().getAABB().expand(range, range, 0),
-				new IEntityVisitor() {
-					@Override
-					public void visit(Entity entity, EntityComponent component) {
-						double distX = getEntity().getAABB().getCenterX()
-								- entity.getAABB().getCenterX();
-						double distY = getEntity().getAABB().getCenterY()
-								- entity.getAABB().getCenterY();
-						double dist = Math.sqrt(distX * distX + distY * distY)
-								/ range;
-
-						if (entity != getEntity() && !entity.getBlocking()
-								&& entity.getDitherable()) {
-							if (dist <= 1.0) {
-								((SpriteComponent) component)
-										.setTransparency(dist * dist);
-							} else {
-								((SpriteComponent) component)
-										.setTransparency(1);
-							}
-						}
-					}
-				});
 	}
 }

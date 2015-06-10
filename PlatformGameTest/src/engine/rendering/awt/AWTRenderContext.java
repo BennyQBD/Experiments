@@ -16,21 +16,7 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 		lightMap = new LightMap(width, height, 1);
 		lightMap.clear();
 	}
-
-	private static final int[] dither = new int[] { 1, 49, 13, 61, 4, 52, 16,
-			64, 33, 17, 45, 29, 36, 20, 48, 32, 9, 57, 5, 53, 12, 60, 8, 56,
-			41, 25, 37, 21, 44, 28, 40, 24, 3, 51, 15, 63, 2, 50, 14, 62, 35,
-			19, 47, 31, 34, 18, 46, 30, 11, 59, 7, 55, 10, 58, 6, 54, 43, 27,
-			39, 23, 42, 26, 38, 22, };
-
-	private static boolean ditherPass(int i, int j, int ditherAmt) {
-		return dither[(i & 7) + (j & 7) * 8] <= ditherAmt;
-	}
-
-	private static int getDitherAmt(double ditherFactor) {
-		return (int) (Util.saturate(ditherFactor) * 64.0 + 0.5);
-	}
-
+	
 	public int drawString(String str, SpriteSheet font, int x, int y,
 			int color, int wrapX) {
 		int maxLength = (wrapX - x) / font.getSpriteWidth();
@@ -104,15 +90,18 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 			xEnd = getWidth();
 		}
 
-		int ditherTransparency = getDitherAmt(transparency);
 		for (int j = jStart, y = offsetY; y < yEnd; j += jStep, y++) {
 			for (int i = iStart, x = offsetX; x < xEnd; i += iStep, x++) {
-				int color = image.getPixel(i, j);
-//				 color = blendColors(color & colorMask, getPixel(x, y),
-//				 transparency);
-//				 setPixel(x, y, color);
-				if (color < 0 && ditherPass(i, j, ditherTransparency)) {
-					setPixel(x, y, color & colorMask);
+				int color1 = image.getPixel(i, j) & colorMask;
+				int color2 = getPixel(x, y);
+				int blendAmt = (int) (ARGBColor.getComponent(color1, 0)
+						* transparency + 0.5);
+				if (blendAmt == 0) {
+					setPixel(x, y, color2);
+				} else if (blendAmt == 255) {
+					setPixel(x, y, color1);
+				} else {
+					setPixel(x, y, blendColors(color1, color2, blendAmt));
 				}
 			}
 		}
@@ -122,13 +111,8 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 		return (comp1 * amt1 + comp2 * amt2) >> 8;
 	}
 
-	private static int blendColors(int color1, int color2, double amt) {
-		int blendAmt1 = (int) (ARGBColor.getComponent(color1, 0) * amt + 0.5);
-		if (blendAmt1 == 0) {
-			return color2;
-		} else if (blendAmt1 == 255) {
-			return color1;
-		}
+	private static int blendColors(int color1, int color2, int blendAmt) {
+		int blendAmt1 = blendAmt;
 		int blendAmt2 = 255 - blendAmt1;
 		return ARGBColor
 				.makeColor(
@@ -156,12 +140,14 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 
 	@Override
 	public void applyLighting(double ambientLightAmt) {
-		double ambientLightScale = (1.0 - ambientLightAmt) / 255.0;
+		double ambientLightScale = (1.0 - ambientLightAmt);
+		ambientLightAmt = ambientLightAmt * 255.0 + 0.5;
 		for (int j = 0; j < getHeight(); j++) {
 			for (int i = 0; i < getWidth(); i++) {
 				double lightAmt = lightMap.getLight(i, j) * ambientLightScale
 						+ ambientLightAmt;
-				setPixel(i, j, blendColors(getPixel(i, j), 0x000000, lightAmt));
+				setPixel(i, j,
+						blendColors(getPixel(i, j), 0x000000, (int) (lightAmt)));
 			}
 		}
 	}
