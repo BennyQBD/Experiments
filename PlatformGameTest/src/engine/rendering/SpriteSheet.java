@@ -33,14 +33,17 @@ public class SpriteSheet {
 	public IBitmap getSheet() {
 		return sheet;
 	}
-	
+
 	public int getNumSprites() {
 		return spritesPerX * spritesPerY - 1;
 	}
-	
-	public int getPixel(int x, int y, int spriteIndex) {
-		return sheet.getPixel(getStartX(spriteIndex) + x,
-				getStartY(spriteIndex) + y);
+
+	public int[] getPixels(int[] dest, int x, int y, int width, int height,
+			int spriteIndex) {
+		return sheet.getPixels(dest, getStartX(spriteIndex) + x,
+				getStartY(spriteIndex) + y, width, height);
+		// return sheet.getPixel(getStartX(spriteIndex) + x,
+		// getStartY(spriteIndex) + y);
 	}
 
 	public int getStartX(int index) {
@@ -53,22 +56,18 @@ public class SpriteSheet {
 		return ((index / spritesPerX) % spritesPerY) * spriteHeight;
 	}
 
-	private boolean pixelIsOpaque(int x, int y) {
-		return sheet.getPixel(x, y) < 0;
-	}
-
-	private boolean rowHasOpaque(int y, int imgStartX, int imgEndX) {
-		for (int x = imgStartX; x < imgEndX; x++) {
-			if (pixelIsOpaque(x, y)) {
+	private boolean rowHasOpaque(int y, int[] pixels) {
+		for (int x = 0; x < spriteWidth; x++) {
+			if (pixels[x + y * spriteWidth] < 0) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-	private boolean columnHasOpaque(int x, int imgStartY, int imgEndY) {
-		for (int y = imgStartY; y < imgEndY; y++) {
-			if (pixelIsOpaque(x, y)) {
+	private boolean columnHasOpaque(int x, int[] pixels) {
+		for (int y = 0; y < spriteHeight; y++) {
+			if (pixels[x + y * spriteWidth] < 0) {
 				return true;
 			}
 		}
@@ -78,34 +77,34 @@ public class SpriteSheet {
 	public AABB getAABB(int index) {
 		int imgStartX = getStartX(index);
 		int imgStartY = getStartY(index);
-		int imgEndX = imgStartX + spriteWidth;
-		int imgEndY = imgStartY + spriteHeight;
 
 		int minY = 0;
 		int maxY = 0;
 		int minX = 0;
 		int maxX = 0;
-		for (int j = imgStartY; j < imgEndY; j++) {
-			if (rowHasOpaque(j, imgStartX, imgEndX)) {
-				minY = j - imgStartY;
+		int[] pixels = sheet.getPixels(null, imgStartX, imgStartY, spriteWidth,
+				spriteHeight);
+		for (int j = 0; j < spriteHeight; j++) {
+			if (rowHasOpaque(j, pixels)) {
+				minY = j;
 				break;
 			}
 		}
-		for (int j = imgEndY - 1; j >= imgStartY; j--) {
-			if (rowHasOpaque(j, imgStartX, imgEndX)) {
-				maxY = j + 1 - imgStartY;
+		for (int j = spriteHeight - 1; j >= 0; j--) {
+			if (rowHasOpaque(j, pixels)) {
+				maxY = j + 1;
 				break;
 			}
 		}
-		for (int i = imgStartX; i < imgEndX; i++) {
-			if (columnHasOpaque(i, imgStartY, imgEndY)) {
-				minX = i - imgStartX;
+		for (int i = 0; i < spriteWidth; i++) {
+			if (columnHasOpaque(i, pixels)) {
+				minX = i;
 				break;
 			}
 		}
-		for (int i = imgEndX - 1; i >= imgStartX; i--) {
-			if (columnHasOpaque(i, imgStartY, imgEndY)) {
-				maxX = i + 1 - imgStartX;
+		for (int i = spriteWidth - 1; i >= 0; i--) {
+			if (columnHasOpaque(i, pixels)) {
+				maxX = i + 1;
 				break;
 			}
 		}

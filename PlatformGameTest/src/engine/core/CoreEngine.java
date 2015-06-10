@@ -5,7 +5,7 @@ import engine.util.Debug;
 
 public class CoreEngine {
 	private final IDisplay display;
-	private final double   frameTime;
+	private final double frameTime;
 	private final Scene scene;
 
 	public CoreEngine(IDisplay display, Scene scene, double frameRate) {

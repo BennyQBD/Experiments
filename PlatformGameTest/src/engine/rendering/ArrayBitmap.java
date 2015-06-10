@@ -22,8 +22,12 @@ public class ArrayBitmap implements IBitmap {
 	public int getHeight() {
 		return height;
 	}
-
+	
 	@Override
+	public int getHardwareAccelerationID() {
+		return -1;
+	}
+
 	public int getPixel(int i, int j) {
 		return colors[getIndex(i, j)];
 	}
@@ -46,28 +50,39 @@ public class ArrayBitmap implements IBitmap {
 	}
 
 	@Override
-	public IBitmap clear(int color) {
+	public void clear(int color) {
 		Arrays.fill(colors, color);
-		return this;
 	}
 
-	@Override
-	public IBitmap setPixel(int x, int y, int color) {
+	public void setPixel(int x, int y, int color) {
 		colors[getIndex(x, y)] = color;
-		return this;
 	}
 
 	@Override
-	public int[] copyToIntArray(int[] dest) {
-		if (dest.length < getNumPixels()) {
-			throw new IllegalArgumentException(
-					"Result array is not large enough to store all pixels");
+	public int[] getPixels(int[] dest, int x, int y, int width, int height) {
+		if (dest == null || dest.length < width*height) {
+			dest = new int[width*height];
 		}
+		int xIn = x;
+		int yIn = y;
 
-		for (int i = 0; i < getNumPixels(); i++) {
-			dest[i] = colors[i];
+		y = yIn;
+		for(int j = 0; j < height; j++, y++) {
+			x = xIn;
+			for(int i = 0; i < width; i++, x++) {
+				dest[i + j * width] = colors[x + this.width * y];
+			}
 		}
 		return dest;
+	}
+	
+	@Override
+	public void setPixels(int[] colors, int x, int y, int width, int height) {
+		for(int j = y, b = 0; j < y + height; j++, b++) {
+			for(int i = x, a = 0; i < x + width; i++, a++) {
+				this.colors[i + j * this.width] = colors[a + b * width];
+			}
+		}
 	}
 
 	@Override
@@ -76,7 +91,7 @@ public class ArrayBitmap implements IBitmap {
 				BufferedImage.TYPE_INT_ARGB);
 		int[] displayComponents = ((DataBufferInt) output.getRaster()
 				.getDataBuffer()).getData();
-		copyToIntArray(displayComponents);
+		getPixels(displayComponents, 0, 0, width, height);
 
 		ImageIO.write(output, filetype, file);
 	}

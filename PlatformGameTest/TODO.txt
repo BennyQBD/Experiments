@@ -29,6 +29,7 @@
 - Locked areas
 - Items to unlock locked areas
 - Secret locked areas
+- Optional OpenGL renderer
 
 - Weapons?
 

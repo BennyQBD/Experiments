@@ -1,6 +1,5 @@
 package game;
 
-import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -15,6 +14,8 @@ import engine.core.entity.Entity;
 import engine.input.IInput;
 import engine.input.InputListener;
 import engine.rendering.ARGBColor;
+import engine.rendering.ArrayBitmap;
+import engine.rendering.IBitmap;
 import engine.rendering.IRenderContext;
 import engine.rendering.LightMap;
 import engine.rendering.SpriteSheet;
@@ -79,10 +80,12 @@ public class PlatformScene extends Scene {
 
 		LightMap backgroundLight = new LightMap(100);
 		int tileSize = 16;
-		for (int j = 0; j < level.getSpriteHeight(); j++) {
-			for (int i = 0; i < level.getSpriteWidth(); i++) {
-				for (int k = 0; k < level.getNumSprites(); k++) {
-					int color = level.getPixel(i, j, k) & 0x00FFFFFF;
+		for (int k = 0; k < level.getNumSprites(); k++) {
+			int[] pixels = level.getPixels(null, 0, 0, level.getSpriteWidth(),
+					level.getSpriteHeight(), k);
+			for (int j = 0; j < level.getSpriteHeight(); j++) {
+				for (int i = 0; i < level.getSpriteWidth(); i++) {
+					int color = pixels[i + j * level.getSpriteWidth()] & 0x00FFFFFF;
 					int x = i * tileSize;
 					int y = j * tileSize;
 					// addRandomBackgroundTile(structure, x, y, backgrounds,
@@ -90,6 +93,7 @@ public class PlatformScene extends Scene {
 					addEntity(config, input, structure, x, y, k, bitmaps,
 							tileSheet, color, bigLightMapTest, backgroundLight,
 							points, lives, lifeDeficit);
+
 				}
 			}
 		}
@@ -106,11 +110,12 @@ public class PlatformScene extends Scene {
 					bitmaps.get("./res/playertest.png"), 1), 0);
 			playerComponent = new PlayerComponent(player, points, 2, lives,
 					lifeDeficit, new InputListener(input,
-							new int[] { KeyEvent.VK_LEFT }), new InputListener(
-							input, new int[] { KeyEvent.VK_RIGHT }),
-					new InputListener(input, new int[] { KeyEvent.VK_SHIFT }),
-					new InputListener(input, new int[] { KeyEvent.VK_SPACE }),
-					new InputListener(input, new int[] { KeyEvent.VK_DOWN }));
+							new int[] { IInput.KEY_LEFT }), new InputListener(
+							input, new int[] { IInput.KEY_RIGHT }),
+					new InputListener(input, new int[] { IInput.KEY_LSHIFT,
+							IInput.KEY_RSHIFT }), new InputListener(input,
+							new int[] { IInput.KEY_SPACE }), new InputListener(
+							input, new int[] { IInput.KEY_DOWN }));
 		} else if (color == 254) {
 			Entity entity = new Entity(structure, x, y, layer, false);
 			new CollectableComponent(entity, 10);
@@ -255,11 +260,11 @@ public class PlatformScene extends Scene {
 
 	private void initMenu() {
 		this.menu = new MenuStack(font, 0xFFFFFF, 0xFF88FF, 20, 20,
-				new InputListener(input, new int[] { KeyEvent.VK_UP }),
-				new InputListener(input, new int[] { KeyEvent.VK_DOWN }),
-				new InputListener(input, new int[] { KeyEvent.VK_ENTER }),
-				new InputListener(input, new int[] { KeyEvent.VK_ESCAPE }),
-				0.1, getDefaultMenu());
+				new InputListener(input, new int[] { IInput.KEY_UP }),
+				new InputListener(input, new int[] { IInput.KEY_DOWN }),
+				new InputListener(input, new int[] { IInput.KEY_RETURN }),
+				new InputListener(input, new int[] { IInput.KEY_ESCAPE }), 0.1,
+				getDefaultMenu());
 	}
 
 	private void initVariables() {
@@ -281,8 +286,7 @@ public class PlatformScene extends Scene {
 		this.input = input;
 		this.config = config;
 		this.bitmaps = new BitmapFactory();
-		this.helpMenuKey = new InputListener(input,
-				new int[] { KeyEvent.VK_F1 });
+		this.helpMenuKey = new InputListener(input, new int[] { IInput.KEY_F1 });
 		startNewGame();
 	}
 
@@ -383,10 +387,19 @@ public class PlatformScene extends Scene {
 		return shouldExit;
 	}
 
+	private static IBitmap background;
+	private static SpriteSheet backgroundSpriteSheet;
+
 	private static void drawBackground(IRenderContext target, double r,
 			double g, double b, int parallax, int x, int y) {
+		if (background == null || background.getWidth() != target.getWidth()
+				|| background.getHeight() != target.getHeight()) {
+			background = new ArrayBitmap(target.getWidth(), target.getHeight());
+			backgroundSpriteSheet = new SpriteSheet(background, 1);
+		}
 		int width = target.getWidth();
 		int height = target.getHeight();
+		int[] result = new int[width*height];
 		for (int j = 0; j < height; j++) {
 			int adjustedJ = Util.floorMod(j + (y / parallax), height);
 			double jFract = ((double) (adjustedJ) / (double) (height - 1));
@@ -400,9 +413,13 @@ public class PlatformScene extends Scene {
 			int color = ARGBColor.makeColor(jFract * r, jFract * g, jFract * b);
 
 			for (int i = 0; i < width; i++) {
-				target.setPixel(i, j, color);
+				result[i + j * width] = color;
+				// background.setPixel(i, j, color);
 			}
 		}
+		background.setPixels(result, 0, 0, width, height);
+		target.drawSprite(backgroundSpriteSheet, 0, 0, 0, 1.0, false, false,
+				0xFFFFFF);
 	}
 
 	private void renderScene(IRenderContext target, double viewportX,
@@ -441,6 +458,10 @@ public class PlatformScene extends Scene {
 		int viewportXInt = (int) Math.round(viewportX);
 		int viewportYInt = (int) Math.round(viewportY);
 
+		// target.clear(0.0f, 0.0f, 0.0f, 0.0f);
+		// player.render(target, (int) Math.round(viewportX), (int)
+		// Math.round(viewportY));
+
 		switch (state) {
 		case RUNNING:
 			target.clearLighting();
@@ -452,7 +473,7 @@ public class PlatformScene extends Scene {
 			target.applyLighting(16.0 / 256.0);
 			break;
 		case LOST_LIFE:
-			target.clear(0x000000);
+			target.clear(0.0, 0.0, 0.0, 0.0);
 			player.render(target, (int) Math.round(viewportX),
 					(int) Math.round(viewportY));
 			String gameOverString = "Game Over";
@@ -467,7 +488,7 @@ public class PlatformScene extends Scene {
 			}
 			break;
 		case ERROR:
-			target.clear(0x880000);
+			target.clear(0.0f, 0.5f, 0.0f, 0.0f);
 			String errorHeader = "Error";
 			target.drawString(
 					errorHeader,

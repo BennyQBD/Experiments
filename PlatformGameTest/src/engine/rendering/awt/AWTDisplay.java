@@ -19,7 +19,7 @@ import engine.rendering.IRenderContext;
 public class AWTDisplay extends Canvas implements IDisplay {
 	private static final long serialVersionUID = 1L;
 	private final JFrame frame;
-	private final IRenderContext frameBuffer;
+	private final AWTRenderContext frameBuffer;
 	private final BufferedImage displayImage;
 	private final int[] displayComponents;
 	private final BufferStrategy bufferStrategy;
@@ -45,6 +45,7 @@ public class AWTDisplay extends Canvas implements IDisplay {
 
 	@Override
 	public void dispose() {
+		frameBuffer.dispose();
 		frame.dispose();
 	}
 
@@ -145,7 +146,7 @@ public class AWTDisplay extends Canvas implements IDisplay {
 	// }
 
 	public void swapBuffers() {
-		frameBuffer.copyToIntArray(displayComponents);
+		frameBuffer.getPixels(displayComponents, 0, 0, frameBuffer.getWidth(), frameBuffer.getHeight());
 		// initDitheredComponents();
 		// dither();
 		graphics.drawImage(displayImage, 0, 0, scaledWidth, scaledHeight, null);

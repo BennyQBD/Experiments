@@ -22,7 +22,13 @@ public class BitmapFactory {
 			return current;
 		} else {
 			loadedBitmaps.remove(fileName);
-			IBitmap result = new ArrayBitmap(fileName);
+			IBitmap result;
+//			if(fileName.equals("./res/testLevel.png")) {
+//				Debug.log("Made the right one!");
+				result = new ArrayBitmap(fileName);
+//			} else {
+//				result = new OpenGLBitmap(fileName);
+//			}
 			loadedBitmaps.put(fileName, new SoftReference<IBitmap>(result));
 			return result;
 		}

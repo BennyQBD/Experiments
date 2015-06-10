@@ -90,9 +90,12 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 			xEnd = getWidth();
 		}
 
+		int[] imgSection = image.getPixels(null, imgStartX, imgStartY, imgWidth, imgHeight);
+		iStart -= imgStartX;
+		jStart -= imgStartY;
 		for (int j = jStart, y = offsetY; y < yEnd; j += jStep, y++) {
 			for (int i = iStart, x = offsetX; x < xEnd; i += iStep, x++) {
-				int color1 = image.getPixel(i, j) & colorMask;
+				int color1 = imgSection[i + j * imgWidth] & colorMask;
 				int color2 = getPixel(x, y);
 				int blendAmt = (int) (ARGBColor.getComponent(color1, 0)
 						* transparency + 0.5);
@@ -150,5 +153,15 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 						blendColors(getPixel(i, j), 0x000000, (int) (lightAmt)));
 			}
 		}
+	}
+
+	@Override
+	public void clear(double a, double r, double g, double b) {
+		this.clear(ARGBColor.makeColor(a, r, g, b));
+	}
+
+	@Override
+	public void dispose() {
+		// Nothing to dispose!
 	}
 }

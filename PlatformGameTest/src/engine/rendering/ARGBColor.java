@@ -10,8 +10,12 @@ public class ARGBColor {
 	}
 
 	public static int makeColor(double r, double g, double b) {
-		return makeColor(doubleToComponent(r), doubleToComponent(g),
-				doubleToComponent(b));
+		return makeColor(1.0, r, g, b);
+	}
+
+	public static int makeColor(double a, double r, double g, double b) {
+		return makeColor(doubleToComponent(a), doubleToComponent(r),
+				doubleToComponent(g), doubleToComponent(b));
 	}
 
 	public static int makeColor(int r, int g, int b) {
@@ -36,5 +40,9 @@ public class ARGBColor {
 
 	private static int getComponentShift(int component) {
 		return (COMPONENT_BITS * (NUM_COMPONENTS - component - 1));
+	}
+	
+	public static double getComponentd(int color, int component) {
+		return (double)(getComponent(color, component)/255.0);
 	}
 }
