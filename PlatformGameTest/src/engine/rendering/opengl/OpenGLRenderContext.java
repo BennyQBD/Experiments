@@ -1,6 +1,7 @@
 package engine.rendering.opengl;
 
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL30.*;
 
 import java.nio.ByteBuffer;
 
@@ -73,7 +74,7 @@ public class OpenGLRenderContext implements IRenderContext {
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA,
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_INTENSITY8, width, height, 0, GL_RGBA,
 				GL_UNSIGNED_BYTE, (ByteBuffer) null);
 	}
 
@@ -193,6 +194,7 @@ public class OpenGLRenderContext implements IRenderContext {
 				(float) ARGBColor.getComponentd(colorMask, 3),
 				(float) transparency);
 
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glBegin(GL_QUADS);
 		{
 			glTexCoord2f((float) texMinX, (float) texMinY);
@@ -264,6 +266,9 @@ public class OpenGLRenderContext implements IRenderContext {
 			}
 		}
 		buffer.flip();
+		
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+//		glBindTexture(GL_TEXTURE_2D, lightMap.getId());
 		glBindTexture(GL_TEXTURE_2D, lightMapTexId);
 		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA,
 				GL_UNSIGNED_BYTE, buffer);

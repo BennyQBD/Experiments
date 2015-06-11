@@ -16,8 +16,8 @@ import engine.rendering.ARGBColor;
 import engine.rendering.IBitmap;
 
 public class OpenGLBitmap implements IBitmap {
-	private int width;
-	private int height;
+	private final int width;
+	private final int height;
 	private int id;
 
 	public OpenGLBitmap(int width, int height) {

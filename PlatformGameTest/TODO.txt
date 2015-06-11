@@ -22,6 +22,7 @@
 + Multiple Save Files
 + 2D Lighting
 + Layers in Level
++ Optional OpenGL renderer
 - Animation
 - Sound
 - Flying powerup?
@@ -29,7 +30,6 @@
 - Locked areas
 - Items to unlock locked areas
 - Secret locked areas
-- Optional OpenGL renderer
 
 - Weapons?
 
