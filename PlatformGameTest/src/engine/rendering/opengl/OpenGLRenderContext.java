@@ -17,14 +17,18 @@ public class OpenGLRenderContext implements IRenderContext {
 	private final int width;
 	private final int height;
 	private SpriteSheet boundTex;
+	private LightMap lightMap;
 	private int texId;
 	private int texWidth;
 	private int texHeight;
+	private int lightMapTexId;
 
 	public OpenGLRenderContext(int width, int height) {
 		this.width = width;
 		this.height = height;
 		this.boundTex = null;
+		lightMap = new LightMap(width, height, 1);
+		lightMap.clear();
 
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
@@ -43,6 +47,7 @@ public class OpenGLRenderContext implements IRenderContext {
 	@Override
 	public void dispose() {
 		glDeleteTextures(texId);
+		glDeleteTextures(lightMapTexId);
 	}
 
 	private void initTexture() {
@@ -58,6 +63,18 @@ public class OpenGLRenderContext implements IRenderContext {
 		this.texWidth = 256;
 		this.texHeight = 256;
 		allocTex(null);
+
+		this.lightMapTexId = glGenTextures();
+		glBindTexture(GL_TEXTURE_2D, lightMapTexId);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA,
+				GL_UNSIGNED_BYTE, (ByteBuffer) null);
 	}
 
 	private void allocTex(ByteBuffer buffer) {
@@ -152,7 +169,7 @@ public class OpenGLRenderContext implements IRenderContext {
 		double texScaleX = (double) (sheet.getSheet().getWidth()) / texWidth;
 		double texScaleY = (double) (sheet.getSheet().getHeight()) / texHeight;
 
-		if(!isInHardware) {
+		if (!isInHardware) {
 			texMinX *= texScaleX;
 			texMinY *= texScaleY;
 			texMaxX *= texScaleX;
@@ -222,20 +239,47 @@ public class OpenGLRenderContext implements IRenderContext {
 
 	@Override
 	public void clearLighting() {
-		// TODO Auto-generated method stub
-
+		lightMap.clear();
 	}
 
 	@Override
 	public void drawLight(LightMap light, int x, int y, int mapStartX,
 			int mapStartY, int width, int height) {
-		// TODO Auto-generated method stub
-
+		lightMap.addLight(light, x, y, mapStartX, mapStartY, width, height);
 	}
 
 	@Override
 	public void applyLighting(double ambientLightAmt) {
-		// TODO Auto-generated method stub
-
+		double ambientLightScale = (1.0 - ambientLightAmt);
+		ambientLightAmt = ambientLightAmt * 255.0 + 0.5;
+		ByteBuffer buffer = BufferUtils.createByteBuffer(height * width * 4);
+		for (int j = 0; j < height; j++) {
+			for (int i = 0; i < width; i++) {
+				double lightAmt = lightMap.getLight(i, j) * ambientLightScale
+						+ ambientLightAmt;
+				buffer.put((byte) ((int) lightAmt));
+				buffer.put((byte) ((int) lightAmt));
+				buffer.put((byte) ((int) lightAmt));
+				buffer.put((byte) ((int) lightAmt));
+			}
+		}
+		buffer.flip();
+		glBindTexture(GL_TEXTURE_2D, lightMapTexId);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA,
+				GL_UNSIGNED_BYTE, buffer);
+		glBlendFunc(GL_DST_COLOR, GL_ZERO);
+		glBegin(GL_QUADS);
+		{
+			glTexCoord2f(0, 0);
+			glVertex2f(0, 0);
+			glTexCoord2f(0, 1);
+			glVertex2f(0, height);
+			glTexCoord2f(1, 1);
+			glVertex2f(width, height);
+			glTexCoord2f(1, 0);
+			glVertex2f(width, 0);
+		}
+		glEnd();
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	}
 }

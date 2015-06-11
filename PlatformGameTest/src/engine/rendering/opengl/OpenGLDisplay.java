@@ -10,6 +10,7 @@ import engine.input.IInput;
 import engine.input.opengl.OpenGLInput;
 import engine.rendering.IDisplay;
 import engine.rendering.IRenderContext;
+import engine.util.Debug;
 
 public class OpenGLDisplay implements IDisplay {
 	private IRenderContext frameBuffer;
@@ -25,6 +26,7 @@ public class OpenGLDisplay implements IDisplay {
 		Keyboard.create();
 		Mouse.create();
 		
+		Display.setVSyncEnabled(!Debug.IGNORE_FRAME_CAP);
 		frameBuffer = new OpenGLRenderContext(width, height);
 		input = new OpenGLInput();
 	}
