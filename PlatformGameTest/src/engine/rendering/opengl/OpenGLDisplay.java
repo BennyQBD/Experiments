@@ -16,18 +16,19 @@ public class OpenGLDisplay implements IDisplay {
 	private IRenderContext frameBuffer;
 	private IInput input;
 
-	public OpenGLDisplay(int width, int height, double scale, String title) throws LWJGLException {
+	public OpenGLDisplay(int width, int height, double scale, String title)
+			throws LWJGLException {
 		Display.setTitle(title);
-		int scaledWidth = (int)(width*scale);
-		int scaledHeight = (int)(height*scale);
-		
+		int scaledWidth = (int) (width * scale);
+		int scaledHeight = (int) (height * scale);
+
 		Display.setDisplayMode(new DisplayMode(scaledWidth, scaledHeight));
 		Display.create();
 		Keyboard.create();
 		Mouse.create();
-		
+
 		Display.setVSyncEnabled(!Debug.IGNORE_FRAME_CAP);
-		frameBuffer = new OpenGLRenderContext(width, height);
+		frameBuffer = new OpenGLRenderContext(width, height, scaledWidth, scaledHeight);
 		input = new OpenGLInput();
 	}
 

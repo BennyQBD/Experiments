@@ -14,4 +14,5 @@ public interface IBitmap {
 
 	public void clear(int color);
 	public void save(String filetype, File file) throws IOException;
+	
 }

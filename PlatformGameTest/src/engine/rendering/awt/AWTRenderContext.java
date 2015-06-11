@@ -10,11 +10,13 @@ import engine.util.Util;
 
 public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 	private LightMap lightMap;
+	private int[] imgSection;
 
 	public AWTRenderContext(int width, int height) {
 		super(width, height);
 		lightMap = new LightMap(width, height, 1);
 		lightMap.clear();
+		imgSection = null;
 	}
 	
 	public int drawString(String str, SpriteSheet font, int x, int y,
@@ -90,22 +92,25 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 			xEnd = getWidth();
 		}
 
-		int[] imgSection = image.getPixels(null, imgStartX, imgStartY, imgWidth, imgHeight);
+		imgSection = image.getPixels(imgSection, imgStartX, imgStartY, imgWidth, imgHeight);
 		iStart -= imgStartX;
 		jStart -= imgStartY;
 		for (int j = jStart, y = offsetY; y < yEnd; j += jStep, y++) {
 			for (int i = iStart, x = offsetX; x < xEnd; i += iStep, x++) {
 				int color1 = imgSection[i + j * imgWidth] & colorMask;
-				int color2 = getPixel(x, y);
-				int blendAmt = (int) (ARGBColor.getComponent(color1, 0)
-						* transparency + 0.5);
-				if (blendAmt == 0) {
-					setPixel(x, y, color2);
-				} else if (blendAmt == 255) {
+				if(color1 < 0) {
 					setPixel(x, y, color1);
-				} else {
-					setPixel(x, y, blendColors(color1, color2, blendAmt));
 				}
+//				int color2 = getPixel(x, y);
+//				int blendAmt = (int) (ARGBColor.getComponent(color1, 0)
+//						* transparency + 0.5);
+//				if (blendAmt == 0) {
+//					setPixel(x, y, color2);
+//				} else if (blendAmt == 255) {
+//					setPixel(x, y, color1);
+//				} else {
+//					setPixel(x, y, blendColors(color1, color2, blendAmt));
+//				}
 			}
 		}
 	}

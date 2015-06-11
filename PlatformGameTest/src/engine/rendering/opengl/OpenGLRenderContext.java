@@ -17,6 +17,8 @@ import engine.util.Util;
 public class OpenGLRenderContext implements IRenderContext {
 	private final int width;
 	private final int height;
+	private final int scaledWidth;
+	private final int scaledHeight;
 	private SpriteSheet boundTex;
 	private LightMap lightMap;
 	private int texId;
@@ -24,9 +26,11 @@ public class OpenGLRenderContext implements IRenderContext {
 	private int texHeight;
 	private int lightMapTexId;
 
-	public OpenGLRenderContext(int width, int height) {
+	public OpenGLRenderContext(int width, int height, int scaledWidth, int scaledHeight) {
 		this.width = width;
 		this.height = height;
+		this.scaledWidth = scaledWidth;
+		this.scaledHeight = scaledHeight;
 		this.boundTex = null;
 		lightMap = new LightMap(width, height, 1);
 		lightMap.clear();
@@ -43,6 +47,16 @@ public class OpenGLRenderContext implements IRenderContext {
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		initTexture();
+	}
+	
+	private void bindAsRenderTarget() {
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(0, width, height, 0, 1, -1);
+		glMatrixMode(GL_MODELVIEW);
+		
+		glViewport(0, 0, scaledWidth, scaledHeight);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
 	@Override
@@ -194,7 +208,8 @@ public class OpenGLRenderContext implements IRenderContext {
 				(float) ARGBColor.getComponentd(colorMask, 3),
 				(float) transparency);
 
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		bindAsRenderTarget();
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glBegin(GL_QUADS);
 		{
 			glTexCoord2f((float) texMinX, (float) texMinY);
@@ -267,8 +282,7 @@ public class OpenGLRenderContext implements IRenderContext {
 		}
 		buffer.flip();
 		
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-//		glBindTexture(GL_TEXTURE_2D, lightMap.getId());
+		bindAsRenderTarget();
 		glBindTexture(GL_TEXTURE_2D, lightMapTexId);
 		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA,
 				GL_UNSIGNED_BYTE, buffer);
@@ -285,6 +299,21 @@ public class OpenGLRenderContext implements IRenderContext {
 			glVertex2f(width, 0);
 		}
 		glEnd();
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		
+//		bindAsRenderTarget();
+//		glBindTexture(GL_TEXTURE_2D, lightMap.getId());
+//		glBlendFunc(GL_DST_COLOR, GL_ZERO);
+//		glBegin(GL_QUADS);
+//		{
+//			glTexCoord2f(0, 0);
+//			glVertex2f(0, 0);
+//			glTexCoord2f(0, 1);
+//			glVertex2f(0, height);
+//			glTexCoord2f(1, 1);
+//			glVertex2f(width, height);
+//			glTexCoord2f(1, 0);
+//			glVertex2f(width, 0);
+//		}
+//		glEnd();
 	}
 }
