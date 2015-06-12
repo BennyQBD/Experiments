@@ -6,6 +6,7 @@ import engine.rendering.IBitmap;
 import engine.rendering.IRenderContext;
 import engine.rendering.LightMap;
 import engine.rendering.SpriteSheet;
+import engine.rendering.opengl.OpenGLLightMap;
 import engine.util.Util;
 
 public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
@@ -141,9 +142,10 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 	}
 
 	@Override
-	public void drawLight(LightMap light, int xIn, int yIn, int mapStartX,
+	public void drawLight(OpenGLLightMap light, int xIn, int yIn, int mapStartX,
 			int mapStartY, int width, int height) {
-		lightMap.addLight(light, xIn, yIn, mapStartX, mapStartY, width, height);
+		// TODO: FIXME
+		//lightMap.addLight(light, xIn, yIn, mapStartX, mapStartY, width, height);
 	}
 
 	@Override

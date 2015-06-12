@@ -21,7 +21,7 @@ public class OpenGLLightMap {
 	private final int width;
 	private final int height;
 	private final double scale;
-	private final int id;
+	private int id;
 	private int fbo;
 
 	public OpenGLLightMap(int radius) {
@@ -33,48 +33,50 @@ public class OpenGLLightMap {
 		this.width = width;
 		this.height = height;
 		this.scale = scale;
-		this.id = glGenTextures();
-		glBindTexture(GL_TEXTURE_2D, id);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_INTENSITY8, width, height, 0,
-				GL_RGBA, GL_UNSIGNED_BYTE, (ByteBuffer) null);
+		this.id = OpenGLUtil.makeTexture(width, height, (byte[]) null,
+				GL_LINEAR);
 
 		this.fbo = glGenFramebuffers();
-		bindAsRenderTarget();
+		OpenGLUtil.bindRenderTarget(fbo, this.width, this.height, this.width,
+				this.height);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
 				GL_TEXTURE_2D, id, 0);
 		clear();
 	}
 
-	private void bindAsRenderTarget() {
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(0, width, 0, height, 1, -1);
-		glMatrixMode(GL_MODELVIEW);
+	// private void bindAsRenderTarget() {
+	// glMatrixMode(GL_PROJECTION);
+	// glLoadIdentity();
+	// glOrtho(0, width, height, 0, 1, -1);
+	// glMatrixMode(GL_MODELVIEW);
+	//
+	// glViewport(0, 0, width, height);
+	// glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	// }
 
-		glViewport(0, 0, width, height);
-		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	public void dispose() {
+		if (fbo != 0) {
+			glDeleteFramebuffers(fbo);
+			fbo = 0;
+		}
+		if (id != 0) {
+			glDeleteTextures(id);
+			id = 0;
+		}
 	}
 
 	@Override
 	protected void finalize() throws Throwable {
-		glDeleteFramebuffers(fbo);
-		glDeleteTextures(id);
+		dispose();
 		super.finalize();
 	}
 
 	public void clear() {
-		bindAsRenderTarget();
+		OpenGLUtil.bindRenderTarget(fbo, this.width, this.height, this.width,
+				this.height);
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 	}
-
-	// public double getLight(int x, int y) {
-	// return (double) ((lighting[x + y * width] & 0xFF));
-	// }
 
 	public int getWidth() {
 		return width;
@@ -92,60 +94,35 @@ public class OpenGLLightMap {
 		return (byte) (Util.saturate(val) * 255.0 + 0.5);
 	}
 
-	private void generate(int radius) {
-		byte[] lighting = new byte[width * height];
-		Arrays.fill(lighting, (byte) 0);
+	private static byte calcLight(int radius, int radiusSq, int distX, int distY) {
+		int distCenterSq = distY * distY + distX * distX;
+		if (distCenterSq > radiusSq) {
+			return (byte) 0;
+		}
+		return toData(((double) radius / (double) (distCenterSq)));
+	}
+
+	private static byte[] generateLighting(int radius, int width, int height) {
+		byte[] result = new byte[width * height];
 		int centerX = width / 2;
 		int centerY = height / 2;
 		int radiusSq = radius * radius;
 		for (int j = 0, distY = -centerY; j < height; j++, distY++) {
 			for (int i = 0, distX = -centerX; i < width; i++, distX++) {
-				int distCenterSq = distY * distY + distX * distX;
-				if (distCenterSq > radiusSq) {
-					continue;
-				}
-				lighting[i + j * width] = toData(((double) radius / (double) (distCenterSq)));
+				result[i + j * width] = calcLight(radius, radiusSq, distX,
+						distY);
 			}
 		}
-
-		ByteBuffer buffer = BufferUtils.createByteBuffer(width * height * 4);
-		for (int i = 0; i < width * height; i++) {
-			byte val = lighting[i];
-			buffer.put(val);
-			buffer.put(val);
-			buffer.put(val);
-			buffer.put(val);
-		}
-		buffer.flip();
-		glBindTexture(GL_TEXTURE_2D, id);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA,
-				GL_UNSIGNED_BYTE, buffer);
+		return result;
 	}
 
-	@SuppressWarnings("unused")
-	private void save(String fileName) {
-		ByteBuffer buffer = BufferUtils.createByteBuffer(width * height * 4);
-		glBindTexture(GL_TEXTURE_2D, id);
-		glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+	private void generate(int radius) {
+		OpenGLUtil.updateTexture(id, generateLighting(radius, width, height),
+				0, 0, width, height);
+	}
 
-		BufferedImage output = new BufferedImage(width, height,
-				BufferedImage.TYPE_INT_ARGB);
-		int[] displayComponents = ((DataBufferInt) output.getRaster()
-				.getDataBuffer()).getData();
-		for (int i = 0; i < width * height; i++) {
-			int r = buffer.get() & 0xFF;
-			int g = buffer.get() & 0xFF;
-			int b = buffer.get() & 0xFF;
-			int a = buffer.get() & 0xFF;
-			displayComponents[i] = ARGBColor.makeColor(0xFF, r, g, b);
-		}
-
-		try {
-			ImageIO.write(output, "png", new File(fileName));
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+	public void save(String fileName) throws IOException {
+		OpenGLUtil.saveTexture(id, width, height, "png", new File(fileName));
 	}
 
 	public int getId() {
@@ -154,29 +131,28 @@ public class OpenGLLightMap {
 
 	public void addLight(OpenGLLightMap light, int x, int y, int mapStartX,
 			int mapStartY, int width, int height) {
-		double scaleAmt = 1.0 / scale;
-		double texCoordScale = 1.0 / light.getScale();
-		double texMinX = texCoordScale
+		double posScale = 1.0 / scale;
+		double texScale = 1.0 / light.getScale();
+		double texMinX = texScale
 				* ((double) mapStartX / ((double) light.getWidth()));
-		double texMinY = texCoordScale
+		double texMinY = texScale
 				* ((double) mapStartY / ((double) light.getHeight()));
-		double texMaxX = texMinX + texCoordScale * ((double) width)
+		double texMaxX = texMinX + texScale * ((double) width)
 				/ ((double) light.getWidth());
-		double texMaxY = texMinY + texCoordScale * ((double) height)
+		double texMaxY = texMinY + texScale * ((double) height)
 				/ ((double) light.getHeight());
 
-		double xStart = x;
-		double xEnd = (x + width);
-		double yStart = y;
-		double yEnd = (y + height);
+		double xStart = x * posScale;
+		double xEnd = (x + width) * posScale;
+		double yStart = y * posScale;
+		double yEnd = (y + height) * posScale;
 
-		xStart *= scaleAmt;
-		xEnd *= scaleAmt;
-		yStart *= scaleAmt;
-		yEnd *= scaleAmt;
+		yStart = this.height - yStart;
+		yEnd = this.height - yEnd;
 
+		OpenGLUtil.bindRenderTarget(fbo, this.width, this.height, this.width,
+				this.height);
 		glBindTexture(GL_TEXTURE_2D, light.id);
-		bindAsRenderTarget();
 		glBlendFunc(GL_ONE, GL_ONE);
 		glBegin(GL_QUADS);
 		glTexCoord2f((float) texMinX, (float) texMinY);

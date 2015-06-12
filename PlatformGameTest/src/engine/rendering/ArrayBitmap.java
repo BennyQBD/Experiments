@@ -24,7 +24,7 @@ public class ArrayBitmap implements IBitmap {
 	}
 	
 	@Override
-	public int getHardwareAccelerationID() {
+	public int getHardwareID() {
 		return -1;
 	}
 
@@ -108,5 +108,10 @@ public class ArrayBitmap implements IBitmap {
 		}
 
 		return y * width + x;
+	}
+
+	@Override
+	public void dispose() {
+		// No clean up necessary
 	}
 }

@@ -19,6 +19,7 @@ import engine.rendering.IBitmap;
 import engine.rendering.IRenderContext;
 import engine.rendering.LightMap;
 import engine.rendering.SpriteSheet;
+import engine.rendering.opengl.OpenGLLightMap;
 import engine.space.Grid;
 import engine.space.ISpatialStructure;
 import engine.util.BitmapFactory;
@@ -56,12 +57,15 @@ public class PlatformScene extends Scene {
 	private MenuStack menu;
 	private boolean shouldExit;
 	private InputListener helpMenuKey;
-	private LightMap bigLightMapTest;
+	private OpenGLLightMap bigLightMapTest;
 
 	private void loadLevel(Config config, IInput input,
 			ISpatialStructure<Entity> structure, int points, int lives,
 			int lifeDeficit) throws IOException {
-		this.bigLightMapTest = new LightMap(2048, 2048, 2);
+		if(bigLightMapTest != null) {
+			bigLightMapTest.dispose();
+		}
+		this.bigLightMapTest = new OpenGLLightMap(2048, 2048, 2);
 		SpriteSheet level = new SpriteSheet(bitmaps.get("./res/"
 				+ config.getString("level.data")), 4, 2);
 		int[] backgrounds = new int[5];
@@ -78,7 +82,7 @@ public class PlatformScene extends Scene {
 		backgrounds[3] = 46;
 		backgrounds[4] = 62;
 
-		LightMap backgroundLight = new LightMap(100);
+		OpenGLLightMap backgroundLight = new OpenGLLightMap(100);
 		int tileSize = 16;
 		int[] pixels = level.getSheet().getPixels(null);
 		for (int k = 0; k < level.getNumSprites(); k++) {
@@ -101,7 +105,7 @@ public class PlatformScene extends Scene {
 	private void addEntity(Config config, IInput input,
 			ISpatialStructure<Entity> structure, int x, int y, int layer,
 			BitmapFactory bitmaps, SpriteSheet tileSheet, int color,
-			LightMap staticLightMap, LightMap lightToAdd, int points,
+			OpenGLLightMap staticLightMap, OpenGLLightMap lightToAdd, int points,
 			int lives, int lifeDeficit) throws IOException {
 		if (color == 255) {
 			player = new Entity(structure, x, y, layer, true);

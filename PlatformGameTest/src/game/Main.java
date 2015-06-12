@@ -7,38 +7,18 @@ import org.lwjgl.LWJGLException;
 
 import engine.core.CoreEngine;
 import engine.rendering.IDisplay;
-import engine.rendering.awt.AWTDisplay;
+import engine.rendering.opengl.OpenGLDisplay;
 import engine.util.BitmapFactory;
 import engine.util.parsing.Config;
 
 public class Main {
 	public static void main(String[] args) throws IOException, ParseException, LWJGLException {
 		Config test = new Config("./res/test.cfg");
-		IDisplay display = new AWTDisplay(256, 224, 3.0, "My Game");
-		//IDisplay display = new OpenGLDisplay(256, 224, 3.0, "My Game");
+		//IDisplay display = new AWTDisplay(256, 224, 3.0, "My Game");
+		IDisplay display = new OpenGLDisplay(256, 224, 3.0, "My Game");
 		CoreEngine engine = new CoreEngine(display, new PlatformScene(test,
-				display.getInput(), BitmapFactory.TYPE_ARRAY), 60.0);
+				display.getInput(), BitmapFactory.TYPE_OPENGL), 60.0);
 		engine.start();
 		engine.dispose();
-		
-		//Display.setDisplayMode(new DisplayMode(scaledWidth, scaledHeight));
-//		Display.create();
-//		long passed = 0;
-//		int num = 0;
-//		while(!Display.isCloseRequested()) {
-//			long start = System.nanoTime();
-//			
-//			Display.update();
-//			
-//			passed += (System.nanoTime() - start);
-//			num++;
-//			
-//			if(passed >= 1000000000) {
-//				System.out.println(num);
-//				num = 0;
-//				passed = 0;
-//			}
-//		}
-//		Display.destroy();
 	}
 }

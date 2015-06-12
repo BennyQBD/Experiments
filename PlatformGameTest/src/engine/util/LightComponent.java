@@ -3,14 +3,14 @@ package engine.util;
 import engine.core.entity.Entity;
 import engine.core.entity.EntityComponent;
 import engine.rendering.IRenderContext;
-import engine.rendering.LightMap;
+import engine.rendering.opengl.OpenGLLightMap;
 import engine.space.AABB;
 
 public class LightComponent extends EntityComponent {
 	public static final String COMPONENT_NAME = "LightComponent";
-	private LightMap light;
+	private OpenGLLightMap light;
 
-	public LightComponent(Entity entity, LightMap light) {
+	public LightComponent(Entity entity, OpenGLLightMap light) {
 		super(entity, COMPONENT_NAME);
 		this.light = light;
 		int halfWidth = light.getWidth() / 2;
