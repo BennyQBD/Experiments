@@ -23,7 +23,7 @@
 + 2D Lighting
 + Layers in Level
 + Optional OpenGL renderer
-- Animation
++ Animation
 - Sound
 - Flying powerup?
 - Environmental hazards (spikes, lava, lasers, etc.)

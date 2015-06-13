@@ -11,6 +11,10 @@ public class SpriteSheet {
 	private final int spriteHeight;
 	private final AABB[] spriteAABBs;
 
+	public SpriteSheet(IBitmap spriteSheet) {
+		this(spriteSheet, 1);
+	}
+	
 	public SpriteSheet(IBitmap spriteSheet, int spritesPerAxis) {
 		this(spriteSheet, spritesPerAxis, spritesPerAxis);
 	}

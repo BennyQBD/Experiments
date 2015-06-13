@@ -264,19 +264,7 @@ public class OpenGLRenderContext implements IRenderContext {
 
 		OpenGLUtil.bindRenderTarget(0, this.width, this.height,
 				this.scaledWidth, this.scaledHeight);
-		glBindTexture(GL_TEXTURE_2D, lightMap.getId());
 		glBlendFunc(GL_DST_COLOR, GL_ZERO);
-		glBegin(GL_QUADS);
-		{
-			glTexCoord2f(0, 0);
-			glVertex2f(0, 0);
-			glTexCoord2f(0, 1);
-			glVertex2f(0, height);
-			glTexCoord2f(1, 1);
-			glVertex2f(width, height);
-			glTexCoord2f(1, 0);
-			glVertex2f(width, 0);
-		}
-		glEnd();
+		OpenGLUtil.drawRect(lightMap.getId(), 0, 0, width, height, 0, 0, 1, 1);
 	}
 }

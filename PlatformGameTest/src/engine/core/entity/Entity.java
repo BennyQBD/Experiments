@@ -15,22 +15,15 @@ public class Entity implements ISpatialObject {
 	private ISpatialStructure<Entity> structure;
 	private AABB aabb;
 	private boolean isBlocking;
-	private boolean ditherable = false;
+	private boolean isRemoved;
 	private List<EntityComponent> components;
-
-	public boolean getDitherable() {
-		return ditherable;
-	}
-
-	public void setDitherable(boolean val) {
-		this.ditherable = val;
-	}
 
 	public Entity(ISpatialStructure<Entity> structure, double posX,
 			double posY, double posZ, boolean isBlocking) {
 		this.structure = structure;
 		this.aabb = new AABB(posX, posY, posZ, posX, posY);
 		this.isBlocking = isBlocking;
+		this.isRemoved = false;
 		structure.add(this);
 		components = new ArrayList<EntityComponent>();
 	}
@@ -124,8 +117,13 @@ public class Entity implements ISpatialObject {
 
 	public void remove() {
 		structure.remove(this);
+		isRemoved = true;
 	}
 
+	public boolean getRemoved() {
+		return isRemoved;
+	}
+	
 	public boolean getBlocking() {
 		return isBlocking;
 	}

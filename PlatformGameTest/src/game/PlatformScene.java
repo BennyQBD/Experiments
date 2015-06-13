@@ -17,13 +17,14 @@ import engine.rendering.ARGBColor;
 import engine.rendering.ArrayBitmap;
 import engine.rendering.IBitmap;
 import engine.rendering.IRenderContext;
-import engine.rendering.LightMap;
 import engine.rendering.SpriteSheet;
 import engine.rendering.opengl.OpenGLLightMap;
 import engine.space.Grid;
 import engine.space.ISpatialStructure;
 import engine.util.BitmapFactory;
 import engine.util.Delay;
+import engine.util.LightComponent;
+import engine.util.LinkComponent;
 import engine.util.SpriteComponent;
 import engine.util.Util;
 import engine.util.menu.IMenuHandler;
@@ -62,7 +63,7 @@ public class PlatformScene extends Scene {
 	private void loadLevel(Config config, IInput input,
 			ISpatialStructure<Entity> structure, int points, int lives,
 			int lifeDeficit) throws IOException {
-		if(bigLightMapTest != null) {
+		if (bigLightMapTest != null) {
 			bigLightMapTest.dispose();
 		}
 		this.bigLightMapTest = new OpenGLLightMap(2048, 2048, 2);
@@ -105,8 +106,8 @@ public class PlatformScene extends Scene {
 	private void addEntity(Config config, IInput input,
 			ISpatialStructure<Entity> structure, int x, int y, int layer,
 			BitmapFactory bitmaps, SpriteSheet tileSheet, int color,
-			OpenGLLightMap staticLightMap, OpenGLLightMap lightToAdd, int points,
-			int lives, int lifeDeficit) throws IOException {
+			OpenGLLightMap staticLightMap, OpenGLLightMap lightToAdd,
+			int points, int lives, int lifeDeficit) throws IOException {
 		if (color == 255) {
 			player = new Entity(structure, x, y, layer, true);
 			new SpriteComponent(player, new SpriteSheet(
@@ -123,12 +124,20 @@ public class PlatformScene extends Scene {
 			Entity entity = new Entity(structure, x, y, layer, false);
 			new CollectableComponent(entity, 10);
 			new SpriteComponent(entity, new SpriteSheet(
-					bitmaps.get("./res/diamond2.png"), 1), 0);
+					bitmaps.get("./res/diamond2.png"), 5, 2), 0.1);
+
+			// Entity entityLight = new Entity(structure, x+8, y+8, layer,
+			// false);
+			// new LightComponent(entityLight, new OpenGLLightMap(8));
+			// new LinkComponent(entityLight, entity);
 		} else if (color == 253) {
 			Entity entity = new Entity(structure, x, y, layer, false);
 			new CollectableComponent(entity, 100);
-			new SpriteComponent(entity, new SpriteSheet(
-					bitmaps.get("./res/diamond.png"), 1), 0);
+			SpriteSheet sheet = new SpriteSheet(
+					bitmaps.get("./res/diamond.png"), 9, 1);
+			new SpriteComponent(entity, sheet, 0.1111111111);
+			// new SpriteComponent(entity, new SpriteSheet(
+			// bitmaps.get("./res/diamond.png"), 1), 0);
 		} else if (color == 250) {
 			Entity entity = new Entity(structure, x, y, layer, true);
 			new SpriteComponent(entity, new SpriteSheet(
@@ -138,7 +147,6 @@ public class PlatformScene extends Scene {
 			boolean blocking = (color & 0x8000) != 0;
 			Entity e = add(structure, x, y, layer, blocking, tileSheet,
 					color & 0xFF);
-			e.setDitherable(true);
 			if (color == 14 || color == 30 || color == 46 || color == 62) {
 				staticLightMap.addLight(lightToAdd, x - lightToAdd.getWidth()
 						/ 2 + (int) e.getAABB().getWidth() / 2,
@@ -284,7 +292,8 @@ public class PlatformScene extends Scene {
 		initMenu();
 	}
 
-	public PlatformScene(Config config, IInput input, int suggestedBitmapType) throws IOException {
+	public PlatformScene(Config config, IInput input, int suggestedBitmapType)
+			throws IOException {
 		super(new Grid<Entity>(16, 256, 256));
 		this.input = input;
 		this.config = config;

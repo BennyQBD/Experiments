@@ -7,9 +7,45 @@ import engine.rendering.SpriteSheet;
 import engine.space.AABB;
 
 public class SpriteComponent extends EntityComponent {
+	private class Animation {
+		private SpriteSheet[] sheets;
+		private int[] indices;
+		private double[] frameTimes;
+		private int[] nextFrames;
+		private int currentFrame;
+		private double currentFrameTime;
+
+		public Animation(SpriteSheet[] sheets, int[] indices,
+				double[] frameTimes, int[] nextFrames) {
+			this.sheets = sheets;
+			this.indices = indices;
+			this.frameTimes = frameTimes;
+			this.nextFrames = nextFrames;
+			this.currentFrame = 0;
+			this.currentFrameTime = 0.0;
+		}
+
+		public void update(double delta) {
+			currentFrameTime += delta;
+			while (frameTimes[currentFrame] != 0
+					&& currentFrameTime > frameTimes[currentFrame]) {
+				currentFrameTime -= frameTimes[currentFrame];
+				int nextFrame = nextFrames[currentFrame];
+				currentFrame = nextFrame;
+			}
+		}
+
+		public SpriteSheet getSheet() {
+			return sheets[currentFrame];
+		}
+
+		public int getSpriteIndex() {
+			return indices[currentFrame];
+		}
+	}
+
 	public static final String COMPONENT_NAME = "SpriteComponent";
-	private SpriteSheet sheet;
-	private int spriteIndex;
+	private Animation animation;
 	private int spriteOffsetX;
 	private int spriteOffsetY;
 	private int spriteOffsetFlippedX;
@@ -19,16 +55,58 @@ public class SpriteComponent extends EntityComponent {
 	private boolean flipY;
 
 	public SpriteComponent(Entity entity, SpriteSheet sheet, int spriteIndex) {
+		this(entity, new SpriteSheet[] { sheet }, new int[] { spriteIndex },
+				0.0);
+	}
+	
+	public SpriteComponent(Entity entity, SpriteSheet sheet, double frameTime) {
 		super(entity, COMPONENT_NAME);
-		this.sheet = sheet;
-		this.spriteIndex = spriteIndex;
-		AABB spriteAABB = sheet.getAABB(spriteIndex);
+		SpriteSheet[] sheets = new SpriteSheet[sheet.getNumSprites()];
+		int[] indices = new int[sheets.length];
+		for(int i = 0; i < sheets.length; i++) {
+			indices[i] = i;
+			sheets[i] = sheet;
+		}
+		init(entity, sheets, indices, frameTime);
+	}
+
+	public SpriteComponent(Entity entity, SpriteSheet[] sheets, int[] indices,
+			double frameTime) {
+		super(entity, COMPONENT_NAME);
+		init(entity, sheets, indices, frameTime);
+	}
+
+	public SpriteComponent(Entity entity, SpriteSheet[] sheets, int[] indices,
+			double[] frameTimes, int[] nextFrames) {
+		super(entity, COMPONENT_NAME);
+		init(entity, sheets, indices, frameTimes, nextFrames);
+	}
+	
+	private void init(Entity entity, SpriteSheet[] sheets, int[] indices,
+			double frameTime) {
+		double frameTimes[] = new double[sheets.length];
+		int nextFrames[] = new int[sheets.length];
+
+		for (int i = 0; i < sheets.length; i++) {
+			frameTimes[i] = frameTime;
+			nextFrames[i] = i + 1;
+		}
+		nextFrames[sheets.length - 1] = 0;
+		init(entity, sheets, indices, frameTimes, nextFrames);
+	}
+
+	private void init(Entity entity, SpriteSheet[] sheets, int[] indices,
+			double[] frameTimes, int[] nextFrames) {
+		this.animation = new Animation(sheets, indices, frameTimes, nextFrames);
+
+		AABB spriteAABB = animation.getSheet().getAABB(
+				animation.getSpriteIndex());
 		entity.fitAABB(spriteAABB);
 		spriteOffsetX = (int) spriteAABB.getMinX();
 		spriteOffsetY = (int) spriteAABB.getMinY();
-		spriteOffsetFlippedX = sheet.getSpriteWidth()
+		spriteOffsetFlippedX = animation.getSheet().getSpriteWidth()
 				- (int) spriteAABB.getMaxX();
-		spriteOffsetFlippedY = sheet.getSpriteHeight()
+		spriteOffsetFlippedY = animation.getSheet().getSpriteHeight()
 				- (int) spriteAABB.getMaxY();
 
 		this.transparency = 1.0;
@@ -37,7 +115,14 @@ public class SpriteComponent extends EntityComponent {
 	}
 
 	@Override
+	public void update(double delta) {
+		animation.update(delta);
+	}
+
+	@Override
 	public void render(IRenderContext target, int viewportX, int viewportY) {
+		SpriteSheet sheet = animation.getSheet();
+		int spriteIndex = animation.getSpriteIndex();
 		if (sheet != null) {
 			int spriteOffX = spriteOffsetX;
 			int spriteOffY = spriteOffsetY;

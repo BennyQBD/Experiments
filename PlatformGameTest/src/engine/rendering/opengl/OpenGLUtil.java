@@ -16,6 +16,9 @@ import org.lwjgl.BufferUtils;
 import engine.rendering.ARGBColor;
 
 public class OpenGLUtil {
+	public static final int FILTER_NEAREST = GL_NEAREST;
+	public static final int FILTER_LINEAR = GL_LINEAR;
+
 	private static int[] byteToInt(byte[] data) {
 		if (data == null) {
 			return null;
@@ -40,6 +43,20 @@ public class OpenGLUtil {
 		return data;
 	}
 
+//	private static FloatBuffer makeBuffer(float[] data) {
+//		FloatBuffer result = BufferUtils.createFloatBuffer(data.length);
+//		result.put(data);
+//		result.flip();
+//		return result;
+//	}
+//
+//	private static IntBuffer makeBuffer(int[] data) {
+//		IntBuffer result = BufferUtils.createIntBuffer(data.length);
+//		result.put(data);
+//		result.flip();
+//		return result;
+//	}
+
 	private static ByteBuffer makeRGBABuffer(int[] data, int width, int height) {
 		if (data == null) {
 			return null;
@@ -56,16 +73,25 @@ public class OpenGLUtil {
 		return buffer;
 	}
 
-	public static int makeTexture(int width, int height, int[] data, int filter) {
-		return makeTexture(width, height, data, filter, GL_RGBA8);
+	public static int createTexture(int width, int height, int[] data,
+			int filter) {
+		return createTexture(width, height, data, filter, GL_RGBA8);
 	}
 
-	public static int makeTexture(int width, int height, byte[] data, int filter) {
-		return makeTexture(width, height, byteToInt(data), filter,
+	public static int createTexture(int width, int height, byte[] data,
+			int filter) {
+		return createTexture(width, height, byteToInt(data), filter,
 				GL_INTENSITY8);
 	}
 
-	private static int makeTexture(int width, int height, int[] data,
+	public static int releaseTexture(int id) {
+		if (id != 0) {
+			glDeleteTextures(id);
+		}
+		return 0;
+	}
+
+	private static int createTexture(int width, int height, int[] data,
 			int filter, int format) {
 		int id = glGenTextures();
 		glBindTexture(GL_TEXTURE_2D, id);
@@ -123,4 +149,90 @@ public class OpenGLUtil {
 		glViewport(0, 0, fboWidth, fboHeight);
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	}
+	
+	public static void clear(double a, double r, double g, double b) {
+		glClearColor((float)r, (float)g, (float)b, (float)a);
+		glClear(GL_COLOR_BUFFER_BIT);
+	}
+
+	public static void drawRect(int texId, double x, double y, double width,
+			double height, double texX, double texY, double texWidth,
+			double texHeight) {
+		glBindTexture(GL_TEXTURE_2D, texId);
+		glBegin(GL_QUADS);
+		{
+			glTexCoord2f((float) texX, (float) (texY));
+			glVertex2f((float) x, (float) y);
+			glTexCoord2f((float) texX, (float) (texY + texHeight));
+			glVertex2f((float) x, (float) (y + height));
+			glTexCoord2f((float) (texX + texWidth), (float) (texY + texHeight));
+			glVertex2f((float) (x + width), (float) (y + height));
+			glTexCoord2f((float) (texX + texWidth), (float) (texY));
+			glVertex2f((float) (x + width), (float) y);
+		}
+		glEnd();
+	}
+
+	// public static int createBuffer(float[] data, int elementSize) {
+	// int bo = glGenBuffers();
+	// glBindBuffer(GL_ARRAY_BUFFER, bo);
+	// glBufferData(GL_ARRAY_BUFFER, makeBuffer(data), GL_STATIC_DRAW);
+	// return bo;
+	// }
+	//
+	// public static int releaseBuffer(int bo) {
+	// if (bo != 0) {
+	// glDeleteBuffers(bo);
+	// }
+	// return 0;
+	// }
+	//
+	// public static void drawMesh(int vertexBuffer, int texCoordBuffer, int
+	// numVertices) {
+	// glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+	// glVertexPointer(3, GL_FLOAT, 0, 0);
+	// glBindBuffer(GL_ARRAY_BUFFER, texCoordBuffer);
+	// glTexCoordPointer(3, GL_FLOAT, 0, 0);
+	// glEnableClientState(GL_VERTEX_ARRAY);
+	// glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	// glDrawArrays(GL_TRIANGLES, 0, numVertices);
+	// }
+
+	// public static int createMesh() {
+	// return glGenVertexArrays();
+	// }
+	//
+	// public static int releaseMesh(int vao) {
+	// if (vao != 0) {
+	// glDeleteVertexArrays(vao);
+	// }
+	// return 0;
+	// }
+	//
+	// public static int createMeshBuffer(int vao, float[] data, int
+	// elementSize,
+	// int attribLoc) {
+	// glBindVertexArray(vao);
+	// int bo = glGenBuffers();
+	// glBindBuffer(GL_ARRAY_BUFFER, bo);
+	// glBufferData(GL_ARRAY_BUFFER, makeBuffer(data), GL_STATIC_DRAW);
+	// glEnableVertexAttribArray(attribLoc);
+	// glVertexAttribPointer(attribLoc, elementSize, GL_FLOAT, false, 0, 0);
+	// return bo;
+	// }
+	//
+	// public static int createMeshIndexBuffer(int vao, int[] data) {
+	// glBindVertexArray(vao);
+	// int bo = glGenBuffers();
+	// glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bo);
+	// glBufferData(GL_ELEMENT_ARRAY_BUFFER, makeBuffer(data), GL_STATIC_DRAW);
+	// return bo;
+	// }
+	//
+	// public static int releaseMeshBuffer(int bo) {
+	// if (bo != 0) {
+	// glDeleteBuffers(bo);
+	// }
+	// return 0;
+	// }
 }

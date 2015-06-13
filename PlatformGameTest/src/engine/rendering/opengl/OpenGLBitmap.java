@@ -1,19 +1,12 @@
 package engine.rendering.opengl;
 
-import static org.lwjgl.opengl.GL11.*;
-
 import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferInt;
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import javax.imageio.ImageIO;
 
-import org.lwjgl.BufferUtils;
-
-import engine.rendering.ARGBColor;
 import engine.rendering.IBitmap;
 
 public class OpenGLBitmap implements IBitmap {
@@ -24,8 +17,8 @@ public class OpenGLBitmap implements IBitmap {
 	public OpenGLBitmap(int width, int height) {
 		this.width = width;
 		this.height = height;
-		this.id = OpenGLUtil.makeTexture(width, height, (int[]) null,
-				GL_NEAREST);
+		this.id = OpenGLUtil.createTexture(width, height, (int[]) null,
+				OpenGLUtil.FILTER_NEAREST);
 	}
 
 	public OpenGLBitmap(String fileName) throws IOException {
@@ -36,15 +29,12 @@ public class OpenGLBitmap implements IBitmap {
 
 		int imgPixels[] = new int[width * height];
 		image.getRGB(0, 0, width, height, imgPixels, 0, width);
-		this.id = OpenGLUtil.makeTexture(width, height, imgPixels, GL_NEAREST);
+		this.id = OpenGLUtil.createTexture(width, height, imgPixels, OpenGLUtil.FILTER_NEAREST);
 	}
 
 	@Override
 	public void dispose() {
-		if (id != 0) {
-			glDeleteTextures(id);
-			id = 0;
-		}
+		id = OpenGLUtil.releaseTexture(id);
 	}
 
 	@Override
