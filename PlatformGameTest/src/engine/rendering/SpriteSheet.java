@@ -4,22 +4,22 @@ import engine.space.AABB;
 import engine.util.Util;
 
 public class SpriteSheet {
-	private final IBitmap sheet;
+	private final Bitmap sheet;
 	private final int spritesPerX;
 	private final int spritesPerY;
 	private final int spriteWidth;
 	private final int spriteHeight;
 	private final AABB[] spriteAABBs;
 
-	public SpriteSheet(IBitmap spriteSheet) {
+	public SpriteSheet(Bitmap spriteSheet) {
 		this(spriteSheet, 1);
 	}
 	
-	public SpriteSheet(IBitmap spriteSheet, int spritesPerAxis) {
+	public SpriteSheet(Bitmap spriteSheet, int spritesPerAxis) {
 		this(spriteSheet, spritesPerAxis, spritesPerAxis);
 	}
 
-	public SpriteSheet(IBitmap spriteSheet, int spritesPerX, int spritesPerY) {
+	public SpriteSheet(Bitmap spriteSheet, int spritesPerX, int spritesPerY) {
 		this.sheet = spriteSheet;
 		this.spritesPerX = spritesPerX;
 		this.spritesPerY = spritesPerY;
@@ -40,7 +40,7 @@ public class SpriteSheet {
 		return spriteHeight;
 	}
 
-	public IBitmap getSheet() {
+	public Bitmap getSheet() {
 		return sheet;
 	}
 

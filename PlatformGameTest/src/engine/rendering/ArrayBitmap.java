@@ -8,24 +8,17 @@ import java.util.Arrays;
 
 import javax.imageio.ImageIO;
 
-public class ArrayBitmap implements IBitmap {
+public class ArrayBitmap {
 	private final int width;
 	private final int height;
 	private final int colors[];
-
-	@Override
+	
 	public int getWidth() {
 		return width;
 	}
 
-	@Override
 	public int getHeight() {
 		return height;
-	}
-	
-	@Override
-	public int getHardwareID() {
-		return -1;
 	}
 
 	public int getPixel(int i, int j) {
@@ -49,7 +42,6 @@ public class ArrayBitmap implements IBitmap {
 		this.colors = imgPixels;
 	}
 
-	@Override
 	public void clear(int color) {
 		Arrays.fill(colors, color);
 	}
@@ -58,12 +50,10 @@ public class ArrayBitmap implements IBitmap {
 		colors[getIndex(x, y)] = color;
 	}
 
-	@Override
 	public int[] getPixels(int[] dest) {
 		return getPixels(dest, 0, 0, width, height);
 	}
 	
-	@Override
 	public int[] getPixels(int[] dest, int x, int y, int width, int height) {
 		if (dest == null || dest.length < width*height) {
 			dest = new int[width*height];
@@ -76,7 +66,6 @@ public class ArrayBitmap implements IBitmap {
 		return dest;
 	}
 	
-	@Override
 	public void setPixels(int[] colors, int x, int y, int width, int height) {
 		for(int j = y, b = 0; j < y + height; j++, b++) {
 			for(int i = x, a = 0; i < x + width; i++, a++) {
@@ -85,7 +74,6 @@ public class ArrayBitmap implements IBitmap {
 		}
 	}
 
-	@Override
 	public void save(String filetype, File file) throws IOException {
 		BufferedImage output = new BufferedImage(width, height,
 				BufferedImage.TYPE_INT_ARGB);
@@ -108,10 +96,5 @@ public class ArrayBitmap implements IBitmap {
 		}
 
 		return y * width + x;
-	}
-
-	@Override
-	public void dispose() {
-		// No clean up necessary
 	}
 }

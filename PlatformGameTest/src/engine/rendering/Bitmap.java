@@ -1,27 +1,30 @@
-package engine.rendering.opengl;
+package engine.rendering;
 
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
 import javax.imageio.ImageIO;
 
-import engine.rendering.IBitmap;
-
-public class OpenGLBitmap implements IBitmap {
+public class Bitmap {
+	private final IRenderDevice device;
 	private final int width;
 	private final int height;
 	private int id;
 
-	public OpenGLBitmap(int width, int height) {
+	public Bitmap(IRenderDevice device, int width, int height) {
+		this.device = device;
 		this.width = width;
 		this.height = height;
-		this.id = OpenGLUtil.createTexture(width, height, (int[]) null,
-				OpenGLUtil.FILTER_NEAREST);
+		this.id = device.createTexture(width, height, (int[]) null,
+				IRenderDevice.FILTER_NEAREST);
 	}
 
-	public OpenGLBitmap(String fileName) throws IOException {
+	public Bitmap(IRenderDevice device, String fileName)
+			throws IOException {
+		this.device = device;
 		BufferedImage image = ImageIO.read(new File(fileName));
 
 		this.width = image.getWidth();
@@ -29,12 +32,12 @@ public class OpenGLBitmap implements IBitmap {
 
 		int imgPixels[] = new int[width * height];
 		image.getRGB(0, 0, width, height, imgPixels, 0, width);
-		this.id = OpenGLUtil.createTexture(width, height, imgPixels, OpenGLUtil.FILTER_NEAREST);
+		this.id = device.createTexture(width, height, imgPixels,
+				IRenderDevice.FILTER_NEAREST);
 	}
 
-	@Override
 	public void dispose() {
-		id = OpenGLUtil.releaseTexture(id);
+		id = device.releaseTexture(id);
 	}
 
 	@Override
@@ -43,34 +46,28 @@ public class OpenGLBitmap implements IBitmap {
 		super.finalize();
 	}
 
-	@Override
 	public int getHardwareID() {
 		return id;
 	}
 
-	@Override
 	public int getWidth() {
 		return width;
 	}
 
-	@Override
 	public int getHeight() {
 		return height;
 	}
 
-	@Override
 	public void clear(int color) {
-		int[] newTex = new int[width*height];
+		int[] newTex = new int[width * height];
 		Arrays.fill(newTex, color);
-		OpenGLUtil.updateTexture(id, newTex, 0, 0, width, height);
+		device.updateTexture(id, newTex, 0, 0, width, height);
 	}
 
-	@Override
 	public int[] getPixels(int[] dest) {
-		return OpenGLUtil.getTexture(id, dest, width, height);
+		return device.getTexture(id, dest, width, height);
 	}
 
-	@Override
 	public int[] getPixels(int[] dest, int x, int y, int width, int height) {
 		if (dest == null || dest.length < width * height) {
 			dest = new int[width * height];
@@ -84,13 +81,17 @@ public class OpenGLBitmap implements IBitmap {
 		return dest;
 	}
 
-	@Override
 	public void save(String filetype, File file) throws IOException {
-		OpenGLUtil.saveTexture(id, width, height, filetype, file);
+		BufferedImage output = new BufferedImage(width, height,
+				BufferedImage.TYPE_INT_ARGB);
+		int[] displayComponents = ((DataBufferInt) output.getRaster()
+				.getDataBuffer()).getData();
+		device.getTexture(id, displayComponents, width, height);
+
+		ImageIO.write(output, "png", file);
 	}
 
-	@Override
 	public void setPixels(int[] colors, int x, int y, int width, int height) {
-		OpenGLUtil.updateTexture(id, colors, x, y, width, height);
+		device.updateTexture(id, colors, x, y, width, height);
 	}
 }

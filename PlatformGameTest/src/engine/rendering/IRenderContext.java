@@ -1,6 +1,5 @@
 package engine.rendering;
 
-import engine.rendering.opengl.OpenGLLightMap;
 
 public interface IRenderContext {
 	public void clear(double a, double r, double g, double b);
@@ -10,7 +9,7 @@ public interface IRenderContext {
 			int color, int wrapX);
 
 	public void clearLighting();
-	public void drawLight(OpenGLLightMap light, int x, int y, int mapStartX,
+	public void drawLight(LightMap light, int x, int y, int mapStartX,
 			int mapStartY, int width, int height);
 	public void applyLighting(double ambientLightAmt);
 

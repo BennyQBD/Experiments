@@ -14,18 +14,15 @@ import engine.core.entity.Entity;
 import engine.input.IInput;
 import engine.input.InputListener;
 import engine.rendering.ARGBColor;
-import engine.rendering.ArrayBitmap;
-import engine.rendering.IBitmap;
+import engine.rendering.Bitmap;
 import engine.rendering.IRenderContext;
+import engine.rendering.IRenderDevice;
+import engine.rendering.LightMap;
 import engine.rendering.SpriteSheet;
-import engine.rendering.opengl.OpenGLBitmap;
-import engine.rendering.opengl.OpenGLLightMap;
 import engine.space.Grid;
 import engine.space.ISpatialStructure;
 import engine.util.BitmapFactory;
 import engine.util.Delay;
-import engine.util.LightComponent;
-import engine.util.LinkComponent;
 import engine.util.SpriteComponent;
 import engine.util.Util;
 import engine.util.menu.IMenuHandler;
@@ -51,6 +48,7 @@ public class PlatformScene extends Scene {
 	private SpriteSheet healthIcon;
 
 	private IInput input;
+	private IRenderDevice device;
 	private Config config;
 
 	private State state;
@@ -59,7 +57,7 @@ public class PlatformScene extends Scene {
 	private MenuStack menu;
 	private boolean shouldExit;
 	private InputListener helpMenuKey;
-	private OpenGLLightMap bigLightMapTest;
+	private LightMap bigLightMapTest;
 
 	private void loadLevel(Config config, IInput input,
 			ISpatialStructure<Entity> structure, int points, int lives,
@@ -67,7 +65,7 @@ public class PlatformScene extends Scene {
 		if (bigLightMapTest != null) {
 			bigLightMapTest.dispose();
 		}
-		this.bigLightMapTest = new OpenGLLightMap(2048, 2048, 2);
+		this.bigLightMapTest = new LightMap(device, 2048, 2048, 2);
 		SpriteSheet level = new SpriteSheet(bitmaps.get("./res/"
 				+ config.getString("level.data")), 4, 2);
 		int[] backgrounds = new int[5];
@@ -84,7 +82,7 @@ public class PlatformScene extends Scene {
 		backgrounds[3] = 46;
 		backgrounds[4] = 62;
 
-		OpenGLLightMap backgroundLight = new OpenGLLightMap(100);
+		LightMap backgroundLight = new LightMap(device, 100);
 		int tileSize = 16;
 		int[] pixels = level.getSheet().getPixels(null);
 		for (int k = 0; k < level.getNumSprites(); k++) {
@@ -107,7 +105,7 @@ public class PlatformScene extends Scene {
 	private void addEntity(Config config, IInput input,
 			ISpatialStructure<Entity> structure, int x, int y, int layer,
 			BitmapFactory bitmaps, SpriteSheet tileSheet, int color,
-			OpenGLLightMap staticLightMap, OpenGLLightMap lightToAdd,
+			LightMap staticLightMap, LightMap lightToAdd,
 			int points, int lives, int lifeDeficit) throws IOException {
 		if (color == 255) {
 			player = new Entity(structure, x, y, layer, true);
@@ -293,12 +291,13 @@ public class PlatformScene extends Scene {
 		initMenu();
 	}
 
-	public PlatformScene(Config config, IInput input, int suggestedBitmapType)
+	public PlatformScene(Config config, IInput input, IRenderDevice device)
 			throws IOException {
 		super(new Grid<Entity>(16, 256, 256));
 		this.input = input;
+		this.device = device;
 		this.config = config;
-		this.bitmaps = new BitmapFactory(suggestedBitmapType);
+		this.bitmaps = new BitmapFactory(device);
 		this.helpMenuKey = new InputListener(input, new int[] { IInput.KEY_F1 });
 		startNewGame();
 	}
@@ -400,14 +399,14 @@ public class PlatformScene extends Scene {
 		return shouldExit;
 	}
 
-	private static IBitmap background;
+	private static Bitmap background;
 	private static SpriteSheet backgroundSpriteSheet;
 
-	private static void drawBackground(IRenderContext target, double r,
+	private void drawBackground(IRenderContext target, double r,
 			double g, double b, int parallax, int x, int y) {
 		if (background == null || background.getWidth() != target.getWidth()
 				|| background.getHeight() != target.getHeight()) {
-			background = new OpenGLBitmap(target.getWidth(), target.getHeight());
+			background = new Bitmap(device, target.getWidth(), target.getHeight());
 			backgroundSpriteSheet = new SpriteSheet(background, 1);
 		}
 		int width = target.getWidth();

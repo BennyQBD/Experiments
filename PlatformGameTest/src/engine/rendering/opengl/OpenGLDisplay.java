@@ -10,11 +10,13 @@ import engine.input.IInput;
 import engine.input.opengl.OpenGLInput;
 import engine.rendering.IDisplay;
 import engine.rendering.IRenderContext;
+import engine.rendering.IRenderDevice;
 import engine.util.Debug;
 
 public class OpenGLDisplay implements IDisplay {
-	private IRenderContext frameBuffer;
-	private IInput input;
+	private final IRenderDevice device;
+	private final IRenderContext frameBuffer;
+	private final IInput input;
 
 	public OpenGLDisplay(int width, int height, double scale, String title)
 			throws LWJGLException {
@@ -28,7 +30,8 @@ public class OpenGLDisplay implements IDisplay {
 		Mouse.create();
 
 		Display.setVSyncEnabled(!Debug.IGNORE_FRAME_CAP);
-		frameBuffer = new OpenGLRenderContext(width, height, scaledWidth, scaledHeight);
+		device = new OpenGLRenderDevice(width, height, scaledWidth, scaledHeight);
+		frameBuffer = new OpenGLRenderContext(device);
 		input = new OpenGLInput();
 	}
 
@@ -53,6 +56,11 @@ public class OpenGLDisplay implements IDisplay {
 	@Override
 	public IRenderContext getRenderContext() {
 		return frameBuffer;
+	}
+	
+	@Override
+	public IRenderDevice getRenderDevice() {
+		return device;
 	}
 
 	@Override

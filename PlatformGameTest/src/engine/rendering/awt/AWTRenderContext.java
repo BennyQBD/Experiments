@@ -2,20 +2,20 @@ package engine.rendering.awt;
 
 import engine.rendering.ARGBColor;
 import engine.rendering.ArrayBitmap;
-import engine.rendering.IBitmap;
+import engine.rendering.Bitmap;
 import engine.rendering.IRenderContext;
 import engine.rendering.LightMap;
+import engine.rendering.OldLightMap;
 import engine.rendering.SpriteSheet;
-import engine.rendering.opengl.OpenGLLightMap;
 import engine.util.Util;
 
 public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
-	private LightMap lightMap;
+	private OldLightMap lightMap;
 	private int[] imgSection;
 
 	public AWTRenderContext(int width, int height) {
 		super(width, height);
-		lightMap = new LightMap(width, height, 1);
+		lightMap = new OldLightMap(width, height, 1);
 		lightMap.clear();
 		imgSection = null;
 	}
@@ -56,7 +56,7 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 				sheet.getSpriteWidth(), sheet.getSpriteHeight(), colorMask);
 	}
 
-	private void blit(IBitmap image, int offsetX, int offsetY,
+	private void blit(Bitmap image, int offsetX, int offsetY,
 			double transparency, boolean flipX, boolean flipY, int imgStartX,
 			int imgStartY, int imgWidth, int imgHeight, int colorMask) {
 		colorMask |= 0xFF000000;
@@ -142,7 +142,7 @@ public class AWTRenderContext extends ArrayBitmap implements IRenderContext {
 	}
 
 	@Override
-	public void drawLight(OpenGLLightMap light, int xIn, int yIn, int mapStartX,
+	public void drawLight(LightMap light, int xIn, int yIn, int mapStartX,
 			int mapStartY, int width, int height) {
 		// TODO: FIXME
 		//lightMap.addLight(light, xIn, yIn, mapStartX, mapStartY, width, height);

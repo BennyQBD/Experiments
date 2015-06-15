@@ -15,6 +15,7 @@ import engine.input.IInput;
 import engine.input.awt.AWTInput;
 import engine.rendering.IDisplay;
 import engine.rendering.IRenderContext;
+import engine.rendering.IRenderDevice;
 
 public class AWTDisplay extends Canvas implements IDisplay {
 	private static final long serialVersionUID = 1L;
@@ -31,6 +32,12 @@ public class AWTDisplay extends Canvas implements IDisplay {
 	@Override
 	public IRenderContext getRenderContext() {
 		return frameBuffer;
+	}
+	
+	@Override
+	public IRenderDevice getRenderDevice() {
+		// TODO: Implement render device;
+		return null;
 	}
 
 	@Override

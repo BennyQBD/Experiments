@@ -1,33 +1,53 @@
 package engine.rendering;
 
-import java.util.Arrays;
-
 import engine.util.Util;
 
 public class LightMap {
+	private final IRenderDevice device;
 	private final int width;
 	private final int height;
 	private final double scale;
-	private final byte[] lighting;
+	private int id;
+	private int fbo;
 
-	public LightMap(int radius) {
-		this(radius * 2, radius * 2, 1);
-		generate(radius);
+	public LightMap(IRenderDevice device, int radius) {
+		this.device = device;
+		this.width = radius * 2;
+		this.height = radius * 2;
+		this.scale = 1;
+		initTextures(width, height, scale,
+				generateLighting(radius, width, height));
 	}
 
-	public LightMap(int width, int height, double scale) {
-		lighting = new byte[width * height];
+	public LightMap(IRenderDevice device, int width, int height,
+			double scale) {
+		this.device = device;
 		this.width = width;
 		this.height = height;
 		this.scale = scale;
+		initTextures(width, height, scale, null);
+	}
+
+	private void initTextures(int width, int height, double scale, byte[] data) {
+		this.id = device.createTexture(width, height, data,
+				IRenderDevice.FILTER_LINEAR);
+		this.fbo = device.createRenderTarget(width, height, width, height, id);
+		clear();
+	}
+
+	public void dispose() {
+		fbo = device.releaseRenderTarget(fbo);
+		id = device.releaseTexture(id);
+	}
+
+	@Override
+	protected void finalize() throws Throwable {
+		dispose();
+		super.finalize();
 	}
 
 	public void clear() {
-		Arrays.fill(lighting, (byte) 0);
-	}
-
-	public double getLight(int x, int y) {
-		return (double) ((lighting[x + y * width] & 0xFF));
+		device.clear(fbo, 0.0, 0.0, 0.0, 0.0);
 	}
 
 	public int getWidth() {
@@ -42,91 +62,63 @@ public class LightMap {
 		return scale;
 	}
 
-	private static byte toData(double val) {
-		return (byte) (Util.saturate(val) * 255.0 + 0.5);
+	private static byte toData(double val, double dither) {
+		return (byte) (Util.saturate(val) * 255.0 + dither);
 	}
 
-	private void generate(int radius) {
-		clear();
+	private static byte calcLight(int radius, int radiusSq, int distX,
+			int distY, double dither) {
+		int distCenterSq = distY * distY + distX * distX;
+		if (distCenterSq > radiusSq) {
+			return (byte) 0;
+		}
+		return toData(((double) radius / (double) (distCenterSq)), dither);
+	}
+
+	private static byte[] generateLighting(int radius, int width, int height) {
+		byte[] result = new byte[width * height];
 		int centerX = width / 2;
 		int centerY = height / 2;
 		int radiusSq = radius * radius;
 		for (int j = 0, distY = -centerY; j < height; j++, distY++) {
 			for (int i = 0, distX = -centerX; i < width; i++, distX++) {
-				int distCenterSq = distY * distY + distX * distX;
-				if (distCenterSq > radiusSq) {
-					continue;
-				}
-				lighting[i + j * width] = toData(((double) radius / (double) (distCenterSq)));
+				result[i + j * width] = calcLight(radius, radiusSq, distX,
+						distY, Dither.getDither(i, j));
 			}
 		}
+		return result;
 	}
 
-	public void addLight(LightMap light, int xIn, int yIn, int mapStartX,
+	public int getId() {
+		return id;
+	}
+
+	public void addLight(LightMap light, int x, int y, int mapStartX,
 			int mapStartY, int width, int height) {
-		double iStart = mapStartX / light.getScale();
-		double jStart = mapStartY / light.getScale();
-		int xStart = xIn;
-		int yStart = yIn;
-		int xEnd = xStart + width;
-		int yEnd = yStart + height;
-		if (xStart < 0) {
-			iStart -= xIn / light.getScale();
-		}
-		if (yStart < 0) {
-			jStart -= yIn / light.getScale();
-		}
-		xStart = Util.clamp((int) Math.floor(xStart / scale), 0, getWidth());
-		yStart = Util.clamp((int) Math.floor(yStart / scale), 0, getHeight());
-		xEnd = Util.clamp((int) Math.ceil(xEnd / scale), 0, getWidth());
-		yEnd = Util.clamp((int) Math.ceil(yEnd / scale), 0, getHeight());
-		double step = scale / light.getScale();
+		double posScale = 1.0 / scale;
+		double texScale = 1.0 / light.getScale();
+		double texMinX = texScale
+				* ((double) mapStartX / ((double) light.getWidth()));
+		double texMinY = texScale
+				* ((double) mapStartY / ((double) light.getHeight()));
+		double texWidth = texScale * ((double) width)
+				/ ((double) light.getWidth());
+		double texHeight = texScale * ((double) height)
+				/ ((double) light.getHeight());
 
-		int xDist = xEnd - xStart;
-		int yDist = yEnd - yStart;
-		double jEnd = (jStart + yDist * step);
-		if (jEnd > light.height - 1) {
-			yEnd = (int) (((light.height - 1) - jStart) / step) + yStart;
-		}
+		double xStart = x * posScale;
+		double xEnd = (x + width) * posScale;
+		double yStart = y * posScale;
+		double yEnd = (y + height) * posScale;
 
-		double iEnd = (iStart + xDist * step);
-		if (iEnd > light.width - 1) {
-			xEnd = (int) (((light.width - 1) - iStart) / step) + xStart;
-		}
+		yStart = this.height - yStart;
+		yEnd = this.height - yEnd;
 
-		double j = jStart;
-		for (int y = yStart; y < yEnd; y++, j += step) {
-			double i = iStart;
-			for (int x = xStart; x < xEnd; x++, i += step) {
-//				if (step >= 1.0) {
-					int index = x + y * this.width;
-					int light1 = lighting[index] & 0xFF;
-					int light2 = light.lighting[(int) (i+0.5) + ((int) (j+0.5))
-							* light.width] & 0xFF;
-					lighting[index] = (byte) Util
-							.clamp(light1 + light2, 0, 255);
-//				} else {
-//					int iInt = (int) i;
-//					int jInt = (int) j;
-//
-//					int light1 = light.lighting[iInt + (jInt) * light.width] & 0xFF;
-//					int light2 = light.lighting[iInt + 1 + (jInt) * light.width] & 0xFF;
-//					int light3 = light.lighting[iInt + (jInt + 1) * light.width] & 0xFF;
-//					int light4 = light.lighting[iInt + 1 + (jInt + 1)
-//							* light.width] & 0xFF;
-//
-//					int amt1 = (int) ((i - iInt) * 255.0);
-//					int amt2 = (int) ((j - jInt) * 255.0);
-//
-//					int lerpX1 = (light1 * (255 - amt1) + light2 * amt1) >> 8;
-//					int lerpX2 = (light3 * (255 - amt1) + light4 * amt1) >> 8;
-//					int lightAmt = (lerpX1 * (255 - amt2) + lerpX2 * amt2) >> 8;
-//					
-//					int index = x + y * this.width;
-//					lighting[index] = (byte) Util
-//							.clamp(lighting[index] + lightAmt, 0, 255);
-//				}
-			}
-		}
+		double drawWidth = (xEnd - xStart);
+		double drawHeight = (yEnd - yStart);
+
+		device.drawRect(fbo, light.id, IRenderDevice.BlendMode.ADD_LIGHT,
+				xStart, yStart, drawWidth, drawHeight, texMinX, texMinY,
+				texWidth, texHeight);
 	}
 }

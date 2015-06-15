@@ -1,102 +1,29 @@
 package engine.rendering.opengl;
 
-import static org.lwjgl.opengl.GL11.*;
-
-import java.nio.ByteBuffer;
-
-import engine.rendering.ARGBColor;
-import engine.rendering.IBitmap;
 import engine.rendering.IRenderContext;
+import engine.rendering.IRenderDevice;
+import engine.rendering.LightMap;
+import engine.rendering.IRenderDevice.BlendMode;
 import engine.rendering.SpriteSheet;
-import engine.util.Debug;
 import engine.util.Util;
 
 public class OpenGLRenderContext implements IRenderContext {
 	private final int width;
 	private final int height;
-	private final int scaledWidth;
-	private final int scaledHeight;
-	private SpriteSheet boundTex;
-	private OpenGLLightMap lightMap;
-	private OpenGLBitmap softTex;
-	private int lightMapTexId;
-	
-	public OpenGLRenderContext(int width, int height, int scaledWidth,
-			int scaledHeight) {
-		this.width = width;
-		this.height = height;
-		this.scaledWidth = scaledWidth;
-		this.scaledHeight = scaledHeight;
-		this.boundTex = null;
-		lightMap = new OpenGLLightMap(width, height, 1);
-		lightMap.clear();
+	private final IRenderDevice device;
+	private final LightMap lightMap;
 
-		OpenGLUtil.init(this.width, this.height, this.scaledWidth,
-				this.scaledHeight);
-		initTexture();
+	public OpenGLRenderContext(IRenderDevice device) {
+		this.device = device;
+		this.width = device.getRenderTargetWidth(0);
+		this.height = device.getRenderTargetHeight(0);
+		this.lightMap = new LightMap(device, width, height, 1);
+		lightMap.clear();
 	}
 
 	@Override
 	public void dispose() {
-		softTex.dispose();
-		glDeleteTextures(lightMapTexId);
-	}
-
-	private void initTexture() {
-		softTex = new OpenGLBitmap(256, 256);
-
-		this.lightMapTexId = glGenTextures();
-		glBindTexture(GL_TEXTURE_2D, lightMapTexId);
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_INTENSITY8, width, height, 0,
-				GL_RGBA, GL_UNSIGNED_BYTE, (ByteBuffer) null);
-	}
-
-	private boolean bind(SpriteSheet sheet) {
-		int id = sheet.getSheet().getHardwareID();
-		if (id != -1) {
-			glBindTexture(GL_TEXTURE_2D, id);
-			return true;
-		} else {
-			glBindTexture(GL_TEXTURE_2D, softTex.getHardwareID());
-		}
-		
-		// TODO: Remove software texture path
-
-		if (sheet == boundTex) {
-			return false;
-		}
-		IBitmap image = sheet.getSheet();
-		int width = image.getWidth();
-		int height = image.getHeight();
-
-		boolean realloc = false;
-		int newWidth = softTex.getWidth();
-		int newHeight = softTex.getHeight();
-		if (width > newWidth) {
-			realloc = true;
-			newWidth = width;
-		}
-
-		if (height > newHeight) {
-			realloc = true;
-			newHeight = height;
-		}
-
-		if (realloc) {
-			softTex.dispose();
-			softTex = new OpenGLBitmap(newWidth, newHeight);
-		}
-
-		softTex.setPixels(image.getPixels(null), 0, 0, width, height);
-		boundTex = sheet;
-		return false;
+		lightMap.dispose();
 	}
 
 	@Override
@@ -111,9 +38,7 @@ public class OpenGLRenderContext implements IRenderContext {
 
 	@Override
 	public void clear(double a, double r, double g, double b) {
-		OpenGLUtil.bindRenderTarget(0);
-		glClearColor((float) r, (float) g, (float) b, (float) a);
-		glClear(GL_COLOR_BUFFER_BIT);
+		device.clear(0, a, r, g, b);
 	}
 
 	@Override
@@ -130,20 +55,6 @@ public class OpenGLRenderContext implements IRenderContext {
 		double texMaxY = texMinY + ((double) sheet.getSpriteHeight())
 				/ ((double) sheet.getSheet().getHeight());
 
-		boolean isInHardware = bind(sheet);
-
-		double texScaleX = (double) (sheet.getSheet().getWidth())
-				/ softTex.getWidth();
-		double texScaleY = (double) (sheet.getSheet().getHeight())
-				/ softTex.getHeight();
-
-		if (!isInHardware) {
-			texMinX *= texScaleX;
-			texMinY *= texScaleY;
-			texMaxX *= texScaleX;
-			texMaxY *= texScaleY;
-		}
-
 		if (flipX) {
 			double temp = texMinX;
 			texMinX = texMaxX;
@@ -156,25 +67,12 @@ public class OpenGLRenderContext implements IRenderContext {
 			texMaxY = temp;
 		}
 
-		glColor4f((float) ARGBColor.getComponentd(colorMask, 1),
-				(float) ARGBColor.getComponentd(colorMask, 2),
-				(float) ARGBColor.getComponentd(colorMask, 3),
-				(float) transparency);
+		double texWidth = texMaxX - texMinX;
+		double texHeight = texMaxY - texMinY;
 
-		OpenGLUtil.bindRenderTarget(0);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glBegin(GL_QUADS);
-		{
-			glTexCoord2f((float) texMinX, (float) texMinY);
-			glVertex2f(x, y);
-			glTexCoord2f((float) texMinX, (float) texMaxY);
-			glVertex2f(x, y + height);
-			glTexCoord2f((float) texMaxX, (float) texMaxY);
-			glVertex2f(x + width, y + height);
-			glTexCoord2f((float) texMaxX, (float) texMinY);
-			glVertex2f(x + width, y);
-		}
-		glEnd();
+		device.drawRect(0, sheet.getSheet().getHardwareID(), BlendMode.SPRITE,
+				x, y, width, height, texMinX, texMinY, texWidth, texHeight,
+				colorMask, transparency);
 	}
 
 	@Override
@@ -213,48 +111,15 @@ public class OpenGLRenderContext implements IRenderContext {
 	}
 
 	@Override
-	public void drawLight(OpenGLLightMap light, int x, int y, int mapStartX,
+	public void drawLight(LightMap light, int x, int y, int mapStartX,
 			int mapStartY, int width, int height) {
 		lightMap.addLight(light, x, y, mapStartX, mapStartY, width, height);
 	}
 
 	@Override
 	public void applyLighting(double ambientLightAmt) {
-		// double ambientLightScale = (1.0 - ambientLightAmt);
-		// ambientLightAmt = ambientLightAmt * 255.0 + 0.5;
-		// ByteBuffer buffer = BufferUtils.createByteBuffer(height * width * 4);
-		// for (int j = 0; j < height; j++) {
-		// for (int i = 0; i < width; i++) {
-		// double lightAmt = lightMap.getLight(i, j) * ambientLightScale
-		// + ambientLightAmt;
-		// buffer.put((byte) ((int) lightAmt));
-		// buffer.put((byte) ((int) lightAmt));
-		// buffer.put((byte) ((int) lightAmt));
-		// buffer.put((byte) ((int) lightAmt));
-		// }
-		// }
-		// buffer.flip();
-		//
-		// bindAsRenderTarget();
-		// glBindTexture(GL_TEXTURE_2D, lightMapTexId);
-		// glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA,
-		// GL_UNSIGNED_BYTE, buffer);
-		// glBlendFunc(GL_DST_COLOR, GL_ZERO);
-		// glBegin(GL_QUADS);
-		// {
-		// glTexCoord2f(0, 0);
-		// glVertex2f(0, 0);
-		// glTexCoord2f(0, 1);
-		// glVertex2f(0, height);
-		// glTexCoord2f(1, 1);
-		// glVertex2f(width, height);
-		// glTexCoord2f(1, 0);
-		// glVertex2f(width, 0);
-		// }
-		// glEnd();
-
-		OpenGLUtil.drawRect(0, lightMap.getId(),
-				OpenGLUtil.BlendMode.APPLY_LIGHT, 0, 0, width, height, 0, 0, 1,
-				1);
+		device.drawRect(0, lightMap.getId(),
+				IRenderDevice.BlendMode.APPLY_LIGHT, 0, 0, width, height, 0, 0,
+				1, 1);
 	}
 }

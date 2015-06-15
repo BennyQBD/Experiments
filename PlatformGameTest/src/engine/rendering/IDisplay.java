@@ -9,5 +9,6 @@ public interface IDisplay {
 	public void dispose();
 	
 	public IRenderContext getRenderContext();
+	public IRenderDevice getRenderDevice();
 	public IInput getInput();
 }
