@@ -8,16 +8,38 @@ import java.awt.image.DataBufferInt;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.imageio.ImageIO;
 
 import org.lwjgl.BufferUtils;
 
 import engine.rendering.ARGBColor;
-
 public class OpenGLUtil {
+	public static enum BlendMode {
+		SPRITE, ADD_LIGHT, APPLY_LIGHT
+	}
+
 	public static final int FILTER_NEAREST = GL_NEAREST;
 	public static final int FILTER_LINEAR = GL_LINEAR;
+
+	private static class FramebufferData {
+		public FramebufferData(int width, int height, int projWidth,
+				int projHeight) {
+			this.width = width;
+			this.height = height;
+			this.projWidth = projWidth;
+			this.projHeight = projHeight;
+		}
+
+		private int width;
+		private int height;
+		private int projWidth;
+		private int projHeight;
+	}
+
+	private static final Map<Integer, FramebufferData> framebuffers = new HashMap<>();
 
 	private static int[] byteToInt(byte[] data) {
 		if (data == null) {
@@ -43,19 +65,19 @@ public class OpenGLUtil {
 		return data;
 	}
 
-//	private static FloatBuffer makeBuffer(float[] data) {
-//		FloatBuffer result = BufferUtils.createFloatBuffer(data.length);
-//		result.put(data);
-//		result.flip();
-//		return result;
-//	}
-//
-//	private static IntBuffer makeBuffer(int[] data) {
-//		IntBuffer result = BufferUtils.createIntBuffer(data.length);
-//		result.put(data);
-//		result.flip();
-//		return result;
-//	}
+	// private static FloatBuffer makeBuffer(float[] data) {
+	// FloatBuffer result = BufferUtils.createFloatBuffer(data.length);
+	// result.put(data);
+	// result.flip();
+	// return result;
+	// }
+	//
+	// private static IntBuffer makeBuffer(int[] data) {
+	// IntBuffer result = BufferUtils.createIntBuffer(data.length);
+	// result.put(data);
+	// result.flip();
+	// return result;
+	// }
 
 	private static ByteBuffer makeRGBABuffer(int[] data, int width, int height) {
 		if (data == null) {
@@ -139,25 +161,82 @@ public class OpenGLUtil {
 		ImageIO.write(output, "png", file);
 	}
 
-	public static void bindRenderTarget(int fbo, int projWidth, int projHeight,
-			int fboWidth, int fboHeight) {
+	public static void init(int width, int height, int projWidth,
+			int projHeight) {
+		framebuffers.put(0, new FramebufferData(width, height, projWidth,
+				projHeight));
+		OpenGLUtil.bindRenderTarget(0);
+		glDisable(GL_DEPTH_TEST);
+		glEnable(GL_TEXTURE_2D);
+
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	}
+
+	public static int createRenderTarget(int width, int height, int projWidth,
+			int projHeight, int texId) {
+		int fbo = glGenFramebuffers();
+		FramebufferData data = new FramebufferData(width, height, projWidth,
+				projHeight);
+		framebuffers.put(fbo, data);
+		if (texId != 0 && texId != -1) {
+			OpenGLUtil.bindRenderTarget(fbo);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+					GL_TEXTURE_2D, texId, 0);
+		}
+		return fbo;
+	}
+
+	public static int releaseRenderTarget(int fbo) {
+		if (fbo != 0 && fbo != -1) {
+			glDeleteFramebuffers(fbo);
+			framebuffers.remove(fbo);
+		}
+		return 0;
+	}
+
+	public static void bindRenderTarget(int fbo) {
+		FramebufferData data = framebuffers.get(fbo);
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
-		glOrtho(0, projWidth, projHeight, 0, 1, -1);
+		glOrtho(0, data.width, data.height, 0, 1, -1);
 		glMatrixMode(GL_MODELVIEW);
 
-		glViewport(0, 0, fboWidth, fboHeight);
+		glViewport(0, 0, data.projWidth, data.projHeight);
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	}
-	
+
+	// public static void bindRenderTarget(int fbo, int width, int height,
+	// int projWidth, int projHeight) {
+	// glMatrixMode(GL_PROJECTION);
+	// glLoadIdentity();
+	// glOrtho(0, width, height, 0, 1, -1);
+	// glMatrixMode(GL_MODELVIEW);
+	//
+	// glViewport(0, 0, projWidth, projHeight);
+	// glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	// }
+
 	public static void clear(double a, double r, double g, double b) {
-		glClearColor((float)r, (float)g, (float)b, (float)a);
+		glClearColor((float) r, (float) g, (float) b, (float) a);
 		glClear(GL_COLOR_BUFFER_BIT);
 	}
 
-	public static void drawRect(int texId, double x, double y, double width,
-			double height, double texX, double texY, double texWidth,
-			double texHeight) {
+	public static void drawRect(int fbo, int texId, BlendMode mode, double x,
+			double y, double width, double height, double texX, double texY,
+			double texWidth, double texHeight) {
+		bindRenderTarget(fbo);
+		switch(mode) {
+		case ADD_LIGHT:
+			glBlendFunc(GL_ONE, GL_ONE);
+			break;
+		case APPLY_LIGHT:
+			glBlendFunc(GL_DST_COLOR, GL_ZERO);
+			break;
+		case SPRITE:
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			break;
+		}
 		glBindTexture(GL_TEXTURE_2D, texId);
 		glBegin(GL_QUADS);
 		{

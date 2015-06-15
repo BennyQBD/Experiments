@@ -1,17 +1,14 @@
 package engine.rendering.opengl;
 
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL30.*;
 
 import java.nio.ByteBuffer;
-
-import org.lwjgl.BufferUtils;
 
 import engine.rendering.ARGBColor;
 import engine.rendering.IBitmap;
 import engine.rendering.IRenderContext;
-import engine.rendering.LightMap;
 import engine.rendering.SpriteSheet;
+import engine.util.Debug;
 import engine.util.Util;
 
 public class OpenGLRenderContext implements IRenderContext {
@@ -23,7 +20,7 @@ public class OpenGLRenderContext implements IRenderContext {
 	private OpenGLLightMap lightMap;
 	private OpenGLBitmap softTex;
 	private int lightMapTexId;
-
+	
 	public OpenGLRenderContext(int width, int height, int scaledWidth,
 			int scaledHeight) {
 		this.width = width;
@@ -34,14 +31,8 @@ public class OpenGLRenderContext implements IRenderContext {
 		lightMap = new OpenGLLightMap(width, height, 1);
 		lightMap.clear();
 
-		OpenGLUtil.bindRenderTarget(0, this.width, this.height,
-				this.scaledWidth, this.scaledHeight);
-		glDisable(GL_DEPTH_TEST);
-		glEnable(GL_TEXTURE_2D);
-
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
+		OpenGLUtil.init(this.width, this.height, this.scaledWidth,
+				this.scaledHeight);
 		initTexture();
 	}
 
@@ -75,6 +66,8 @@ public class OpenGLRenderContext implements IRenderContext {
 		} else {
 			glBindTexture(GL_TEXTURE_2D, softTex.getHardwareID());
 		}
+		
+		// TODO: Remove software texture path
 
 		if (sheet == boundTex) {
 			return false;
@@ -118,8 +111,7 @@ public class OpenGLRenderContext implements IRenderContext {
 
 	@Override
 	public void clear(double a, double r, double g, double b) {
-		OpenGLUtil.bindRenderTarget(0, this.width, this.height,
-				this.scaledWidth, this.scaledHeight);
+		OpenGLUtil.bindRenderTarget(0);
 		glClearColor((float) r, (float) g, (float) b, (float) a);
 		glClear(GL_COLOR_BUFFER_BIT);
 	}
@@ -169,8 +161,7 @@ public class OpenGLRenderContext implements IRenderContext {
 				(float) ARGBColor.getComponentd(colorMask, 3),
 				(float) transparency);
 
-		OpenGLUtil.bindRenderTarget(0, this.width, this.height,
-				this.scaledWidth, this.scaledHeight);
+		OpenGLUtil.bindRenderTarget(0);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glBegin(GL_QUADS);
 		{
@@ -262,9 +253,8 @@ public class OpenGLRenderContext implements IRenderContext {
 		// }
 		// glEnd();
 
-		OpenGLUtil.bindRenderTarget(0, this.width, this.height,
-				this.scaledWidth, this.scaledHeight);
-		glBlendFunc(GL_DST_COLOR, GL_ZERO);
-		OpenGLUtil.drawRect(lightMap.getId(), 0, 0, width, height, 0, 0, 1, 1);
+		OpenGLUtil.drawRect(0, lightMap.getId(),
+				OpenGLUtil.BlendMode.APPLY_LIGHT, 0, 0, width, height, 0, 0, 1,
+				1);
 	}
 }

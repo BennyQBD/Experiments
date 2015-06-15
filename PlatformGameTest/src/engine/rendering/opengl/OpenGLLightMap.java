@@ -1,8 +1,5 @@
 package engine.rendering.opengl;
 
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL30.*;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -28,23 +25,19 @@ public class OpenGLLightMap {
 		this.id = OpenGLUtil.createTexture(width, height, (byte[]) null,
 				OpenGLUtil.FILTER_LINEAR);
 
-		this.fbo = glGenFramebuffers();
-		OpenGLUtil.bindRenderTarget(fbo, this.width, this.height, this.width,
-				this.height);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-				GL_TEXTURE_2D, id, 0);
+		// this.fbo = glGenFramebuffers();
+		// OpenGLUtil.bindRenderTarget(fbo, this.width, this.height, this.width,
+		// this.height);
+		// glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+		// GL_TEXTURE_2D, id, 0);
+		this.fbo = OpenGLUtil.createRenderTarget(width, height, width, height,
+				id);
 		clear();
 	}
 
 	public void dispose() {
-		if (fbo != 0) {
-			glDeleteFramebuffers(fbo);
-			fbo = 0;
-		}
-		if (id != 0) {
-			glDeleteTextures(id);
-			id = 0;
-		}
+		fbo = OpenGLUtil.releaseRenderTarget(fbo);
+		id = OpenGLUtil.releaseTexture(id);
 	}
 
 	@Override
@@ -54,8 +47,7 @@ public class OpenGLLightMap {
 	}
 
 	public void clear() {
-		OpenGLUtil.bindRenderTarget(fbo, this.width, this.height, this.width,
-				this.height);
+		OpenGLUtil.bindRenderTarget(fbo);
 		OpenGLUtil.clear(0.0, 0.0, 0.0, 0.0);
 	}
 
@@ -135,10 +127,8 @@ public class OpenGLLightMap {
 		double drawWidth = (xEnd - xStart);
 		double drawHeight = (yEnd - yStart);
 
-		OpenGLUtil.bindRenderTarget(fbo, this.width, this.height, this.width,
-				this.height);
-		glBlendFunc(GL_ONE, GL_ONE);
-		OpenGLUtil.drawRect(light.id, xStart, yStart, drawWidth, drawHeight,
-				texMinX, texMinY, texWidth, texHeight);
+		OpenGLUtil.drawRect(fbo, light.id, OpenGLUtil.BlendMode.ADD_LIGHT,
+				xStart, yStart, drawWidth, drawHeight, texMinX, texMinY,
+				texWidth, texHeight);
 	}
 }

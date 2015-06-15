@@ -18,6 +18,7 @@ import engine.rendering.ArrayBitmap;
 import engine.rendering.IBitmap;
 import engine.rendering.IRenderContext;
 import engine.rendering.SpriteSheet;
+import engine.rendering.opengl.OpenGLBitmap;
 import engine.rendering.opengl.OpenGLLightMap;
 import engine.space.Grid;
 import engine.space.ISpatialStructure;
@@ -111,7 +112,7 @@ public class PlatformScene extends Scene {
 		if (color == 255) {
 			player = new Entity(structure, x, y, layer, true);
 			new SpriteComponent(player, new SpriteSheet(
-					bitmaps.get("./res/playertest.png"), 1), 0);
+					bitmaps.get("./res/playertest2.png"), 1), 0);
 			playerComponent = new PlayerComponent(player, points, 2, lives,
 					lifeDeficit, new InputListener(input,
 							new int[] { IInput.KEY_LEFT }), new InputListener(
@@ -406,7 +407,7 @@ public class PlatformScene extends Scene {
 			double g, double b, int parallax, int x, int y) {
 		if (background == null || background.getWidth() != target.getWidth()
 				|| background.getHeight() != target.getHeight()) {
-			background = new ArrayBitmap(target.getWidth(), target.getHeight());
+			background = new OpenGLBitmap(target.getWidth(), target.getHeight());
 			backgroundSpriteSheet = new SpriteSheet(background, 1);
 		}
 		int width = target.getWidth();
