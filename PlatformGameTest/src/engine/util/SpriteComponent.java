@@ -42,6 +42,11 @@ public class SpriteComponent extends EntityComponent {
 		public int getSpriteIndex() {
 			return indices[currentFrame];
 		}
+
+		public void setFrame(int frame) {
+			currentFrame = frame;
+			currentFrameTime = 0.0;
+		}
 	}
 
 	public static final String COMPONENT_NAME = "SpriteComponent";
@@ -65,6 +70,16 @@ public class SpriteComponent extends EntityComponent {
 		int[] indices = new int[sheets.length];
 		for(int i = 0; i < sheets.length; i++) {
 			indices[i] = i;
+			sheets[i] = sheet;
+		}
+		init(entity, sheets, indices, frameTime);
+	}
+	
+	public SpriteComponent(Entity entity, SpriteSheet sheet, int[] indices,
+			double frameTime) {
+		super(entity, COMPONENT_NAME);
+		SpriteSheet[] sheets = new SpriteSheet[indices.length];
+		for(int i = 0; i < sheets.length; i++) {
 			sheets[i] = sheet;
 		}
 		init(entity, sheets, indices, frameTime);
@@ -155,5 +170,9 @@ public class SpriteComponent extends EntityComponent {
 
 	public void setTransparency(double transparency) {
 		this.transparency = transparency;
+	}
+	
+	public void setFrame(int frame) {
+		animation.setFrame(frame);
 	}
 }

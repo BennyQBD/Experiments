@@ -30,9 +30,9 @@ public class PlayerComponent extends EntityComponent {
 	private int lifeDeficit;
 	private double invulnerabilityTimer;
 	private SpriteComponent spriteComponent;
-	private final double moveSpeed = 90.0;
-	private final double maxBounceVelocity = -200.0;
-	private final double invulnerabilityLength = 3.0;
+	private final double moveSpeed;
+	private final double maxBounceVelocity;
+	private final double invulnerabilityLength;
 	private final double jumpTime;
 	private final double runModifier;
 	private final double jumpSpeed;
@@ -63,6 +63,7 @@ public class PlayerComponent extends EntityComponent {
 
 		velY = 0.0;
 		jumpCounter = 0.0;
+		this.invulnerabilityLength = 3.0;
 		this.points = points;
 		this.health = health;
 		this.lives = lives;
@@ -72,10 +73,14 @@ public class PlayerComponent extends EntityComponent {
 
 		this.jumpTime = 0.1375;
 		this.jumpSpeed = 1004.8;
-		this.runModifier = 2.0;
+		this.maxBounceVelocity = -200.0;
+		this.moveSpeed = 120.0;
+		this.runModifier = 1.5;
 		this.gravity = 157.0;
 		this.jumpModifier = 1.15;
 		this.flashFrequency = 15.0;
+		
+		getSpriteComponent().setFrame(1);
 	}
 	
 	public void damage() {
@@ -164,10 +169,20 @@ public class PlayerComponent extends EntityComponent {
 		if (rightKey.isDown()) {
 			moveX += (float) speed;
 			getSpriteComponent().setFlipX(false);
+			getSpriteComponent().setFrame(0);
 		}
 		if (leftKey.isDown()) {
 			moveX -= (float) speed;
 			getSpriteComponent().setFlipX(true);
+			getSpriteComponent().setFrame(0);
+		}
+		
+		if(moveX == 0.0f) {
+			if(state == STATE_MOVING) {
+				getSpriteComponent().setFrame(1);
+			} else {
+				getSpriteComponent().setFrame(2);
+			}
 		}
 		return moveX;
 	}
@@ -230,6 +245,7 @@ public class PlayerComponent extends EntityComponent {
 		if (slamKey.isDown()) {
 			velY += jumpSpeed * 0.8 * delta;
 			getSpriteComponent().setFlipY(true);
+//			getSpriteComponent().setFrame(2);
 		} else {
 			getSpriteComponent().setFlipY(false);
 		}

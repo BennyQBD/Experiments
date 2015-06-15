@@ -24,13 +24,13 @@
 + Layers in Level
 + Optional OpenGL renderer
 + Animation
-- Sound
-- Flying powerup?
 - Environmental hazards (spikes, lava, lasers, etc.)
 - Locked areas
 - Items to unlock locked areas
 - Secret locked areas
-
+- Different enemy types (projectile shooting enemies?)
+- Sound
+- Flying powerup?
 - Weapons?
 
 IMPLI DAMA TORT CAU WEVE 

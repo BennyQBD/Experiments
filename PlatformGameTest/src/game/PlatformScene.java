@@ -110,7 +110,7 @@ public class PlatformScene extends Scene {
 		if (color == 255) {
 			player = new Entity(structure, x, y, layer, true);
 			new SpriteComponent(player, new SpriteSheet(
-					bitmaps.get("./res/playertest2.png"), 1), 0);
+					bitmaps.get("./res/playertest2.png"), 3, 1), 0.0);
 			playerComponent = new PlayerComponent(player, points, 2, lives,
 					lifeDeficit, new InputListener(input,
 							new int[] { IInput.KEY_LEFT }), new InputListener(

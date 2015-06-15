@@ -11,6 +11,7 @@ import engine.util.Util;
 public class AWTRenderDevice implements IRenderDevice {
 	private class ArrayBitmap {
 		private final int width;
+		@SuppressWarnings("unused")
 		private final int height;
 		private final int pixels[];
 
@@ -31,7 +32,9 @@ public class AWTRenderDevice implements IRenderDevice {
 	private class Framebuffer {
 		private final int width;
 		private final int height;
+		@SuppressWarnings("unused")
 		private final int projWidth;
+		@SuppressWarnings("unused")
 		private final int projHeight;
 		private final int texId;
 
@@ -153,7 +156,8 @@ public class AWTRenderDevice implements IRenderDevice {
 				texWidth, texHeight, 0xFFFFFF, 1.0);
 	}
 
-	private int projectCoord(double val, int dimensionWidth) {
+	@SuppressWarnings("unused")
+	private static int projectCoord(double val, int dimensionWidth) {
 		return Util.clamp((int) Math.floor(val), 0, dimensionWidth - 1);
 	}
 
