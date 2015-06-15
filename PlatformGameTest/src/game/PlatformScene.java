@@ -69,7 +69,7 @@ public class PlatformScene extends Scene {
 		SpriteSheet level = new SpriteSheet(bitmaps.get("./res/"
 				+ config.getString("level.data")), 4, 2);
 		int[] backgrounds = new int[5];
-
+		
 		SpriteSheet tileSheet = new SpriteSheet(
 				bitmaps.get("./res/tilesheet.png"), 16);
 		font = new SpriteSheet(bitmaps.get("./res/monospace.png"), 16);

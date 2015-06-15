@@ -65,20 +65,11 @@ public class Bitmap {
 	}
 
 	public int[] getPixels(int[] dest) {
-		return device.getTexture(id, dest, width, height);
+		return getPixels(dest, 0, 0, width, height);
 	}
 
 	public int[] getPixels(int[] dest, int x, int y, int width, int height) {
-		if (dest == null || dest.length < width * height) {
-			dest = new int[width * height];
-		}
-		int[] pixels = getPixels(null);
-		for (int j = 0, srcY = 0; j < height; j++, srcY++) {
-			for (int i = 0, srcX = 0; i < width; i++, srcX++) {
-				dest[i + j * width] = pixels[srcX + srcY * this.width];
-			}
-		}
-		return dest;
+		return device.getTexture(id, dest, x, y, width, height);
 	}
 
 	public void save(String filetype, File file) throws IOException {
@@ -86,7 +77,7 @@ public class Bitmap {
 				BufferedImage.TYPE_INT_ARGB);
 		int[] displayComponents = ((DataBufferInt) output.getRaster()
 				.getDataBuffer()).getData();
-		device.getTexture(id, displayComponents, width, height);
+		device.getTexture(id, displayComponents, 0, 0, width, height);
 
 		ImageIO.write(output, "png", file);
 	}

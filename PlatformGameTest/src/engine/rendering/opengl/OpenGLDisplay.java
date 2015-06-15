@@ -11,6 +11,7 @@ import engine.input.opengl.OpenGLInput;
 import engine.rendering.IDisplay;
 import engine.rendering.IRenderContext;
 import engine.rendering.IRenderDevice;
+import engine.rendering.RenderContext;
 import engine.util.Debug;
 
 public class OpenGLDisplay implements IDisplay {
@@ -31,7 +32,7 @@ public class OpenGLDisplay implements IDisplay {
 
 		Display.setVSyncEnabled(!Debug.IGNORE_FRAME_CAP);
 		device = new OpenGLRenderDevice(width, height, scaledWidth, scaledHeight);
-		frameBuffer = new OpenGLRenderContext(device);
+		frameBuffer = new RenderContext(device);
 		input = new OpenGLInput();
 	}
 

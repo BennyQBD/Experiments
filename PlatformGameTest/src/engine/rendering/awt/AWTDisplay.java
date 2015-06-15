@@ -16,11 +16,12 @@ import engine.input.awt.AWTInput;
 import engine.rendering.IDisplay;
 import engine.rendering.IRenderContext;
 import engine.rendering.IRenderDevice;
+import engine.rendering.RenderContext;
 
 public class AWTDisplay extends Canvas implements IDisplay {
 	private static final long serialVersionUID = 1L;
 	private final JFrame frame;
-	private final AWTRenderContext frameBuffer;
+	private final RenderContext frameBuffer;
 	private final BufferedImage displayImage;
 	private final int[] displayComponents;
 	private final BufferStrategy bufferStrategy;
@@ -28,6 +29,7 @@ public class AWTDisplay extends Canvas implements IDisplay {
 	private final int scaledWidth;
 	private final int scaledHeight;
 	private final AWTInput input;
+	private final IRenderDevice device;
 
 	@Override
 	public IRenderContext getRenderContext() {
@@ -36,8 +38,7 @@ public class AWTDisplay extends Canvas implements IDisplay {
 	
 	@Override
 	public IRenderDevice getRenderDevice() {
-		// TODO: Implement render device;
-		return null;
+		return device;
 	}
 
 	@Override
@@ -64,7 +65,8 @@ public class AWTDisplay extends Canvas implements IDisplay {
 		setMinimumSize(size);
 		setMaximumSize(size);
 
-		this.frameBuffer = new AWTRenderContext(width, height);
+		this.device = new AWTRenderDevice(width, height, scaledWidth, scaledHeight);
+		this.frameBuffer = new RenderContext(device);
 		this.displayImage = new BufferedImage(width, height,
 				BufferedImage.TYPE_INT_RGB);
 		this.displayComponents = ((DataBufferInt) displayImage.getRaster()
@@ -84,7 +86,7 @@ public class AWTDisplay extends Canvas implements IDisplay {
 		createBufferStrategy(1);
 		this.bufferStrategy = getBufferStrategy();
 		this.graphics = bufferStrategy.getDrawGraphics();
-
+		
 		this.input = new AWTInput();
 		addKeyListener(input);
 		addFocusListener(input);

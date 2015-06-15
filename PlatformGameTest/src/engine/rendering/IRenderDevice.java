@@ -19,7 +19,7 @@ public interface IRenderDevice {
 			int height);
 	public void updateTexture(int id, byte[] data, int x, int y, int width,
 			int height);
-	public int[] getTexture(int id, int[] dest, int width, int height);
+	public int[] getTexture(int id, int[] dest, int x, int y, int width, int height);
 
 	public int createRenderTarget(int width, int height, int projWidth,
 			int projHeight, int texId);

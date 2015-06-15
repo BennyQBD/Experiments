@@ -1,19 +1,14 @@
-package engine.rendering.opengl;
+package engine.rendering;
 
-import engine.rendering.IRenderContext;
-import engine.rendering.IRenderDevice;
-import engine.rendering.LightMap;
-import engine.rendering.IRenderDevice.BlendMode;
-import engine.rendering.SpriteSheet;
 import engine.util.Util;
 
-public class OpenGLRenderContext implements IRenderContext {
+public class RenderContext implements IRenderContext {
 	private final int width;
 	private final int height;
 	private final IRenderDevice device;
 	private final LightMap lightMap;
 
-	public OpenGLRenderContext(IRenderDevice device) {
+	public RenderContext(IRenderDevice device) {
 		this.device = device;
 		this.width = device.getRenderTargetWidth(0);
 		this.height = device.getRenderTargetHeight(0);
@@ -70,9 +65,9 @@ public class OpenGLRenderContext implements IRenderContext {
 		double texWidth = texMaxX - texMinX;
 		double texHeight = texMaxY - texMinY;
 
-		device.drawRect(0, sheet.getSheet().getHardwareID(), BlendMode.SPRITE,
-				x, y, width, height, texMinX, texMinY, texWidth, texHeight,
-				colorMask, transparency);
+		device.drawRect(0, sheet.getSheet().getHardwareID(),
+				IRenderDevice.BlendMode.SPRITE, x, y, width, height, texMinX,
+				texMinY, texWidth, texHeight, colorMask, transparency);
 	}
 
 	@Override
@@ -121,5 +116,9 @@ public class OpenGLRenderContext implements IRenderContext {
 		device.drawRect(0, lightMap.getId(),
 				IRenderDevice.BlendMode.APPLY_LIGHT, 0, 0, width, height, 0, 0,
 				1, 1);
+	}
+	
+	public void getPixels(int[] dest) {
+		device.getTexture(0, dest, 0, 0, width, height);
 	}
 }

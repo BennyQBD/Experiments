@@ -27,8 +27,18 @@ public class OpenGLRenderDevice implements IRenderDevice {
 		private int projWidth;
 		private int projHeight;
 	}
+	
+	private class TextureData {
+		public TextureData(int width, int height) {
+			this.width = width;
+			this.height = height;
+		}
+		private int width;
+		private int height;
+	}
 
 	private final Map<Integer, FramebufferData> framebuffers = new HashMap<>();
+	private final Map<Integer, TextureData> textures = new HashMap<>();
 	private int boundFbo;
 	private int boundTex;
 
@@ -67,6 +77,10 @@ public class OpenGLRenderDevice implements IRenderDevice {
 	public int releaseTexture(int id) {
 		if (id != 0) {
 			glDeleteTextures(id);
+			textures.remove(id);
+			if (id == boundTex) {
+				boundTex = -1;
+			}
 		}
 		return 0;
 	}
@@ -86,16 +100,26 @@ public class OpenGLRenderDevice implements IRenderDevice {
 	}
 
 	@Override
-	public int[] getTexture(int id, int[] dest, int width, int height) {
+	public int[] getTexture(int id, int[] dest, int x, int y, int width, int height) {
 		if (dest == null || dest.length < width * height) {
 			dest = new int[width * height];
 		}
-
-		ByteBuffer buffer = BufferUtils.createByteBuffer(width * height * 4);
+		TextureData tex = textures.get(id);
+		ByteBuffer buffer = BufferUtils.createByteBuffer(tex.width * tex.height * 4);
 		bindTexture(id);
 		glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+		
+		if(x == 0 && y == 0 && width == tex.width && height == tex.height) {
+			return byteBufferToInt(dest, buffer, tex.width, tex.height);
+		}
 
-		return byteBufferToInt(dest, buffer, width, height);
+		int[] pixels = byteBufferToInt(new int[tex.width*tex.height], buffer, tex.width, tex.height);
+		for (int j = 0, srcY = y; j < height; j++, srcY++) {
+			for (int i = 0, srcX = x; i < width; i++, srcX++) {
+				dest[i + j * width] = pixels[srcX + srcY * tex.width];
+			}
+		}
+		return dest;
 	}
 
 	@Override
@@ -221,6 +245,7 @@ public class OpenGLRenderDevice implements IRenderDevice {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
 		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, GL_RGBA,
 				GL_UNSIGNED_BYTE, makeRGBABuffer(data, width, height));
+		textures.put(id, new TextureData(width, height));
 		return id;
 	}
 
