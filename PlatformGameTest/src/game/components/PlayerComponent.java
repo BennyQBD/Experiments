@@ -3,10 +3,11 @@ package game.components;
 import engine.core.entity.Entity;
 import engine.core.entity.EntityComponent;
 import engine.core.entity.IEntityVisitor;
-import engine.input.InputListener;
+import engine.input.Control;
 import engine.util.IDAssigner;
 import engine.util.Util;
 import engine.util.components.SpriteComponent;
+import engine.util.parsing.Config;
 
 public class PlayerComponent extends EntityComponent {
 	private class DoubleVal {
@@ -17,11 +18,11 @@ public class PlayerComponent extends EntityComponent {
 	private static final int POINTS_FOR_EXTRA_LIFE = 1000;
 	private static final int STATE_MOVING = 0;
 	private static final int STATE_IN_AIR = 1;
-	private InputListener leftKey;
-	private InputListener rightKey;
-	private InputListener runKey;
-	private InputListener jumpKey;
-	private InputListener slamKey;
+	private Control leftKey;
+	private Control rightKey;
+	private Control runKey;
+	private Control jumpKey;
+	private Control slamKey;
 	private int state;
 
 	private double velY;
@@ -42,6 +43,13 @@ public class PlayerComponent extends EntityComponent {
 	private final double gravity;
 	private final double jumpModifier;
 	private final double flashFrequency;
+	private final double moveAccel;
+	private final double frictionAmt;
+	private final double frictionAirRatio;
+	
+	private final int standAnimationFrame;
+	private final int glideAnimationFrame;
+	private final int hoverAnimationFrame;
 
 	private SpriteComponent getSpriteComponent() {
 		if (spriteComponent != null) {
@@ -53,9 +61,9 @@ public class PlayerComponent extends EntityComponent {
 		return spriteComponent;
 	}
 
-	public PlayerComponent(Entity entity, int points, int health, int lives,
-			int lifeDeficit, InputListener leftKey, InputListener rightKey,
-			InputListener runKey, InputListener jumpKey, InputListener slamKey) {
+	public PlayerComponent(Entity entity, Config config, int points, int lives,
+			int lifeDeficit, Control leftKey, Control rightKey, Control runKey,
+			Control jumpKey, Control slamKey) {
 		super(entity, ID);
 		this.leftKey = leftKey;
 		this.rightKey = rightKey;
@@ -67,24 +75,32 @@ public class PlayerComponent extends EntityComponent {
 		velY = 0.0;
 		velX = 0.0;
 		jumpCounter = 0.0;
-		this.invulnerabilityLength = 3.0;
+		this.invulnerabilityLength = config.getDouble("player.invulnerabilityLength");
 		this.points = points;
-		this.health = health;
+		this.health = config.getInt("player.health");
 		this.lives = lives;
 		this.lifeDeficit = lifeDeficit;
 		this.invulnerabilityTimer = invulnerabilityLength;
 		spriteComponent = null;
 
-		this.jumpTime = 0.1375;
-		this.jumpSpeed = 1004.8;
-		this.maxBounceVelocity = -200.0;
-		this.moveSpeed = 120.0;
-		this.runModifier = 1.5;
-		this.gravity = 157.0;
-		this.jumpModifier = 1.15;
-		this.flashFrequency = 15.0;
+		this.jumpTime = config.getDouble("player.jumpTime");
+		this.jumpSpeed = config.getDouble("player.jumpSpeed");
+		this.maxBounceVelocity = config.getDouble("player.maxBounceVelocity");
+		this.moveSpeed = config.getDouble("player.moveSpeed");
+		this.runModifier = config.getDouble("player.runModifier");
+		this.gravity = config.getDouble("player.gravity");
+		this.jumpModifier = config.getDouble("player.jumpModifier");
+		this.flashFrequency = config.getDouble("player.flashFrequency");
+		
+		this.moveAccel = config.getDouble("player.moveAccel");
+		this.frictionAmt = config.getDouble("player.frictionAmt");
+		this.frictionAirRatio = config.getDouble("player.frictionAirRatio");
+		
+		this.standAnimationFrame = config.getInt("player.standAnimationFrame");
+		this.glideAnimationFrame = config.getInt("player.glideAnimationFrame");
+		this.hoverAnimationFrame = config.getInt("player.hoverAnimationFrame");
 
-		getSpriteComponent().setFrame(1);
+		getSpriteComponent().setFrame(standAnimationFrame);
 	}
 
 	public void damage() {
@@ -173,19 +189,19 @@ public class PlayerComponent extends EntityComponent {
 		if (rightKey.isDown()) {
 			moveX += (float) speed;
 			getSpriteComponent().setFlipX(false);
-			getSpriteComponent().setFrame(0);
+			getSpriteComponent().setFrame(glideAnimationFrame);
 		}
 		if (leftKey.isDown()) {
 			moveX -= (float) speed;
 			getSpriteComponent().setFlipX(true);
-			getSpriteComponent().setFrame(0);
+			getSpriteComponent().setFrame(glideAnimationFrame);
 		}
 
 		if (moveX == 0.0f) {
 			if (state == STATE_MOVING) {
-				getSpriteComponent().setFrame(1);
+				getSpriteComponent().setFrame(standAnimationFrame);
 			} else {
-				getSpriteComponent().setFrame(2);
+				getSpriteComponent().setFrame(hoverAnimationFrame);
 			}
 		}
 
@@ -227,49 +243,44 @@ public class PlayerComponent extends EntityComponent {
 		}
 		return false;
 	}
-	
+
 	private void applyFriction(double delta) {
-		double frictionAmt = 10.0;
-		double frictionAirRatio = 0.5;
-		
 		double friction = 0;
-		
-		if(velX > 0) {
+
+		if (velX > 0) {
 			friction = delta * frictionAmt;
-		} else if(velX < 0) {
+		} else if (velX < 0) {
 			friction = -delta * frictionAmt;
 		}
-		
-		if(state != STATE_MOVING) {
+
+		if (state != STATE_MOVING) {
 			friction *= frictionAirRatio;
 		}
-		
+
 		boolean sign = velX > 0;
 		velX -= friction;
-		if(velX > 0 != sign) {
+		if (velX > 0 != sign) {
 			velX = 0;
 		}
 	}
 
 	private float applyLateralMovement(double moveSpeed, double runModifier,
 			double delta) {
-		double moveAccel = 10.0;
-		
 		double maxSpeed = moveSpeed * delta;
 		if (runKey.isDown()) {
 			maxSpeed *= runModifier;
 		}
-		
+
 		float moveX = findLateralMovement(moveSpeed, runModifier, delta);
 		moveX *= delta * moveAccel;
 		velX += moveX;
-		
+
 		applyFriction(delta);
 
 		velX = Util.clamp(velX, -maxSpeed, maxSpeed);
-		moveX = (float)velX;
+		moveX = (float) velX;
 		float result = getEntity().move(moveX, 0);
-		if(result != moveX) {
+		if (result != moveX) {
 			velX = 0.0;
 		}
 		return result;
@@ -292,7 +303,6 @@ public class PlayerComponent extends EntityComponent {
 		if (slamKey.isDown()) {
 			velY += jumpSpeed * 0.8 * delta;
 			getSpriteComponent().setFlipY(true);
-			// getSpriteComponent().setFrame(2);
 		} else {
 			getSpriteComponent().setFlipY(false);
 		}

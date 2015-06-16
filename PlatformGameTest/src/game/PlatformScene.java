@@ -11,8 +11,8 @@ import java.util.Map;
 
 import engine.core.Scene;
 import engine.core.entity.Entity;
+import engine.input.Control;
 import engine.input.IInput;
-import engine.input.InputListener;
 import engine.rendering.ARGBColor;
 import engine.rendering.Bitmap;
 import engine.rendering.IRenderContext;
@@ -24,9 +24,9 @@ import engine.space.ISpatialStructure;
 import engine.util.BitmapFactory;
 import engine.util.Delay;
 import engine.util.LightMapFactory;
+import engine.util.SpriteSheetFactory;
 import engine.util.Util;
 import engine.util.components.LightComponent;
-import engine.util.components.LinkComponent;
 import engine.util.components.SpriteComponent;
 import engine.util.menu.IMenuHandler;
 import engine.util.menu.Menu;
@@ -46,7 +46,8 @@ public class PlatformScene extends Scene {
 	private static final int NUM_SAVE_FILES = 5;
 	private Entity player;
 	private PlayerComponent playerComponent;
-	private BitmapFactory bitmaps;
+	private SpriteSheetFactory sprites;
+	private LightMapFactory lightMaps;
 	private SpriteSheet font;
 	private SpriteSheet livesIcon;
 	private SpriteSheet healthIcon;
@@ -60,7 +61,7 @@ public class PlatformScene extends Scene {
 	private String errorMessage;
 	private MenuStack menu;
 	private boolean shouldExit;
-	private InputListener helpMenuKey;
+	private Control helpMenuKey;
 	private LightMap staticLightMap;
 
 	private void loadLevel(Config config, IInput input,
@@ -70,15 +71,13 @@ public class PlatformScene extends Scene {
 			staticLightMap.dispose();
 		}
 		this.staticLightMap = new LightMap(device, 2048, 2048, 2);
-		SpriteSheet level = new SpriteSheet(bitmaps.get("./res/"
-				+ config.getString("level.data")), 4, 2);
+		SpriteSheet level = sprites.get(
+				"./res/" + config.getString("level.data"), 4, 2);
 		int[] backgrounds = new int[5];
 
-		SpriteSheet tileSheet = new SpriteSheet(
-				bitmaps.get("./res/tilesheet.png"), 16);
-		font = new SpriteSheet(bitmaps.get("./res/monospace.png"), 16);
-		livesIcon = new SpriteSheet(bitmaps.get("./res/livesicon.png"), 1);
-		healthIcon = new SpriteSheet(bitmaps.get("./res/healthicon.png"), 1);
+		font = sprites.get("./res/monospace.png", 16, 16);
+		livesIcon = sprites.get("./res/livesicon.png", 1, 1);
+		healthIcon = sprites.get("./res/healthicon.png", 1, 1);
 
 		backgrounds[0] = 41;
 		backgrounds[1] = 14;
@@ -86,7 +85,6 @@ public class PlatformScene extends Scene {
 		backgrounds[3] = 46;
 		backgrounds[4] = 62;
 
-		LightMapFactory lightMaps = new LightMapFactory(device);// backgroundLight = new LightMap(device, 100);
 		int tileSize = 16;
 		int[] pixels = level.getSheet().getPixels(null);
 		for (int k = 0; k < level.getNumSprites(); k++) {
@@ -95,76 +93,125 @@ public class PlatformScene extends Scene {
 					int color = pixels[level.getPixelIndex(k, i, j)] & 0x00FFFFFF;
 					int x = i * tileSize;
 					int y = j * tileSize;
-					// addRandomBackgroundTile(structure, x, y, backgrounds,
-					// tileSheet, 10, bigLightMapTest);
-					addEntity(config, input, structure, x, y, k, bitmaps,
-							tileSheet, color, staticLightMap, lightMaps,
-							points, lives, lifeDeficit);
+					addEntity(config, input, structure, x, y, k, sprites,
+							color, staticLightMap, lightMaps, points, lives,
+							lifeDeficit);
 
 				}
 			}
 		}
 	}
 
+	private static void addSpriteComponent(Entity e, String prefix,
+			Config config, SpriteSheetFactory sprites, int b)
+			throws IOException {
+		SpriteSheet sheet = null;
+		String fileName = config.getStringWithDefault(prefix + ".fileName",
+				"sprite.default.fileName");
+		int numSpritesX = config.getIntWithDefault("sprite.sheet." + fileName
+				+ ".spritesX", "sprite.default.spritesX");
+		int numSpritesY = config.getIntWithDefault("sprite.sheet." + fileName
+				+ ".spritesY", "sprite.default.spritesY");
+
+		String animationType = config.getStringWithDefault(prefix
+				+ ".animationType", "sprite.default.animationType");
+
+		sheet = sprites.get("./res/" + fileName, numSpritesX, numSpritesY);
+		SpriteComponent sc = null;
+		switch (animationType) {
+		case "automatic":
+			sc = new SpriteComponent(e, sheet, config.getDoubleWithDefault(
+					prefix + ".frameTime", "sprite.default.frameTime"));
+			break;
+		case "none":
+			int spriteIndex = config.getIntWithDefault(prefix + ".spriteIndex",
+					"sprite.default.spriteIndex");
+			if (spriteIndex == -1) {
+				spriteIndex = b;
+			}
+			sc = new SpriteComponent(e, sheet, spriteIndex);
+			break;
+		}
+
+		double transparency = config.getDoubleWithDefault(prefix
+				+ ".transparency", "sprite.default.transparency");
+		sc.setTransparency(transparency);
+	}
+
 	private void addEntity(Config config, IInput input,
 			ISpatialStructure<Entity> structure, int x, int y, int layer,
-			BitmapFactory bitmaps, SpriteSheet tileSheet, int color,
-			LightMap staticLightMap, LightMapFactory lightMaps, int points,
-			int lives, int lifeDeficit) throws IOException {
-		if (color == 255) {
-			player = new Entity(structure, x, y, layer, true);
-			new SpriteComponent(player, new SpriteSheet(
-					bitmaps.get("./res/playertest2.png"), 3, 1), 0.0);
-			playerComponent = new PlayerComponent(player, points, 2, lives,
-					lifeDeficit, new InputListener(input,
-							new int[] { IInput.KEY_LEFT }), new InputListener(
-							input, new int[] { IInput.KEY_RIGHT }),
-					new InputListener(input, new int[] { IInput.KEY_LSHIFT,
-							IInput.KEY_RSHIFT }), new InputListener(input,
-							new int[] { IInput.KEY_SPACE }), new InputListener(
-							input, new int[] { IInput.KEY_DOWN }));
-			
-		} else if (color == 254) {
-			Entity entity = new Entity(structure, x, y, layer, false);
-			new CollectableComponent(entity, 10);
-			new SpriteComponent(entity, new SpriteSheet(
-					bitmaps.get("./res/diamond2.png"), 5, 2), 0.1);
+			SpriteSheetFactory sprites, int color, LightMap staticLightMap,
+			LightMapFactory lightMaps, int points, int lives, int lifeDeficit)
+			throws IOException {
+		if (color == 0) {
+			return;
+		}
+		boolean blocking = (color & 0x8000) != 0;
+		int b = color & 0xFF;
+		int componentCounter = 0;
+		String center = b + "";
+		String prefix = "entity." + center + "." + componentCounter;
+		String test = config.getString(prefix);
+		if (test == null) {
+			center = "default";
+			prefix = "entity." + center + "." + componentCounter;
+			test = config.getString(prefix);
+		}
+		if (test != null) {
+			Entity e = new Entity(structure, x, y, layer, blocking);
+			while (test != null) {
+				switch (test) {
+				case "sprite":
+					addSpriteComponent(e, prefix, config, sprites, b);
+					break;
+				case "player":
+					player = e;
+					playerComponent = new PlayerComponent(e, config, points,
+							lives, lifeDeficit, new Control(input,
+									new int[] { IInput.KEY_LEFT }),
+							new Control(input, new int[] { IInput.KEY_RIGHT }),
+							new Control(input, new int[] { IInput.KEY_LSHIFT,
+									IInput.KEY_RSHIFT }), new Control(input,
+									new int[] { IInput.KEY_SPACE }),
+							new Control(input, new int[] { IInput.KEY_DOWN }));
+					break;
+				case "collectable":
+					new CollectableComponent(e, config.getIntWithDefault(prefix
+							+ ".points", "collectable.default.points"));
+					break;
+				case "enemy":
+					new EnemyComponent(e, config, config.getStringWithDefault(
+							prefix + ".type", "enemy.default.type"));
+					break;
+				case "hazard":
+					double spaceX = config.getDoubleWithDefault(prefix
+							+ ".spaceX", "hazard.default.spaceX");
+					double spaceY = config.getDoubleWithDefault(prefix
+							+ ".spaceY", "hazard.default.spaceY");
+					double spaceZ = config.getDoubleWithDefault(prefix
+							+ ".spaceZ", "hazard.default.spaceZ");
+					new HazardComponent(e, spaceX, spaceY, spaceZ);
+					break;
+				case "light":
+					LightMap light = lightMaps.get(config.getIntWithDefault(
+							prefix + ".radius", "light.default.radius"));
+					String lightType = config.getStringWithDefault(prefix
+							+ ".type", "light.default.type");
+					if (lightType.equals("static")) {
+						addStaticLight(e, x, y, staticLightMap, light);
+					} else if (lightType.equals("dynamic")) {
+						new LightComponent(e, light);
+					}
+					break;
+				}
 
-//			 Entity entityLight = new Entity(structure, x+8, y+8, layer,
-//			 false);
-//			new LightComponent(entityLight, lightMaps.get(8));
-//			 new LinkComponent(entityLight, entity);
-		} else if (color == 253) {
-			Entity entity = new Entity(structure, x, y, layer, false);
-			new CollectableComponent(entity, 100);
-			SpriteSheet sheet = new SpriteSheet(
-					bitmaps.get("./res/diamond.png"), 9, 1);
-			new SpriteComponent(entity, sheet, 0.1111111111);
-			
-		} else if (color == 250) {
-			Entity entity = new Entity(structure, x, y, layer, true);
-			new SpriteComponent(entity, new SpriteSheet(
-					bitmaps.get("./res/slime.png"), 1), 0);
-			new EnemyComponent(entity, 20);
-			new HazardComponent(entity, 1, 0, 0);
-			
-		} else if (color == 249) {
-			Entity e = new Entity(structure, x, y, layer, false);
-			SpriteComponent sc = new SpriteComponent(e, new SpriteSheet(
-					bitmaps.get("./res/lava.png"), 1), 0.25);
-			sc.setTransparency(0.8);
-			new HazardComponent(e, 0, 0, 0);
-			addStaticLight(e, x, y, staticLightMap, lightMaps.get(100));
-		} else if (color != 0) {
-			boolean blocking = (color & 0x8000) != 0;
-			Entity e = add(structure, x, y, layer, blocking, tileSheet,
-					color & 0xFF);
-			 if (color == 14 || color == 30 || color == 46 || color == 62) {
-				 addStaticLight(e, x, y, staticLightMap, lightMaps.get(100));
-			 }
+				componentCounter++;
+				prefix = "entity." + center + "." + componentCounter;
+				test = config.getString(prefix);
+			}
 		}
 	}
-	
+
 	private static void addStaticLight(Entity e, int x, int y,
 			LightMap staticLightMap, LightMap lightToAdd) {
 		staticLightMap.addLight(lightToAdd, x - lightToAdd.getWidth() / 2
@@ -287,10 +334,10 @@ public class PlatformScene extends Scene {
 
 	private void initMenu() {
 		this.menu = new MenuStack(font, 0xFFFFFF, 0xFF88FF, 20, 20,
-				new InputListener(input, new int[] { IInput.KEY_UP }),
-				new InputListener(input, new int[] { IInput.KEY_DOWN }),
-				new InputListener(input, new int[] { IInput.KEY_RETURN }),
-				new InputListener(input, new int[] { IInput.KEY_ESCAPE }), 0.1,
+				new Control(input, new int[] { IInput.KEY_UP }), new Control(
+						input, new int[] { IInput.KEY_DOWN }), new Control(
+						input, new int[] { IInput.KEY_RETURN }), new Control(
+						input, new int[] { IInput.KEY_ESCAPE }), 0.1,
 				getDefaultMenu());
 	}
 
@@ -314,17 +361,10 @@ public class PlatformScene extends Scene {
 		this.input = input;
 		this.device = device;
 		this.config = config;
-		this.bitmaps = new BitmapFactory(device);
-		this.helpMenuKey = new InputListener(input, new int[] { IInput.KEY_F1 });
+		this.lightMaps = new LightMapFactory(device);
+		this.sprites = new SpriteSheetFactory(new BitmapFactory(device));
+		this.helpMenuKey = new Control(input, new int[] { IInput.KEY_F1 });
 		startNewGame();
-	}
-
-	private static Entity add(ISpatialStructure<Entity> structure, double posX,
-			double posY, double posZ, boolean isBlocking,
-			SpriteSheet spriteSheet, int spriteIndex) {
-		Entity result = new Entity(structure, posX, posY, posZ, isBlocking);
-		new SpriteComponent(result, spriteSheet, spriteIndex);
-		return result;
 	}
 
 	private void enterErrorState(Exception e) {

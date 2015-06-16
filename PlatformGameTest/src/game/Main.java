@@ -12,7 +12,7 @@ import engine.util.parsing.Config;
 
 public class Main {
 	public static void main(String[] args) throws IOException, ParseException, LWJGLException {
-		Config test = new Config("./res/test.cfg");
+		Config test = new Config("./res/main.cfg");
 		//IDisplay display = new AWTDisplay(256, 224, 3.0, "My Game");
 		IDisplay display = new OpenGLDisplay(256, 224, 3.0, "My Game");
 		CoreEngine engine = new CoreEngine(display, new PlatformScene(test,

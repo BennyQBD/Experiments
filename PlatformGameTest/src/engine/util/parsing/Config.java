@@ -53,19 +53,43 @@ public class Config {
 		}
 	}
 
-	public boolean getBoolean(String entry) {
-		return Boolean.parseBoolean(map.get(entry));
+	public String getString(String entry) {
+		String result = map.get(entry);
+		if(result != null && result.charAt(0) == '$') {
+			return getString(result.substring(1));
+		}
+		return result;
 	}
-
+	
 	public int getInt(String entry) {
-		return Integer.parseInt(map.get(entry));
+		return Integer.parseInt(getString(entry));
 	}
 
 	public double getDouble(String entry) {
-		return Double.parseDouble(map.get(entry));
+		return Double.parseDouble(getString(entry));
 	}
-
-	public String getString(String entry) {
-		return map.get(entry);
+	
+	public boolean getBoolean(String entry) {
+		return Boolean.parseBoolean(getString(entry));
+	}
+	
+	public String getStringWithDefault(String entry, String defaultEntry) {
+		String result = getString(entry);
+		if(result == null) {
+			result = getString(defaultEntry);
+		}
+		return result;
+	}
+	
+	public int getIntWithDefault(String entry, String defaultEntry) {
+		return Integer.parseInt(getStringWithDefault(entry, defaultEntry));
+	}
+	
+	public double getDoubleWithDefault(String entry, String defaultEntry) {
+		return Double.parseDouble(getStringWithDefault(entry, defaultEntry));
+	}
+	
+	public boolean getBooleanWithDefault(String entry, String defaultEntry) {
+		return Boolean.parseBoolean(getStringWithDefault(entry, defaultEntry));
 	}
 }

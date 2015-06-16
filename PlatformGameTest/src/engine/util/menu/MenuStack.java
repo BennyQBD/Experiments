@@ -2,7 +2,7 @@ package engine.util.menu;
 
 import java.util.Stack;
 
-import engine.input.InputListener;
+import engine.input.Control;
 import engine.rendering.IRenderContext;
 import engine.rendering.SpriteSheet;
 import engine.util.Delay;
@@ -11,10 +11,10 @@ public class MenuStack {
 	private Stack<Menu> menuStack;
 	private Menu defaultMenu;
 	private SpriteSheet font;
-	private InputListener downKey;
-	private InputListener upKey;
-	private InputListener activateKey;
-	private InputListener toggleKey;
+	private Control downKey;
+	private Control upKey;
+	private Control activateKey;
+	private Control toggleKey;
 	private Delay moveDelay;
 	private Delay toggleDelay;
 	private Delay activateDelay;
@@ -24,9 +24,9 @@ public class MenuStack {
 	private int offsetY;
 
 	public MenuStack(SpriteSheet font, int fontColor, int selectionColor,
-			int offsetX, int offsetY, InputListener upKey,
-			InputListener downKey, InputListener activateKey,
-			InputListener toggleKey, double usageDelayLength, Menu defaultMenu) {
+			int offsetX, int offsetY, Control upKey,
+			Control downKey, Control activateKey,
+			Control toggleKey, double usageDelayLength, Menu defaultMenu) {
 		this.font = font;
 		this.menuStack = new Stack<Menu>();
 		this.toggleKey = toggleKey;

@@ -25,6 +25,7 @@
 + Optional OpenGL renderer
 + Animation
 + Environmental hazards (spikes, lava, lasers, etc.)
++ Properties in config file
 - Locked areas
 - Items to unlock locked areas
 - Secret locked areas

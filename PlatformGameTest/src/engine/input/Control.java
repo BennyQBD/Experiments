@@ -1,10 +1,10 @@
 package engine.input;
 
-public class InputListener {
+public class Control {
 	private int[] keyCodes;
 	private IInput input;
 
-	public InputListener(IInput input, int[] keyCodes) {
+	public Control(IInput input, int[] keyCodes) {
 		this.keyCodes = keyCodes;
 		this.input = input;
 	}
