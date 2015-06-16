@@ -1,17 +1,18 @@
-package engine.util;
+package engine.util.components;
 
 import engine.core.entity.Entity;
 import engine.core.entity.EntityComponent;
 import engine.rendering.IRenderContext;
 import engine.rendering.LightMap;
 import engine.space.AABB;
+import engine.util.IDAssigner;
 
 public class LightComponent extends EntityComponent {
-	public static final String COMPONENT_NAME = "LightComponent";
+	public static final int ID = IDAssigner.getId();
 	private LightMap light;
 
 	public LightComponent(Entity entity, LightMap light) {
-		super(entity, COMPONENT_NAME);
+		super(entity, ID);
 		this.light = light;
 		int halfWidth = light.getWidth() / 2;
 		int halfHeight = light.getHeight() / 2;

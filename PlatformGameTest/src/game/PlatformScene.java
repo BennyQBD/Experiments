@@ -23,14 +23,18 @@ import engine.space.Grid;
 import engine.space.ISpatialStructure;
 import engine.util.BitmapFactory;
 import engine.util.Delay;
-import engine.util.SpriteComponent;
+import engine.util.LightMapFactory;
 import engine.util.Util;
+import engine.util.components.LightComponent;
+import engine.util.components.LinkComponent;
+import engine.util.components.SpriteComponent;
 import engine.util.menu.IMenuHandler;
 import engine.util.menu.Menu;
 import engine.util.menu.MenuStack;
 import engine.util.parsing.Config;
 import game.components.CollectableComponent;
 import game.components.EnemyComponent;
+import game.components.HazardComponent;
 import game.components.PlayerComponent;
 
 public class PlatformScene extends Scene {
@@ -57,19 +61,19 @@ public class PlatformScene extends Scene {
 	private MenuStack menu;
 	private boolean shouldExit;
 	private InputListener helpMenuKey;
-	private LightMap bigLightMapTest;
+	private LightMap staticLightMap;
 
 	private void loadLevel(Config config, IInput input,
 			ISpatialStructure<Entity> structure, int points, int lives,
 			int lifeDeficit) throws IOException {
-		if (bigLightMapTest != null) {
-			bigLightMapTest.dispose();
+		if (staticLightMap != null) {
+			staticLightMap.dispose();
 		}
-		this.bigLightMapTest = new LightMap(device, 2048, 2048, 2);
+		this.staticLightMap = new LightMap(device, 2048, 2048, 2);
 		SpriteSheet level = new SpriteSheet(bitmaps.get("./res/"
 				+ config.getString("level.data")), 4, 2);
 		int[] backgrounds = new int[5];
-		
+
 		SpriteSheet tileSheet = new SpriteSheet(
 				bitmaps.get("./res/tilesheet.png"), 16);
 		font = new SpriteSheet(bitmaps.get("./res/monospace.png"), 16);
@@ -82,7 +86,7 @@ public class PlatformScene extends Scene {
 		backgrounds[3] = 46;
 		backgrounds[4] = 62;
 
-		LightMap backgroundLight = new LightMap(device, 100);
+		LightMapFactory lightMaps = new LightMapFactory(device);// backgroundLight = new LightMap(device, 100);
 		int tileSize = 16;
 		int[] pixels = level.getSheet().getPixels(null);
 		for (int k = 0; k < level.getNumSprites(); k++) {
@@ -94,7 +98,7 @@ public class PlatformScene extends Scene {
 					// addRandomBackgroundTile(structure, x, y, backgrounds,
 					// tileSheet, 10, bigLightMapTest);
 					addEntity(config, input, structure, x, y, k, bitmaps,
-							tileSheet, color, bigLightMapTest, backgroundLight,
+							tileSheet, color, staticLightMap, lightMaps,
 							points, lives, lifeDeficit);
 
 				}
@@ -105,8 +109,8 @@ public class PlatformScene extends Scene {
 	private void addEntity(Config config, IInput input,
 			ISpatialStructure<Entity> structure, int x, int y, int layer,
 			BitmapFactory bitmaps, SpriteSheet tileSheet, int color,
-			LightMap staticLightMap, LightMap lightToAdd,
-			int points, int lives, int lifeDeficit) throws IOException {
+			LightMap staticLightMap, LightMapFactory lightMaps, int points,
+			int lives, int lifeDeficit) throws IOException {
 		if (color == 255) {
 			player = new Entity(structure, x, y, layer, true);
 			new SpriteComponent(player, new SpriteSheet(
@@ -119,41 +123,54 @@ public class PlatformScene extends Scene {
 							IInput.KEY_RSHIFT }), new InputListener(input,
 							new int[] { IInput.KEY_SPACE }), new InputListener(
 							input, new int[] { IInput.KEY_DOWN }));
+			
 		} else if (color == 254) {
 			Entity entity = new Entity(structure, x, y, layer, false);
 			new CollectableComponent(entity, 10);
 			new SpriteComponent(entity, new SpriteSheet(
 					bitmaps.get("./res/diamond2.png"), 5, 2), 0.1);
 
-			// Entity entityLight = new Entity(structure, x+8, y+8, layer,
-			// false);
-			// new LightComponent(entityLight, new OpenGLLightMap(8));
-			// new LinkComponent(entityLight, entity);
+//			 Entity entityLight = new Entity(structure, x+8, y+8, layer,
+//			 false);
+//			new LightComponent(entityLight, lightMaps.get(8));
+//			 new LinkComponent(entityLight, entity);
 		} else if (color == 253) {
 			Entity entity = new Entity(structure, x, y, layer, false);
 			new CollectableComponent(entity, 100);
 			SpriteSheet sheet = new SpriteSheet(
 					bitmaps.get("./res/diamond.png"), 9, 1);
 			new SpriteComponent(entity, sheet, 0.1111111111);
-			// new SpriteComponent(entity, new SpriteSheet(
-			// bitmaps.get("./res/diamond.png"), 1), 0);
+			
 		} else if (color == 250) {
 			Entity entity = new Entity(structure, x, y, layer, true);
 			new SpriteComponent(entity, new SpriteSheet(
 					bitmaps.get("./res/slime.png"), 1), 0);
 			new EnemyComponent(entity, 20);
+			new HazardComponent(entity, 1, 0, 0);
+			
+		} else if (color == 249) {
+			Entity e = new Entity(structure, x, y, layer, false);
+			SpriteComponent sc = new SpriteComponent(e, new SpriteSheet(
+					bitmaps.get("./res/lava.png"), 1), 0.25);
+			sc.setTransparency(0.8);
+			new HazardComponent(e, 0, 0, 0);
+			addStaticLight(e, x, y, staticLightMap, lightMaps.get(100));
 		} else if (color != 0) {
 			boolean blocking = (color & 0x8000) != 0;
 			Entity e = add(structure, x, y, layer, blocking, tileSheet,
 					color & 0xFF);
-			if (color == 14 || color == 30 || color == 46 || color == 62) {
-				staticLightMap.addLight(lightToAdd, x - lightToAdd.getWidth()
-						/ 2 + (int) e.getAABB().getWidth() / 2,
-						y - lightToAdd.getHeight() / 2
-								+ (int) e.getAABB().getHeight() / 2, 0, 0,
-						lightToAdd.getWidth(), lightToAdd.getHeight());
-			}
+			 if (color == 14 || color == 30 || color == 46 || color == 62) {
+				 addStaticLight(e, x, y, staticLightMap, lightMaps.get(100));
+			 }
 		}
+	}
+	
+	private static void addStaticLight(Entity e, int x, int y,
+			LightMap staticLightMap, LightMap lightToAdd) {
+		staticLightMap.addLight(lightToAdd, x - lightToAdd.getWidth() / 2
+				+ (int) e.getAABB().getWidth() / 2, y - lightToAdd.getHeight()
+				/ 2 + (int) e.getAABB().getHeight() / 2, 0, 0,
+				lightToAdd.getWidth(), lightToAdd.getHeight());
 	}
 
 	// private static int getRand(int min, int range) {
@@ -402,11 +419,12 @@ public class PlatformScene extends Scene {
 	private static Bitmap background;
 	private static SpriteSheet backgroundSpriteSheet;
 
-	private void drawBackground(IRenderContext target, double r,
-			double g, double b, int parallax, int x, int y) {
+	private void drawBackground(IRenderContext target, double r, double g,
+			double b, int parallax, int x, int y) {
 		if (background == null || background.getWidth() != target.getWidth()
 				|| background.getHeight() != target.getHeight()) {
-			background = new Bitmap(device, target.getWidth(), target.getHeight());
+			background = new Bitmap(device, target.getWidth(),
+					target.getHeight());
 			backgroundSpriteSheet = new SpriteSheet(background, 1);
 		}
 		int width = target.getWidth();
@@ -480,7 +498,7 @@ public class PlatformScene extends Scene {
 			renderScene(target, viewportX, viewportY);
 			// target.drawLight((int)Math.round(player.getAABB().getCenterX()-viewportX),
 			// (int)Math.round(player.getAABB().getCenterY()-viewportY), 200);
-			target.drawLight(bigLightMapTest, 0, 0, viewportXInt, viewportYInt,
+			target.drawLight(staticLightMap, 0, 0, viewportXInt, viewportYInt,
 					target.getWidth(), target.getHeight());
 			target.applyLighting(16.0 / 256.0);
 			break;

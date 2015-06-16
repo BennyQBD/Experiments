@@ -4,14 +4,16 @@ import engine.core.entity.Entity;
 import engine.core.entity.EntityComponent;
 import engine.core.entity.IEntityVisitor;
 import engine.input.InputListener;
-import engine.util.SpriteComponent;
+import engine.util.IDAssigner;
+import engine.util.Util;
+import engine.util.components.SpriteComponent;
 
 public class PlayerComponent extends EntityComponent {
 	private class DoubleVal {
 		public double val = 0.0;
 	}
-	
-	public static final String COMPONENT_NAME = "PlayerComponent";
+
+	public static final int ID = IDAssigner.getId();
 	private static final int POINTS_FOR_EXTRA_LIFE = 1000;
 	private static final int STATE_MOVING = 0;
 	private static final int STATE_IN_AIR = 1;
@@ -23,6 +25,7 @@ public class PlayerComponent extends EntityComponent {
 	private int state;
 
 	private double velY;
+	private double velX;
 	private double jumpCounter;
 	private int points;
 	private int health;
@@ -46,14 +49,14 @@ public class PlayerComponent extends EntityComponent {
 		}
 
 		spriteComponent = (SpriteComponent) getEntity().getComponent(
-				SpriteComponent.COMPONENT_NAME);
+				SpriteComponent.ID);
 		return spriteComponent;
 	}
 
-	public PlayerComponent(Entity entity, int points, int health, int lives, int lifeDeficit,
-			InputListener leftKey, InputListener rightKey,
+	public PlayerComponent(Entity entity, int points, int health, int lives,
+			int lifeDeficit, InputListener leftKey, InputListener rightKey,
 			InputListener runKey, InputListener jumpKey, InputListener slamKey) {
-		super(entity, COMPONENT_NAME);
+		super(entity, ID);
 		this.leftKey = leftKey;
 		this.rightKey = rightKey;
 		this.runKey = runKey;
@@ -62,6 +65,7 @@ public class PlayerComponent extends EntityComponent {
 		this.state = STATE_MOVING;
 
 		velY = 0.0;
+		velX = 0.0;
 		jumpCounter = 0.0;
 		this.invulnerabilityLength = 3.0;
 		this.points = points;
@@ -79,21 +83,21 @@ public class PlayerComponent extends EntityComponent {
 		this.gravity = 157.0;
 		this.jumpModifier = 1.15;
 		this.flashFrequency = 15.0;
-		
+
 		getSpriteComponent().setFrame(1);
 	}
-	
+
 	public void damage() {
 		if (!isInvulnerable()) {
 			health--;
 			invulnerabilityTimer = 0.0;
 		}
 	}
-	
+
 	public int getLifeDeficit() {
 		return lifeDeficit;
 	}
-	
+
 	public int getPoints() {
 		return points;
 	}
@@ -101,19 +105,19 @@ public class PlayerComponent extends EntityComponent {
 	public int getHealth() {
 		return health;
 	}
-	
+
 	public int getLives() {
 		return lives;
 	}
-	
+
 	public void addLives(int numLives) {
 		lifeDeficit += numLives;
-		if(lifeDeficit > 0) {
+		if (lifeDeficit > 0) {
 			lives += lifeDeficit;
 			lifeDeficit = 0;
 		}
 	}
-	
+
 	@Override
 	public void update(double delta) {
 		boolean jumped = commonUpdate(delta);
@@ -129,7 +133,7 @@ public class PlayerComponent extends EntityComponent {
 					+ " is an invalid enemy state");
 		}
 	}
-	
+
 	private boolean commonUpdate(double delta) {
 		invulnerabilityFlash(delta);
 		pickupCollectables();
@@ -138,7 +142,7 @@ public class PlayerComponent extends EntityComponent {
 		applyGravity(gravity, delta);
 		return applyJumpAmt(jumpSpeed, moveX, delta);
 	}
-	
+
 	private void movingUpdate(double delta, boolean jumped) {
 		if (applyMovementY(delta)) {
 			state = STATE_IN_AIR;
@@ -151,7 +155,7 @@ public class PlayerComponent extends EntityComponent {
 
 	private void inAirUpdate(double delta) {
 		if (!applyMovementY(delta) && !tryHitEnemy()) {
-			if(velY > 0) {
+			if (velY > 0) {
 				state = STATE_MOVING;
 			}
 			velY = 0.0;
@@ -176,14 +180,15 @@ public class PlayerComponent extends EntityComponent {
 			getSpriteComponent().setFlipX(true);
 			getSpriteComponent().setFrame(0);
 		}
-		
-		if(moveX == 0.0f) {
-			if(state == STATE_MOVING) {
+
+		if (moveX == 0.0f) {
+			if (state == STATE_MOVING) {
 				getSpriteComponent().setFrame(1);
 			} else {
 				getSpriteComponent().setFrame(2);
 			}
 		}
+
 		return moveX;
 	}
 
@@ -194,7 +199,8 @@ public class PlayerComponent extends EntityComponent {
 	private void invulnerabilityFlash(double delta) {
 		if (isInvulnerable()) {
 			invulnerabilityTimer += delta;
-			double invulnerabilityFlasher = invulnerabilityTimer * flashFrequency;
+			double invulnerabilityFlasher = invulnerabilityTimer
+					* flashFrequency;
 			if ((int) (invulnerabilityFlasher) % 2 == 0) {
 				getSpriteComponent().setTransparency(1.0);
 			} else {
@@ -221,11 +227,52 @@ public class PlayerComponent extends EntityComponent {
 		}
 		return false;
 	}
+	
+	private void applyFriction(double delta) {
+		double frictionAmt = 10.0;
+		double frictionAirRatio = 0.5;
+		
+		double friction = 0;
+		
+		if(velX > 0) {
+			friction = delta * frictionAmt;
+		} else if(velX < 0) {
+			friction = -delta * frictionAmt;
+		}
+		
+		if(state != STATE_MOVING) {
+			friction *= frictionAirRatio;
+		}
+		
+		boolean sign = velX > 0;
+		velX -= friction;
+		if(velX > 0 != sign) {
+			velX = 0;
+		}
+	}
 
 	private float applyLateralMovement(double moveSpeed, double runModifier,
 			double delta) {
-		return getEntity().move(
-				findLateralMovement(moveSpeed, runModifier, delta), 0);
+		double moveAccel = 10.0;
+		
+		double maxSpeed = moveSpeed * delta;
+		if (runKey.isDown()) {
+			maxSpeed *= runModifier;
+		}
+		
+		float moveX = findLateralMovement(moveSpeed, runModifier, delta);
+		moveX *= delta * moveAccel;
+		velX += moveX;
+		
+		applyFriction(delta);
+
+		velX = Util.clamp(velX, -maxSpeed, maxSpeed);
+		moveX = (float)velX;
+		float result = getEntity().move(moveX, 0);
+		if(result != moveX) {
+			velX = 0.0;
+		}
+		return result;
 	}
 
 	private double updateJumpCounter(double amt) {
@@ -240,12 +287,12 @@ public class PlayerComponent extends EntityComponent {
 		jumpCounter = newJumpCounter;
 		return jumpDelta;
 	}
-	
+
 	private void applySlam(double jumpSpeed, double delta) {
 		if (slamKey.isDown()) {
 			velY += jumpSpeed * 0.8 * delta;
 			getSpriteComponent().setFlipY(true);
-//			getSpriteComponent().setFrame(2);
+			// getSpriteComponent().setFrame(2);
 		} else {
 			getSpriteComponent().setFlipY(false);
 		}
@@ -263,7 +310,7 @@ public class PlayerComponent extends EntityComponent {
 
 	private void pickupCollectables() {
 		final DoubleVal val = new DoubleVal();
-		getEntity().visitInRange(CollectableComponent.COMPONENT_NAME,
+		getEntity().visitInRange(CollectableComponent.ID,
 				getEntity().getAABB(), new IEntityVisitor() {
 					@Override
 					public void visit(Entity entity, EntityComponent component) {
@@ -277,7 +324,7 @@ public class PlayerComponent extends EntityComponent {
 
 	private boolean tryHitEnemy() {
 		final DoubleVal result = new DoubleVal();
-		getEntity().visitInRange(EnemyComponent.COMPONENT_NAME,
+		getEntity().visitInRange(EnemyComponent.ID,
 				getEntity().getAABB().expand(0, 1, 0), new IEntityVisitor() {
 					@Override
 					public void visit(Entity entity, EntityComponent component) {
@@ -299,10 +346,10 @@ public class PlayerComponent extends EntityComponent {
 	}
 
 	private void addPoints(int amt) {
-		int livesFromPointsBefore = points/POINTS_FOR_EXTRA_LIFE;
+		int livesFromPointsBefore = points / POINTS_FOR_EXTRA_LIFE;
 		points += amt;
-		int extraLives = points/POINTS_FOR_EXTRA_LIFE - livesFromPointsBefore;
-		if(extraLives > 0) {
+		int extraLives = points / POINTS_FOR_EXTRA_LIFE - livesFromPointsBefore;
+		if (extraLives > 0) {
 			addLives(extraLives);
 		} else {
 			lifeDeficit += extraLives;

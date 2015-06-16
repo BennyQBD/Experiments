@@ -4,14 +4,15 @@ import engine.core.entity.Entity;
 import engine.core.entity.EntityComponent;
 import engine.core.entity.IEntityVisitor;
 import engine.rendering.IRenderContext;
-import engine.util.SpriteComponent;
+import engine.util.IDAssigner;
+import engine.util.components.SpriteComponent;
 
 public class EnemyComponent extends EntityComponent {
 	private class DoubleVal {
 		public double val = 0.0;
 	}
 	
-	public static final String COMPONENT_NAME = "EnemyComponent";
+	public static final int ID = IDAssigner.getId();
 	private static final int STATE_WALK = 0;
 	private static final int STATE_DYING = 1;
 	private int state;
@@ -31,12 +32,12 @@ public class EnemyComponent extends EntityComponent {
 		}
 
 		spriteComponent = (SpriteComponent) getEntity().getComponent(
-				SpriteComponent.COMPONENT_NAME);
+				SpriteComponent.ID);
 		return spriteComponent;
 	}
 
 	public EnemyComponent(Entity entity, int points) {
-		super(entity, COMPONENT_NAME);
+		super(entity, ID);
 		this.velY = 0.0;
 		this.state = STATE_WALK;
 		this.lastRenderCounter = 0.0;
@@ -59,6 +60,7 @@ public class EnemyComponent extends EntityComponent {
 		state = STATE_DYING;
 		velY = killBounceSpeed;
 		getEntity().setBlocking(false);
+		getEntity().remove(HazardComponent.ID);
 		getSpriteComponent().setFlipY(true);
 		return true;
 	}
@@ -98,7 +100,7 @@ public class EnemyComponent extends EntityComponent {
 			speedX = -speedX;
 			getSpriteComponent().setFlipX(speedX < 0);
 		}
-		tryHitPlayer();
+//		tryHitPlayer();
 	}
 	
 	private boolean dyingUpdate(double delta) {
@@ -126,7 +128,7 @@ public class EnemyComponent extends EntityComponent {
 
 	private boolean aboutToWalkOffCliff(double distX, double distY) {
 		final DoubleVal val = new DoubleVal();
-		getEntity().visitInRange(null,
+		getEntity().visitInRange(-1,
 				getEntity().getAABB().move(distX, distY), new IEntityVisitor() {
 					@Override
 					public void visit(Entity entity, EntityComponent component) {
@@ -138,13 +140,13 @@ public class EnemyComponent extends EntityComponent {
 		return val.val != 1.0;
 	}
 
-	private void tryHitPlayer() {
-		getEntity().visitInRange(PlayerComponent.COMPONENT_NAME,
-				getEntity().getAABB().expand(1, 0, 0), new IEntityVisitor() {
-					@Override
-					public void visit(Entity entity, EntityComponent component) {
-						((PlayerComponent) component).damage();
-					}
-				});
-	}
+//	private void tryHitPlayer() {
+//		getEntity().visitInRange(PlayerComponent.COMPONENT_NAME,
+//				getEntity().getAABB().expand(1, 0, 0), new IEntityVisitor() {
+//					@Override
+//					public void visit(Entity entity, EntityComponent component) {
+//						((PlayerComponent) component).damage();
+//					}
+//				});
+//	}
 }

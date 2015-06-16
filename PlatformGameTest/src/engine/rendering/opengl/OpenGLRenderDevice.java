@@ -54,7 +54,6 @@ public class OpenGLRenderDevice implements IRenderDevice {
 		glEnable(GL_TEXTURE_2D);
 
 		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	}
 	
 	@Override
@@ -198,7 +197,8 @@ public class OpenGLRenderDevice implements IRenderDevice {
 			break;
 		}
 		bindTexture(texId);
-		glBegin(GL_QUADS);
+		
+		glBegin(GL_TRIANGLE_FAN);
 		{
 			glTexCoord2f((float) texX, (float) (texY));
 			glVertex2f((float) x, (float) y);
@@ -217,14 +217,15 @@ public class OpenGLRenderDevice implements IRenderDevice {
 			return;
 		}
 		FramebufferData data = framebuffers.get(fbo);
+		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+		boundFbo = fbo;
+		
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
 		glOrtho(0, data.width, data.height, 0, 1, -1);
 		glMatrixMode(GL_MODELVIEW);
 
 		glViewport(0, 0, data.projWidth, data.projHeight);
-		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-		boundFbo = fbo;
 	}
 
 	private void bindTexture(int texId) {

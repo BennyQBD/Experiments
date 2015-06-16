@@ -1,14 +1,15 @@
-package engine.util;
+package engine.util.components;
 
 import engine.core.entity.Entity;
 import engine.core.entity.EntityComponent;
+import engine.util.IDAssigner;
 
 public class LinkComponent extends EntityComponent {
-	public static final String COMPONENT_NAME = "LinkComponent";
+	public static final int ID = IDAssigner.getId();
 	private Entity linked;
 
 	public LinkComponent(Entity entity, Entity toLink) {
-		super(entity, COMPONENT_NAME);
+		super(entity, ID);
 		this.linked = toLink;
 	}
 	

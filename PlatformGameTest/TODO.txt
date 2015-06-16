@@ -24,11 +24,12 @@
 + Layers in Level
 + Optional OpenGL renderer
 + Animation
-- Environmental hazards (spikes, lava, lasers, etc.)
++ Environmental hazards (spikes, lava, lasers, etc.)
 - Locked areas
 - Items to unlock locked areas
 - Secret locked areas
 - Different enemy types (projectile shooting enemies?)
+- Multiple levels
 - Sound
 - Flying powerup?
 - Weapons?

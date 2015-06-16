@@ -1,5 +1,13 @@
 package engine.rendering;
 
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+
+import javax.imageio.ImageIO;
+
 import engine.util.Util;
 
 public class LightMap {
@@ -25,14 +33,15 @@ public class LightMap {
 		this.width = width;
 		this.height = height;
 		this.scale = scale;
-		initTextures(width, height, scale, null);
+		byte[] data = new byte[width*height];
+		Arrays.fill(data, (byte)0);
+		initTextures(width, height, scale, data);
 	}
 
 	private void initTextures(int width, int height, double scale, byte[] data) {
 		this.id = device.createTexture(width, height, data,
 				IRenderDevice.FILTER_LINEAR);
-		this.fbo = device.createRenderTarget(width, height, width, height, id);
-		clear();
+		this.fbo = 0;
 	}
 
 	public void dispose() {
@@ -45,9 +54,16 @@ public class LightMap {
 		dispose();
 		super.finalize();
 	}
+	
+	private int getFbo() {
+		if(fbo == 0) {
+			fbo = device.createRenderTarget(width, height, width, height, id);
+		}
+		return fbo;
+	}
 
 	public void clear() {
-		device.clear(fbo, 0.0, 0.0, 0.0, 0.0);
+		device.clear(getFbo(), 0.0, 0.0, 0.0, 0.0);
 	}
 
 	public int getWidth() {
@@ -92,7 +108,20 @@ public class LightMap {
 	public int getId() {
 		return id;
 	}
+	
+	public void save(String filetype, File file) throws IOException {
+		BufferedImage output = new BufferedImage(width, height,
+				BufferedImage.TYPE_INT_ARGB);
+		int[] displayComponents = ((DataBufferInt) output.getRaster()
+				.getDataBuffer()).getData();
+		device.getTexture(id, displayComponents, 0, 0, width, height);
+		for(int i = 0; i < displayComponents.length; i++) {
+			displayComponents[i] |= 0xFF000000;
+		}
 
+		ImageIO.write(output, "png", file);
+	}
+	
 	public void addLight(LightMap light, int x, int y, int mapStartX,
 			int mapStartY, int width, int height) {
 		double posScale = 1.0 / scale;
@@ -117,7 +146,7 @@ public class LightMap {
 		double drawWidth = (xEnd - xStart);
 		double drawHeight = (yEnd - yStart);
 
-		device.drawRect(fbo, light.id, IRenderDevice.BlendMode.ADD_LIGHT,
+		device.drawRect(getFbo(), light.id, IRenderDevice.BlendMode.ADD_LIGHT,
 				xStart, yStart, drawWidth, drawHeight, texMinX, texMinY,
 				texWidth, texHeight);
 	}

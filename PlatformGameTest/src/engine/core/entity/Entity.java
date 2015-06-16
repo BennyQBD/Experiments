@@ -45,27 +45,26 @@ public class Entity implements ISpatialObject {
 		structure.add(this);
 	}
 
-	public EntityComponent getComponent(String name) {
+	public EntityComponent getComponent(int id) {
 		Iterator<EntityComponent> it = components.iterator();
 		while (it.hasNext()) {
 			EntityComponent current = it.next();
-			if (current.getName().equals(name)) {
+			if (current.getId() == id) {
 				return current;
 			}
-
 		}
 		return null;
 	}
 
-	public void visitInRange(String name, AABB range, IEntityVisitor visitor) {
+	public void visitInRange(int id, AABB range, IEntityVisitor visitor) {
 		Set<Entity> entities = structure.queryRange(new HashSet<Entity>(),
 				range);
 		Iterator<Entity> it = entities.iterator();
 		while (it.hasNext()) {
 			Entity entity = it.next();
-			EntityComponent component = name == null ? null : entity
-					.getComponent(name);
-			if (component != null || name == null) {
+			EntityComponent component = id == -1 ? null : entity
+					.getComponent(id);
+			if (component != null || id == -1) {
 				visitor.visit(entity, component);
 			}
 		}
@@ -77,6 +76,16 @@ public class Entity implements ISpatialObject {
 
 	public void remove(EntityComponent component) {
 		components.remove(component);
+	}
+	
+	public void remove(int id) {
+		Iterator<EntityComponent> it = components.iterator();
+		while (it.hasNext()) {
+			EntityComponent current = it.next();
+			if (current.getId() == id) {
+				it.remove();
+			}
+		}
 	}
 
 	public float move(float amtXIn, float amtYIn) {

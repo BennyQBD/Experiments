@@ -1,10 +1,11 @@
-package engine.util;
+package engine.util.components;
 
 import engine.core.entity.Entity;
 import engine.core.entity.EntityComponent;
 import engine.rendering.IRenderContext;
 import engine.rendering.SpriteSheet;
 import engine.space.AABB;
+import engine.util.IDAssigner;
 
 public class SpriteComponent extends EntityComponent {
 	private class Animation {
@@ -49,7 +50,7 @@ public class SpriteComponent extends EntityComponent {
 		}
 	}
 
-	public static final String COMPONENT_NAME = "SpriteComponent";
+	public static final int ID = IDAssigner.getId();
 	private Animation animation;
 	private int spriteOffsetX;
 	private int spriteOffsetY;
@@ -65,7 +66,7 @@ public class SpriteComponent extends EntityComponent {
 	}
 	
 	public SpriteComponent(Entity entity, SpriteSheet sheet, double frameTime) {
-		super(entity, COMPONENT_NAME);
+		super(entity, ID);
 		SpriteSheet[] sheets = new SpriteSheet[sheet.getNumSprites()];
 		int[] indices = new int[sheets.length];
 		for(int i = 0; i < sheets.length; i++) {
@@ -77,7 +78,7 @@ public class SpriteComponent extends EntityComponent {
 	
 	public SpriteComponent(Entity entity, SpriteSheet sheet, int[] indices,
 			double frameTime) {
-		super(entity, COMPONENT_NAME);
+		super(entity, ID);
 		SpriteSheet[] sheets = new SpriteSheet[indices.length];
 		for(int i = 0; i < sheets.length; i++) {
 			sheets[i] = sheet;
@@ -87,13 +88,13 @@ public class SpriteComponent extends EntityComponent {
 
 	public SpriteComponent(Entity entity, SpriteSheet[] sheets, int[] indices,
 			double frameTime) {
-		super(entity, COMPONENT_NAME);
+		super(entity, ID);
 		init(entity, sheets, indices, frameTime);
 	}
 
 	public SpriteComponent(Entity entity, SpriteSheet[] sheets, int[] indices,
 			double[] frameTimes, int[] nextFrames) {
-		super(entity, COMPONENT_NAME);
+		super(entity, ID);
 		init(entity, sheets, indices, frameTimes, nextFrames);
 	}
 	

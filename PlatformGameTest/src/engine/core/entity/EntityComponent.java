@@ -4,16 +4,16 @@ import engine.rendering.IRenderContext;
 
 public abstract class EntityComponent {
 	private Entity entity;
-	private String name;
-
-	public EntityComponent(Entity entity, String name) {
-		this.name = name;
+	private int id;
+	
+	public EntityComponent(Entity entity, int id) {
+		this.id = id;
 		this.entity = entity;
 		entity.add(this);
 	}
 
-	public String getName() {
-		return name;
+	public int getId() {
+		return id;
 	}
 
 	public Entity getEntity() {
