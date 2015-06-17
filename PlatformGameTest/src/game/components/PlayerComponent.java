@@ -15,7 +15,7 @@ public class PlayerComponent extends EntityComponent {
 	}
 
 	public static final int ID = IDAssigner.getId();
-	private static final int POINTS_FOR_EXTRA_LIFE = 1000;
+
 	private static final int STATE_MOVING = 0;
 	private static final int STATE_IN_AIR = 1;
 	private Control leftKey;
@@ -28,10 +28,7 @@ public class PlayerComponent extends EntityComponent {
 	private double velY;
 	private double velX;
 	private double jumpCounter;
-	private int points;
 	private int health;
-	private int lives;
-	private int lifeDeficit;
 	private double invulnerabilityTimer;
 	private SpriteComponent spriteComponent;
 	private final double moveSpeed;
@@ -46,7 +43,7 @@ public class PlayerComponent extends EntityComponent {
 	private final double moveAccel;
 	private final double frictionAmt;
 	private final double frictionAirRatio;
-	
+
 	private final int standAnimationFrame;
 	private final int glideAnimationFrame;
 	private final int hoverAnimationFrame;
@@ -61,8 +58,7 @@ public class PlayerComponent extends EntityComponent {
 		return spriteComponent;
 	}
 
-	public PlayerComponent(Entity entity, Config config, int points, int lives,
-			int lifeDeficit, Control leftKey, Control rightKey, Control runKey,
+	public PlayerComponent(Entity entity, Config config, Control leftKey, Control rightKey, Control runKey,
 			Control jumpKey, Control slamKey) {
 		super(entity, ID);
 		this.leftKey = leftKey;
@@ -75,11 +71,10 @@ public class PlayerComponent extends EntityComponent {
 		velY = 0.0;
 		velX = 0.0;
 		jumpCounter = 0.0;
-		this.invulnerabilityLength = config.getDouble("player.invulnerabilityLength");
-		this.points = points;
+		this.invulnerabilityLength = config
+				.getDouble("player.invulnerabilityLength");
 		this.health = config.getInt("player.health");
-		this.lives = lives;
-		this.lifeDeficit = lifeDeficit;
+		
 		this.invulnerabilityTimer = invulnerabilityLength;
 		spriteComponent = null;
 
@@ -91,11 +86,11 @@ public class PlayerComponent extends EntityComponent {
 		this.gravity = config.getDouble("player.gravity");
 		this.jumpModifier = config.getDouble("player.jumpModifier");
 		this.flashFrequency = config.getDouble("player.flashFrequency");
-		
+
 		this.moveAccel = config.getDouble("player.moveAccel");
 		this.frictionAmt = config.getDouble("player.frictionAmt");
 		this.frictionAirRatio = config.getDouble("player.frictionAirRatio");
-		
+
 		this.standAnimationFrame = config.getInt("player.standAnimationFrame");
 		this.glideAnimationFrame = config.getInt("player.glideAnimationFrame");
 		this.hoverAnimationFrame = config.getInt("player.hoverAnimationFrame");
@@ -110,29 +105,13 @@ public class PlayerComponent extends EntityComponent {
 		}
 	}
 
-	public int getLifeDeficit() {
-		return lifeDeficit;
-	}
-
-	public int getPoints() {
-		return points;
-	}
+	
 
 	public int getHealth() {
 		return health;
 	}
 
-	public int getLives() {
-		return lives;
-	}
-
-	public void addLives(int numLives) {
-		lifeDeficit += numLives;
-		if (lifeDeficit > 0) {
-			lives += lifeDeficit;
-			lifeDeficit = 0;
-		}
-	}
+	
 
 	@Override
 	public void update(double delta) {
@@ -152,7 +131,6 @@ public class PlayerComponent extends EntityComponent {
 
 	private boolean commonUpdate(double delta) {
 		invulnerabilityFlash(delta);
-		pickupCollectables();
 		float moveX = applyLateralMovement(moveSpeed, runModifier, delta);
 		applySlam(delta, jumpSpeed);
 		applyGravity(gravity, delta);
@@ -318,19 +296,19 @@ public class PlayerComponent extends EntityComponent {
 		velY += gravity * delta;
 	}
 
-	private void pickupCollectables() {
-		final DoubleVal val = new DoubleVal();
-		getEntity().visitInRange(CollectableComponent.ID,
-				getEntity().getAABB(), new IEntityVisitor() {
-					@Override
-					public void visit(Entity entity, EntityComponent component) {
-						val.val += ((CollectableComponent) component)
-								.getPoints();
-						entity.remove();
-					}
-				});
-		addPoints((int) val.val);
-	}
+	// private void pickupCollectables() {
+	// final DoubleVal val = new DoubleVal();
+	// getEntity().visitInRange(CollectableComponent.ID,
+	// getEntity().getAABB(), new IEntityVisitor() {
+	// @Override
+	// public void visit(Entity entity, EntityComponent component) {
+	// val.val += ((CollectableComponent) component)
+	// .getPoints();
+	// entity.remove();
+	// }
+	// });
+	// addPoints((int) val.val);
+	// }
 
 	private boolean tryHitEnemy() {
 		final DoubleVal result = new DoubleVal();
@@ -344,7 +322,8 @@ public class PlayerComponent extends EntityComponent {
 						}
 					}
 				});
-		addPoints((int) (result.val));
+		((InventoryComponent) (getEntity().getComponent(InventoryComponent.ID)))
+				.addPoints((int) (result.val));
 		boolean hitEnemy = result.val != 0.0;
 		if (hitEnemy) {
 			velY = -velY;
@@ -355,14 +334,4 @@ public class PlayerComponent extends EntityComponent {
 		return hitEnemy;
 	}
 
-	private void addPoints(int amt) {
-		int livesFromPointsBefore = points / POINTS_FOR_EXTRA_LIFE;
-		points += amt;
-		int extraLives = points / POINTS_FOR_EXTRA_LIFE - livesFromPointsBefore;
-		if (extraLives > 0) {
-			addLives(extraLives);
-		} else {
-			lifeDeficit += extraLives;
-		}
-	}
 }

@@ -1,10 +1,10 @@
 package engine.core;
 
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.TreeSet;
 
 import engine.core.entity.Entity;
 import engine.rendering.IRenderContext;
@@ -37,30 +37,25 @@ public abstract class Scene {
 
 	protected void renderRange(IRenderContext target, double viewportX,
 			double viewportY) {
-		Comparator<Entity> spriteSorter = new Comparator<Entity>() {
-			public int compare(Entity e0, Entity e1) {
-				if (e0.getAABB().getMinZ() > e1.getAABB().getMinZ()) {
-					return 1;
-				}
-				if (e0.getAABB().getMinZ() < e1.getAABB().getMinZ()) {
-					return -1;
-				}
-				return 0;
-
-			}
-		};
-
 		Set<Entity> renderableEntities = structure.queryRange(
-				new HashSet<Entity>(), new AABB(viewportX, viewportY, viewportX
-						+ target.getWidth(), viewportY + target.getHeight()));
+				new TreeSet<Entity>(new Comparator<Entity>() {
+					public int compare(Entity e0, Entity e1) {
+						if (e0.getAABB().getMinZ() > e1.getAABB().getMinZ()) {
+							return 1;
+						}
+						if (e0.getAABB().getMinZ() < e1.getAABB().getMinZ()) {
+							return -1;
+						}
 
-		Entity[] entities = renderableEntities
-				.toArray(new Entity[renderableEntities.size()]);
-		Arrays.sort(entities, spriteSorter);
+						return e0.compareTo(e1);
+					}
+				}),
+				new AABB(viewportX, viewportY, viewportX + target.getWidth(),
+						viewportY + target.getHeight()));
 
-		for (int i = 0; i < entities.length; i++) {
-			Entity entity = entities[i];
-			entity.render(target, (int) Math.round(viewportX),
+		Iterator<Entity> it = renderableEntities.iterator();
+		while (it.hasNext()) {
+			it.next().render(target, (int) Math.round(viewportX),
 					(int) Math.round(viewportY));
 		}
 	}

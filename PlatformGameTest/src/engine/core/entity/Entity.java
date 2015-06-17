@@ -11,12 +11,18 @@ import engine.space.AABB;
 import engine.space.ISpatialObject;
 import engine.space.ISpatialStructure;
 
-public class Entity implements ISpatialObject {
+public class Entity implements ISpatialObject, Comparable<Entity> {
+	private static int currentId = 0;
 	private ISpatialStructure<Entity> structure;
 	private AABB aabb;
 	private boolean isBlocking;
 	private boolean isRemoved;
 	private List<EntityComponent> components;
+	private int id;
+	
+	private static int getNextId() {
+		return currentId++;
+	}
 
 	public Entity(ISpatialStructure<Entity> structure, double posX,
 			double posY, double posZ, boolean isBlocking) {
@@ -24,6 +30,7 @@ public class Entity implements ISpatialObject {
 		this.aabb = new AABB(posX, posY, posZ, posX, posY);
 		this.isBlocking = isBlocking;
 		this.isRemoved = false;
+		this.id = getNextId();
 		structure.add(this);
 		components = new ArrayList<EntityComponent>();
 	}
@@ -158,5 +165,16 @@ public class Entity implements ISpatialObject {
 	@Override
 	public AABB getAABB() {
 		return aabb;
+	}
+
+	@Override
+	public int compareTo(Entity o) {
+		if(id > o.id) {
+			return 1;
+		}
+		if(id < o.id) {
+			return -1;
+		}
+		return 0;
 	}
 }

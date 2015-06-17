@@ -59,13 +59,14 @@ public class SpriteComponent extends EntityComponent {
 	private double transparency;
 	private boolean flipX;
 	private boolean flipY;
+	private int colorMask;
 
-	public SpriteComponent(Entity entity, SpriteSheet sheet, int spriteIndex) {
+	public SpriteComponent(Entity entity, SpriteSheet sheet, int spriteIndex, int colorMask) {
 		this(entity, new SpriteSheet[] { sheet }, new int[] { spriteIndex },
-				0.0);
+				0.0, colorMask);
 	}
 	
-	public SpriteComponent(Entity entity, SpriteSheet sheet, double frameTime) {
+	public SpriteComponent(Entity entity, SpriteSheet sheet, double frameTime, int colorMask) {
 		super(entity, ID);
 		SpriteSheet[] sheets = new SpriteSheet[sheet.getNumSprites()];
 		int[] indices = new int[sheets.length];
@@ -73,33 +74,33 @@ public class SpriteComponent extends EntityComponent {
 			indices[i] = i;
 			sheets[i] = sheet;
 		}
-		init(entity, sheets, indices, frameTime);
+		init(entity, sheets, indices, frameTime, colorMask);
 	}
 	
 	public SpriteComponent(Entity entity, SpriteSheet sheet, int[] indices,
-			double frameTime) {
+			double frameTime, int colorMask) {
 		super(entity, ID);
 		SpriteSheet[] sheets = new SpriteSheet[indices.length];
 		for(int i = 0; i < sheets.length; i++) {
 			sheets[i] = sheet;
 		}
-		init(entity, sheets, indices, frameTime);
+		init(entity, sheets, indices, frameTime, colorMask);
 	}
 
 	public SpriteComponent(Entity entity, SpriteSheet[] sheets, int[] indices,
-			double frameTime) {
+			double frameTime, int colorMask) {
 		super(entity, ID);
-		init(entity, sheets, indices, frameTime);
+		init(entity, sheets, indices, frameTime, colorMask);
 	}
 
 	public SpriteComponent(Entity entity, SpriteSheet[] sheets, int[] indices,
-			double[] frameTimes, int[] nextFrames) {
+			double[] frameTimes, int[] nextFrames, int colorMask) {
 		super(entity, ID);
-		init(entity, sheets, indices, frameTimes, nextFrames);
+		init(entity, sheets, indices, frameTimes, nextFrames, colorMask);
 	}
 	
 	private void init(Entity entity, SpriteSheet[] sheets, int[] indices,
-			double frameTime) {
+			double frameTime, int colorMask) {
 		double frameTimes[] = new double[sheets.length];
 		int nextFrames[] = new int[sheets.length];
 
@@ -108,11 +109,11 @@ public class SpriteComponent extends EntityComponent {
 			nextFrames[i] = i + 1;
 		}
 		nextFrames[sheets.length - 1] = 0;
-		init(entity, sheets, indices, frameTimes, nextFrames);
+		init(entity, sheets, indices, frameTimes, nextFrames, colorMask);
 	}
 
 	private void init(Entity entity, SpriteSheet[] sheets, int[] indices,
-			double[] frameTimes, int[] nextFrames) {
+			double[] frameTimes, int[] nextFrames, int colorMask) {
 		this.animation = new Animation(sheets, indices, frameTimes, nextFrames);
 
 		AABB spriteAABB = animation.getSheet().getAABB(
@@ -128,6 +129,7 @@ public class SpriteComponent extends EntityComponent {
 		this.transparency = 1.0;
 		this.flipX = false;
 		this.flipY = false;
+		this.colorMask = colorMask;
 	}
 
 	@Override
@@ -153,7 +155,7 @@ public class SpriteComponent extends EntityComponent {
 			int yStart = (int) Math.round(getEntity().getAABB().getMinY())
 					- viewportY - spriteOffY;
 			target.drawSprite(sheet, spriteIndex, xStart, yStart, transparency,
-					flipX, flipY, 0xFFFFFF);
+					flipX, flipY, colorMask);
 		}
 	}
 

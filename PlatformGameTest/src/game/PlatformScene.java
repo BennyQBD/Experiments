@@ -35,7 +35,9 @@ import engine.util.parsing.Config;
 import game.components.CollectableComponent;
 import game.components.EnemyComponent;
 import game.components.HazardComponent;
+import game.components.InventoryComponent;
 import game.components.PlayerComponent;
+import game.components.UnlockComponent;
 
 public class PlatformScene extends Scene {
 	private enum State {
@@ -46,6 +48,7 @@ public class PlatformScene extends Scene {
 	private static final int NUM_SAVE_FILES = 5;
 	private Entity player;
 	private PlayerComponent playerComponent;
+	private InventoryComponent playerInventory;
 	private SpriteSheetFactory sprites;
 	private LightMapFactory lightMaps;
 	private SpriteSheet font;
@@ -105,7 +108,6 @@ public class PlatformScene extends Scene {
 	private static void addSpriteComponent(Entity e, String prefix,
 			Config config, SpriteSheetFactory sprites, int b)
 			throws IOException {
-		SpriteSheet sheet = null;
 		String fileName = config.getStringWithDefault(prefix + ".fileName",
 				"sprite.default.fileName");
 		int numSpritesX = config.getIntWithDefault("sprite.sheet." + fileName
@@ -116,12 +118,19 @@ public class PlatformScene extends Scene {
 		String animationType = config.getStringWithDefault(prefix
 				+ ".animationType", "sprite.default.animationType");
 
-		sheet = sprites.get("./res/" + fileName, numSpritesX, numSpritesY);
+		int colorMask = ARGBColor.makeColor(
+				config.getDoubleWithDefault(prefix + ".r", "sprite.default.r"),
+				config.getDoubleWithDefault(prefix + ".g", "sprite.default.g"),
+				config.getDoubleWithDefault(prefix + ".b", "sprite.default.b"));
+
+		SpriteSheet sheet = sprites.get("./res/" + fileName, numSpritesX,
+				numSpritesY);
 		SpriteComponent sc = null;
 		switch (animationType) {
 		case "automatic":
 			sc = new SpriteComponent(e, sheet, config.getDoubleWithDefault(
-					prefix + ".frameTime", "sprite.default.frameTime"));
+					prefix + ".frameTime", "sprite.default.frameTime"),
+					colorMask);
 			break;
 		case "none":
 			int spriteIndex = config.getIntWithDefault(prefix + ".spriteIndex",
@@ -129,7 +138,7 @@ public class PlatformScene extends Scene {
 			if (spriteIndex == -1) {
 				spriteIndex = b;
 			}
-			sc = new SpriteComponent(e, sheet, spriteIndex);
+			sc = new SpriteComponent(e, sheet, spriteIndex, colorMask);
 			break;
 		}
 
@@ -166,9 +175,8 @@ public class PlatformScene extends Scene {
 					break;
 				case "player":
 					player = e;
-					playerComponent = new PlayerComponent(e, config, points,
-							lives, lifeDeficit, new Control(input,
-									new int[] { IInput.KEY_LEFT }),
+					playerComponent = new PlayerComponent(e, config,
+							new Control(input, new int[] { IInput.KEY_LEFT }),
 							new Control(input, new int[] { IInput.KEY_RIGHT }),
 							new Control(input, new int[] { IInput.KEY_LSHIFT,
 									IInput.KEY_RSHIFT }), new Control(input,
@@ -177,7 +185,11 @@ public class PlatformScene extends Scene {
 					break;
 				case "collectable":
 					new CollectableComponent(e, config.getIntWithDefault(prefix
-							+ ".points", "collectable.default.points"));
+							+ ".points", "collectable.default.points"),
+							config.getIntWithDefault(prefix + ".lives",
+									"collectable.default.lives"),
+							config.getIntWithDefault(prefix + ".id",
+									"collectable.default.id"));
 					break;
 				case "enemy":
 					new EnemyComponent(e, config, config.getStringWithDefault(
@@ -203,6 +215,18 @@ public class PlatformScene extends Scene {
 						new LightComponent(e, light);
 					}
 					break;
+				case "inventory":
+					if (e.equals(player)) {
+						playerInventory = new InventoryComponent(e, points,
+								lives, lifeDeficit);
+					} else {
+						new InventoryComponent(e, 0, 0, 0);
+					}
+					break;
+				case "unlock":
+					new UnlockComponent(e, config.getIntWithDefault(prefix
+							+ ".id", "unlock.default.id"));
+					break;
 				}
 
 				componentCounter++;
@@ -219,30 +243,6 @@ public class PlatformScene extends Scene {
 				/ 2 + (int) e.getAABB().getHeight() / 2, 0, 0,
 				lightToAdd.getWidth(), lightToAdd.getHeight());
 	}
-
-	// private static int getRand(int min, int range) {
-	// return ((int) (Math.random() * range)) % range + min;
-	// }
-
-	// private static void addRandomBackgroundTile(
-	// ISpatialStructure<Entity> structure, int x, int y,
-	// int[] backgrounds, SpriteSheet tileSheet, int randBackChance, LightMap
-	// lightMap) {
-	// if (getRand(0, randBackChance) != 0) {
-	// add(structure, x, y, -1, false, tileSheet, backgrounds[0]);
-	// } else {
-	// Entity e = add(structure, x, y, -1, false, tileSheet,
-	// backgrounds[getRand(1, backgrounds.length - 1)]);
-	// lightMap.addLight(lightMapTest, x - lightMapTest.getWidth()
-	// / 2 + (int)e.getAABB().getWidth() / 2,
-	// y - lightMapTest.getHeight() / 2 + (int)e.getAABB().getHeight()
-	// / 2, 0, 0, lightMapTest.getWidth(),
-	// lightMapTest.getHeight());
-	// // new LightComponent(new Entity(structure, x +
-	// // e.getAABB().getWidth()
-	// // / 2, y + e.getAABB().getHeight() / 2, -1, false), lightMapTest);
-	// }
-	// }
 
 	private static String getStackTrace(Exception e) {
 		StringWriter sw = new StringWriter();
@@ -382,9 +382,9 @@ public class PlatformScene extends Scene {
 
 	private void saveGame(int saveNum) throws IOException {
 		Map<String, String> saveData = new HashMap<String, String>();
-		saveData.put("points", playerComponent.getPoints() + "");
-		saveData.put("lives", playerComponent.getLives() + "");
-		saveData.put("lifeDeficit", playerComponent.getLifeDeficit() + "");
+		saveData.put("points", playerInventory.getPoints() + "");
+		saveData.put("lives", playerInventory.getLives() + "");
+		saveData.put("lifeDeficit", playerInventory.getLifeDeficit() + "");
 		Config.write(getSavePath(saveNum), saveData);
 	}
 
@@ -419,9 +419,9 @@ public class PlatformScene extends Scene {
 
 		if (playerComponent.getHealth() == 0) {
 			getStructure().clear();
-			int lives = playerComponent.getLives() - 1;
-			int points = playerComponent.getPoints();
-			int lifeDeficit = playerComponent.getLifeDeficit();
+			int lives = playerInventory.getLives() - 1;
+			int points = playerInventory.getPoints();
+			int lifeDeficit = playerInventory.getLifeDeficit();
 			if (lives <= 0) {
 				points = 0;
 				lifeDeficit = 0;
@@ -444,8 +444,8 @@ public class PlatformScene extends Scene {
 		case LOST_LIFE:
 			if (lostLifeDelay.over(delta)) {
 				state = State.RUNNING;
-				if (playerComponent.getLives() <= 0) {
-					playerComponent.addLives(DEFAULT_LIVES);
+				if (playerInventory.getLives() <= 0) {
+					playerInventory.addLives(DEFAULT_LIVES);
 				}
 			}
 			break;
@@ -507,13 +507,13 @@ public class PlatformScene extends Scene {
 	}
 
 	private void drawHUD(IRenderContext target) {
-		target.drawString(String.format("%07d", playerComponent.getPoints()),
+		target.drawString(String.format("%07d", playerInventory.getPoints()),
 				font, 0, 0, 0xFFFFFF, 0);
 		drawPlayerHealth(target);
 		target.drawSprite(livesIcon, 0, 0,
 				target.getHeight() - livesIcon.getSpriteHeight(), 1.0, false,
 				false, 0xFFFFFF);
-		target.drawString(playerComponent.getLives() + "", font,
+		target.drawString(playerInventory.getLives() + "", font,
 				livesIcon.getSpriteWidth(),
 				target.getHeight() - font.getSpriteHeight(), 0xFFFFFF, 0);
 	}
@@ -547,7 +547,7 @@ public class PlatformScene extends Scene {
 			player.render(target, (int) Math.round(viewportX),
 					(int) Math.round(viewportY));
 			String gameOverString = "Game Over";
-			if (playerComponent.getLives() <= 0) {
+			if (playerInventory.getLives() <= 0) {
 				target.drawString(
 						gameOverString,
 						font,

@@ -5,8 +5,6 @@ import java.lang.ref.SoftReference;
 import java.util.HashMap;
 import java.util.Map;
 
-import engine.rendering.IRenderDevice;
-import engine.rendering.LightMap;
 import engine.rendering.SpriteSheet;
 
 public class SpriteSheetFactory {
