@@ -4,6 +4,7 @@ import engine.core.entity.Entity;
 import engine.core.entity.EntityComponent;
 import engine.core.entity.IEntityVisitor;
 import engine.input.Control;
+import engine.input.IInput;
 import engine.util.IDAssigner;
 import engine.util.Util;
 import engine.util.components.SpriteComponent;
@@ -58,14 +59,13 @@ public class PlayerComponent extends EntityComponent {
 		return spriteComponent;
 	}
 
-	public PlayerComponent(Entity entity, Config config, Control leftKey, Control rightKey, Control runKey,
-			Control jumpKey, Control slamKey) {
+	public PlayerComponent(Entity entity, IInput input, Config config) {
 		super(entity, ID);
-		this.leftKey = leftKey;
-		this.rightKey = rightKey;
-		this.runKey = runKey;
-		this.jumpKey = jumpKey;
-		this.slamKey = slamKey;
+		this.leftKey = new Control(input, config, "player.leftKey.");
+		this.rightKey = new Control(input, config, "player.rightKey.");
+		this.runKey = new Control(input, config, "player.runKey.");
+		this.jumpKey = new Control(input, config, "player.jumpKey.");
+		this.slamKey = new Control(input, config, "player.slamKey.");
 		this.state = STATE_MOVING;
 
 		velY = 0.0;

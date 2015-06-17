@@ -10,11 +10,6 @@ public class Control {
 	private int[] keyCodes;
 	private IInput input;
 
-	public Control(IInput input, int[] keyCodes) {
-		this.keyCodes = keyCodes;
-		this.input = input;
-	}
-
 	public Control(IInput input, Config config, String controlName) {
 		this.input = input;
 		List<Integer> codes = new ArrayList<Integer>();

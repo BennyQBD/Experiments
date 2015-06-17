@@ -10,6 +10,7 @@ import engine.rendering.IRenderContext;
 import engine.space.AABB;
 import engine.space.ISpatialObject;
 import engine.space.ISpatialStructure;
+import engine.util.components.RemoveComponent;
 
 public class Entity implements ISpatialObject, Comparable<Entity> {
 	private static int currentId = 0;
@@ -132,6 +133,15 @@ public class Entity implements ISpatialObject, Comparable<Entity> {
 	}
 
 	public void remove() {
+		RemoveComponent r = (RemoveComponent)getComponent(RemoveComponent.ID);
+		if(r != null) {
+			r.activate();
+		} else {
+			forceRemove();
+		}
+	}
+	
+	public void forceRemove() {
 		structure.remove(this);
 		isRemoved = true;
 	}

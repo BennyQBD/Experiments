@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import engine.core.entity.Entity;
-import engine.input.Control;
 import engine.input.IInput;
 import engine.rendering.ARGBColor;
 import engine.rendering.IRenderDevice;
@@ -15,6 +14,7 @@ import engine.space.ISpatialStructure;
 import engine.util.LightMapFactory;
 import engine.util.SpriteSheetFactory;
 import engine.util.components.LightComponent;
+import engine.util.components.RemoveComponent;
 import engine.util.components.SpriteComponent;
 import engine.util.parsing.Config;
 import game.components.CollectableComponent;
@@ -36,12 +36,12 @@ public class PlatformLevel {
 	private Config config;
 	private IInput input;
 	private IRenderDevice device;
-	
+
 	private Map<Integer, SpriteSheet> itemSprites;
 	private Map<Integer, Integer> itemColors;
 
 	private int lastColorMask;
-	
+
 	public PlatformLevel(IRenderDevice device, IInput input, Config config,
 			SpriteSheetFactory sprites, LightMapFactory lightMaps) {
 		this.sprites = sprites;
@@ -67,11 +67,11 @@ public class PlatformLevel {
 	public LightMap getStaticLightMap() {
 		return staticLightMap;
 	}
-	
+
 	public SpriteSheet getItemSprite(int itemId) {
 		return itemSprites.get(itemId);
 	}
-	
+
 	public int getItemColor(int itemId) {
 		return itemColors.get(itemId);
 	}
@@ -84,7 +84,7 @@ public class PlatformLevel {
 		this.staticLightMap = new LightMap(device, 2048, 2048, 2);
 		SpriteSheet level = sprites.get(
 				"./res/" + config.getString("level.data"), 4, 2);
-		
+
 		this.itemSprites = new HashMap<>();
 		this.itemColors = new HashMap<>();
 
@@ -143,7 +143,7 @@ public class PlatformLevel {
 		double transparency = config.getDoubleWithDefault(prefix
 				+ ".transparency", "sprite.default.transparency");
 		sc.setTransparency(transparency);
-		
+
 		return sheet;
 	}
 
@@ -175,13 +175,13 @@ public class PlatformLevel {
 					break;
 				case "player":
 					player = e;
-					playerComponent = new PlayerComponent(e, config,
-							new Control(input, new int[] { IInput.KEY_LEFT }),
-							new Control(input, new int[] { IInput.KEY_RIGHT }),
-							new Control(input, new int[] { IInput.KEY_LSHIFT,
-									IInput.KEY_RSHIFT }), new Control(input,
-									new int[] { IInput.KEY_SPACE }),
-							new Control(input, new int[] { IInput.KEY_DOWN }));
+					playerComponent = new PlayerComponent(e, input, config);
+					// new Control(input, new int[] { IInput.KEY_LEFT }),
+					// new Control(input, new int[] { IInput.KEY_RIGHT }),
+					// new Control(input, new int[] { IInput.KEY_LSHIFT,
+					// IInput.KEY_RSHIFT }), new Control(input,
+					// new int[] { IInput.KEY_SPACE }),
+					// new Control(input, new int[] { IInput.KEY_DOWN }));
 					break;
 				case "collectable":
 					itemId = config.getIntWithDefault(prefix + ".id",
@@ -189,8 +189,7 @@ public class PlatformLevel {
 					new CollectableComponent(e, config.getIntWithDefault(prefix
 							+ ".points", "collectable.default.points"),
 							config.getIntWithDefault(prefix + ".lives",
-									"collectable.default.lives"),
-									itemId);
+									"collectable.default.lives"), itemId);
 					break;
 				case "enemy":
 					new EnemyComponent(e, config, config.getStringWithDefault(
@@ -228,14 +227,33 @@ public class PlatformLevel {
 					new UnlockComponent(e, config.getIntWithDefault(prefix
 							+ ".id", "unlock.default.id"));
 					break;
+				case "remove":
+					String removeType = config.getStringWithDefault(prefix
+							+ ".type", "remove.default.type");
+					switch (removeType) {
+					default:
+					case "fade":
+						new RemoveComponent(e, RemoveComponent.Type.FADE,
+								config.getDoubleWithDefault(prefix
+										+ ".duration",
+										"remove.default.duration"),
+								config.getDoubleWithDefault(prefix
+										+ ".animationFrame",
+										"remove.default.animationFrame"),
+								config.getDoubleWithDefault(prefix
+										+ ".solidityDuration",
+										"remove.default.solidityDuration"));
+						break;
+					}
+					break;
 				}
 
 				componentCounter++;
 				prefix = "entity." + center + "." + componentCounter;
 				component = config.getString(prefix);
 			}
-			
-			if(itemId != -1 && sheet != null) {
+
+			if (itemId != -1 && sheet != null) {
 				itemSprites.put(itemId, sheet);
 				itemColors.put(itemId, lastColorMask);
 			}
