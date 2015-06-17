@@ -29,7 +29,8 @@
 + Locked areas
 + Items to unlock locked areas
 + Secret locked areas
-- Refactor PlatformScene
++ Refactor PlatformScene
+- Controls in config file
 - Different enemy types (projectile shooting enemies?)
 - Multiple levels
 - Sound

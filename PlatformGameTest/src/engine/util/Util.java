@@ -3,6 +3,14 @@ package engine.util;
 import java.util.StringTokenizer;
 
 public class Util {
+	public static int[] toInt(Integer[] src) {
+		int[] result = new int[src.length];
+		for(int i = 0; i < result.length; i++) {
+			result[i] = src[i];
+		}
+		return result;
+	}
+	
 	public static double saturate(double val) {
 		return clamp(val, 0.0, 1.0);
 	}

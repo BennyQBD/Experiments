@@ -43,6 +43,12 @@ public class MenuStack {
 		this.activateDelay = new Delay(usageDelayLength);
 	}
 
+	public void close() {
+		while(isShowing()) {
+			pop();
+		}
+	}
+	
 	public void toggleVisibility() {
 		if (isShowing()) {
 			pop();

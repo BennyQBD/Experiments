@@ -296,20 +296,6 @@ public class PlayerComponent extends EntityComponent {
 		velY += gravity * delta;
 	}
 
-	// private void pickupCollectables() {
-	// final DoubleVal val = new DoubleVal();
-	// getEntity().visitInRange(CollectableComponent.ID,
-	// getEntity().getAABB(), new IEntityVisitor() {
-	// @Override
-	// public void visit(Entity entity, EntityComponent component) {
-	// val.val += ((CollectableComponent) component)
-	// .getPoints();
-	// entity.remove();
-	// }
-	// });
-	// addPoints((int) val.val);
-	// }
-
 	private boolean tryHitEnemy() {
 		final DoubleVal result = new DoubleVal();
 		getEntity().visitInRange(EnemyComponent.ID,

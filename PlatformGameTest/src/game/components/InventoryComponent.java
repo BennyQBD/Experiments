@@ -1,7 +1,8 @@
 package game.components;
 
-import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
+import java.util.TreeSet;
 
 import engine.core.entity.Entity;
 import engine.core.entity.EntityComponent;
@@ -20,10 +21,14 @@ public class InventoryComponent extends EntityComponent {
 	public InventoryComponent(Entity entity, int points, int lives,
 			int lifeDeficit) {
 		super(entity, ID);
-		itemIds = new HashSet<Integer>();
+		itemIds = new TreeSet<Integer>();
 		this.points = points;
 		this.lives = lives;
 		this.lifeDeficit = lifeDeficit;
+	}
+	
+	public Iterator<Integer> getItemIterator() {
+		return itemIds.iterator();
 	}
 
 	private boolean removeItem(int id) {
