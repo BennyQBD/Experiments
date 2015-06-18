@@ -20,10 +20,10 @@ public class LightComponent extends EntityComponent {
 	}
 
 	@Override
-	public void render(IRenderContext target, int viewportX, int viewportY) {
+	public void render(IRenderContext target, double viewportX, double viewportY) {
 		target.drawLight(light,
-				(int) Math.round(getEntity().getAABB().getMinX()) - viewportX,
-				(int) Math.round(getEntity().getAABB().getMinY()) - viewportY,
+				getEntity().getAABB().getMinX() - viewportX,
+				getEntity().getAABB().getMinY() - viewportY,
 				0, 0, light.getWidth(), light.getHeight());
 	}
 }

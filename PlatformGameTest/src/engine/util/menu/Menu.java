@@ -1,5 +1,6 @@
 package engine.util.menu;
 
+import engine.rendering.Color;
 import engine.rendering.IRenderContext;
 import engine.rendering.SpriteSheet;
 import engine.util.Util;
@@ -30,10 +31,11 @@ public class Menu {
 		selectionIndex = Util.floorMod(selectionIndex + amt, options.length);
 	}
 
-	public void render(IRenderContext target, SpriteSheet font, int offsetX,
-			int offsetY, int selectionColor, int fontColor) {
-		for (int i = 0, y = offsetY; i < options.length; i++) {
-			int color = i == selectionIndex ? selectionColor : fontColor;
+	public void render(IRenderContext target, SpriteSheet font, double offsetX,
+			double offsetY, Color selectionColor, Color fontColor) {
+		double y = offsetY;
+		for (int i = 0; i < options.length; i++) {
+			Color color = i == selectionIndex ? selectionColor : fontColor;
 			y += target.drawString(options[i], font, offsetX, y, color, target.getWidth());
 		}
 	}

@@ -2,6 +2,7 @@ package engine.util.components;
 
 import engine.core.entity.Entity;
 import engine.core.entity.EntityComponent;
+import engine.rendering.Color;
 import engine.rendering.IRenderContext;
 import engine.rendering.SpriteSheet;
 import engine.space.AABB;
@@ -59,16 +60,16 @@ public class SpriteComponent extends EntityComponent {
 	private double transparency;
 	private boolean flipX;
 	private boolean flipY;
-	private int colorMask;
+	private Color color;
 
 	public SpriteComponent(Entity entity, SpriteSheet sheet, int spriteIndex,
-			int colorMask) {
+			Color color) {
 		this(entity, new SpriteSheet[] { sheet }, new int[] { spriteIndex },
-				0.0, colorMask);
+				0.0, color);
 	}
 
 	public SpriteComponent(Entity entity, SpriteSheet sheet, double frameTime,
-			int colorMask) {
+			Color color) {
 		super(entity, ID);
 		SpriteSheet[] sheets = new SpriteSheet[sheet.getNumSprites()];
 		int[] indices = new int[sheets.length];
@@ -76,33 +77,33 @@ public class SpriteComponent extends EntityComponent {
 			indices[i] = i;
 			sheets[i] = sheet;
 		}
-		init(entity, sheets, indices, frameTime, colorMask);
+		init(entity, sheets, indices, frameTime, color);
 	}
 
 	public SpriteComponent(Entity entity, SpriteSheet sheet, int[] indices,
-			double frameTime, int colorMask) {
+			double frameTime, Color color) {
 		super(entity, ID);
 		SpriteSheet[] sheets = new SpriteSheet[indices.length];
 		for (int i = 0; i < sheets.length; i++) {
 			sheets[i] = sheet;
 		}
-		init(entity, sheets, indices, frameTime, colorMask);
+		init(entity, sheets, indices, frameTime, color);
 	}
 
 	public SpriteComponent(Entity entity, SpriteSheet[] sheets, int[] indices,
-			double frameTime, int colorMask) {
+			double frameTime, Color color) {
 		super(entity, ID);
-		init(entity, sheets, indices, frameTime, colorMask);
+		init(entity, sheets, indices, frameTime, color);
 	}
 
 	public SpriteComponent(Entity entity, SpriteSheet[] sheets, int[] indices,
-			double[] frameTimes, int[] nextFrames, int colorMask) {
+			double[] frameTimes, int[] nextFrames, Color color) {
 		super(entity, ID);
-		init(entity, sheets, indices, frameTimes, nextFrames, colorMask);
+		init(entity, sheets, indices, frameTimes, nextFrames, color);
 	}
 
 	private void init(Entity entity, SpriteSheet[] sheets, int[] indices,
-			double frameTime, int colorMask) {
+			double frameTime, Color color) {
 		double frameTimes[] = new double[sheets.length];
 		int nextFrames[] = new int[sheets.length];
 
@@ -111,16 +112,16 @@ public class SpriteComponent extends EntityComponent {
 			nextFrames[i] = i + 1;
 		}
 		nextFrames[sheets.length - 1] = 0;
-		init(entity, sheets, indices, frameTimes, nextFrames, colorMask);
+		init(entity, sheets, indices, frameTimes, nextFrames, color);
 	}
 
 	private void init(Entity entity, SpriteSheet[] sheets, int[] indices,
-			double[] frameTimes, int[] nextFrames, int colorMask) {
+			double[] frameTimes, int[] nextFrames, Color color) {
 		this.animation = new Animation(sheets, indices, frameTimes, nextFrames);
 
 		AABB spriteAABB = animation.getSheet().getAABB(
 				animation.getSpriteIndex());
-		entity.fitAABB(spriteAABB);
+		getEntity().fitAABB(spriteAABB);
 		spriteOffsetX = (int) spriteAABB.getMinX();
 		spriteOffsetY = (int) spriteAABB.getMinY();
 		spriteOffsetFlippedX = animation.getSheet().getSpriteWidth()
@@ -131,7 +132,7 @@ public class SpriteComponent extends EntityComponent {
 		this.transparency = 1.0;
 		this.flipX = false;
 		this.flipY = false;
-		this.colorMask = colorMask;
+		this.color = color;
 	}
 
 	@Override
@@ -140,7 +141,7 @@ public class SpriteComponent extends EntityComponent {
 	}
 
 	@Override
-	public void render(IRenderContext target, int viewportX, int viewportY) {
+	public void render(IRenderContext target, double viewportX, double viewportY) {
 		SpriteSheet sheet = animation.getSheet();
 		int spriteIndex = animation.getSpriteIndex();
 		if (sheet != null) {
@@ -152,12 +153,12 @@ public class SpriteComponent extends EntityComponent {
 			if (flipY) {
 				spriteOffY = spriteOffsetFlippedY;
 			}
-			int xStart = (int) Math.round(getEntity().getAABB().getMinX())
-					- viewportX - spriteOffX;
-			int yStart = (int) Math.round(getEntity().getAABB().getMinY())
-					- viewportY - spriteOffY;
+			double xStart = getEntity().getAABB().getMinX() - viewportX
+					- spriteOffX;
+			double yStart = getEntity().getAABB().getMinY() - viewportY
+					- spriteOffY;
 			target.drawSprite(sheet, spriteIndex, xStart, yStart, transparency,
-					flipX, flipY, colorMask);
+					flipX, flipY, color);
 		}
 	}
 

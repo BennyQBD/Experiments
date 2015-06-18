@@ -6,16 +6,17 @@ import java.util.Map;
 
 import engine.core.entity.Entity;
 import engine.input.IInput;
-import engine.rendering.ARGBColor;
+import engine.rendering.Color;
 import engine.rendering.IRenderDevice;
 import engine.rendering.LightMap;
 import engine.rendering.SpriteSheet;
 import engine.space.ISpatialStructure;
-import engine.util.LightMapFactory;
-import engine.util.SpriteSheetFactory;
+import engine.util.components.CollisionComponent;
+import engine.util.components.FadeRemove;
 import engine.util.components.LightComponent;
-import engine.util.components.RemoveComponent;
 import engine.util.components.SpriteComponent;
+import engine.util.factory.LightMapFactory;
+import engine.util.factory.SpriteSheetFactory;
 import engine.util.parsing.Config;
 import game.components.CollectableComponent;
 import game.components.EnemyComponent;
@@ -38,9 +39,9 @@ public class PlatformLevel {
 	private IRenderDevice device;
 
 	private Map<Integer, SpriteSheet> itemSprites;
-	private Map<Integer, Integer> itemColors;
+	private Map<Integer, Color> itemColors;
 
-	private int lastColorMask;
+	private Color lastColor;
 
 	public PlatformLevel(IRenderDevice device, IInput input, Config config,
 			SpriteSheetFactory sprites, LightMapFactory lightMaps) {
@@ -49,7 +50,7 @@ public class PlatformLevel {
 		this.config = config;
 		this.input = input;
 		this.device = device;
-		this.lastColorMask = 0;
+		this.lastColor = null;
 	}
 
 	public Entity getPlayer() {
@@ -72,7 +73,7 @@ public class PlatformLevel {
 		return itemSprites.get(itemId);
 	}
 
-	public int getItemColor(int itemId) {
+	public Color getItemColor(int itemId) {
 		return itemColors.get(itemId);
 	}
 
@@ -115,11 +116,11 @@ public class PlatformLevel {
 		String animationType = config.getStringWithDefault(prefix
 				+ ".animationType", "sprite.default.animationType");
 
-		int colorMask = ARGBColor.makeColor(
+		Color color = new Color(
 				config.getDoubleWithDefault(prefix + ".r", "sprite.default.r"),
 				config.getDoubleWithDefault(prefix + ".g", "sprite.default.g"),
 				config.getDoubleWithDefault(prefix + ".b", "sprite.default.b"));
-		lastColorMask = colorMask;
+		lastColor = color;
 
 		SpriteSheet sheet = sprites.get("./res/" + fileName, numSpritesX,
 				numSpritesY);
@@ -128,7 +129,7 @@ public class PlatformLevel {
 		case "automatic":
 			sc = new SpriteComponent(e, sheet, config.getDoubleWithDefault(
 					prefix + ".frameTime", "sprite.default.frameTime"),
-					colorMask);
+					color);
 			break;
 		case "none":
 			int spriteIndex = config.getIntWithDefault(prefix + ".spriteIndex",
@@ -136,7 +137,7 @@ public class PlatformLevel {
 			if (spriteIndex == -1) {
 				spriteIndex = b;
 			}
-			sc = new SpriteComponent(e, sheet, spriteIndex, colorMask);
+			sc = new SpriteComponent(e, sheet, spriteIndex, color);
 			break;
 		}
 
@@ -165,7 +166,10 @@ public class PlatformLevel {
 			component = config.getString(prefix);
 		}
 		if (component != null) {
-			Entity e = new Entity(structure, x, y, layer, blocking);
+			Entity e = new Entity(structure, x, y, layer);
+			if (blocking) {
+				new CollisionComponent(e);
+			}
 			SpriteSheet sheet = null;
 			int itemId = -1;
 			while (component != null) {
@@ -176,12 +180,6 @@ public class PlatformLevel {
 				case "player":
 					player = e;
 					playerComponent = new PlayerComponent(e, input, config);
-					// new Control(input, new int[] { IInput.KEY_LEFT }),
-					// new Control(input, new int[] { IInput.KEY_RIGHT }),
-					// new Control(input, new int[] { IInput.KEY_LSHIFT,
-					// IInput.KEY_RSHIFT }), new Control(input,
-					// new int[] { IInput.KEY_SPACE }),
-					// new Control(input, new int[] { IInput.KEY_DOWN }));
 					break;
 				case "collectable":
 					itemId = config.getIntWithDefault(prefix + ".id",
@@ -233,16 +231,14 @@ public class PlatformLevel {
 					switch (removeType) {
 					default:
 					case "fade":
-						new RemoveComponent(e, RemoveComponent.Type.FADE,
-								config.getDoubleWithDefault(prefix
-										+ ".duration",
-										"remove.default.duration"),
-								config.getDoubleWithDefault(prefix
+						new FadeRemove(e, config.getDoubleWithDefault(prefix
+								+ ".duration", "remove.fade.default.duration"),
+								config.getIntWithDefault(prefix
 										+ ".animationFrame",
-										"remove.default.animationFrame"),
+										"remove.fade.default.animationFrame"),
 								config.getDoubleWithDefault(prefix
 										+ ".solidityDuration",
-										"remove.default.solidityDuration"));
+										"remove.fade.default.solidityDuration"));
 						break;
 					}
 					break;
@@ -255,7 +251,7 @@ public class PlatformLevel {
 
 			if (itemId != -1 && sheet != null) {
 				itemSprites.put(itemId, sheet);
-				itemColors.put(itemId, lastColorMask);
+				itemColors.put(itemId, lastColor);
 			}
 		}
 	}

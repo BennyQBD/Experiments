@@ -11,10 +11,10 @@ import engine.rendering.IRenderContext;
 import engine.rendering.IRenderDevice;
 import engine.rendering.SpriteSheet;
 import engine.space.Grid;
-import engine.util.BitmapFactory;
 import engine.util.Delay;
-import engine.util.LightMapFactory;
-import engine.util.SpriteSheetFactory;
+import engine.util.factory.BitmapFactory;
+import engine.util.factory.LightMapFactory;
+import engine.util.factory.SpriteSheetFactory;
 import engine.util.parsing.Config;
 
 public class PlatformScene extends Scene {
@@ -69,7 +69,7 @@ public class PlatformScene extends Scene {
 		this.gameMenu = new GameMenu(this, config, gameIO, input, font);
 		this.hud = new HUD(font, sprites.get("./res/livesicon.png", 1, 1),
 				sprites.get("./res/healthicon.png", 1, 1));
-		this.background = new GradientBackground(device);
+		this.background = new GradientBackground(device, 1.0, 0.0, 0.0);
 		startNewGame();
 	}
 
@@ -128,35 +128,33 @@ public class PlatformScene extends Scene {
 
 	private void renderScene(IRenderContext target, double viewportX,
 			double viewportY) {
-		background.render(target, 1.0, 0.0, 0.0, 4,
-				(int) Math.round(viewportX), (int) Math.round(viewportY));
+		background.render(target, 4.0, viewportY);
 		renderRange(target, viewportX, viewportY);
 	}
 
 	public void render(IRenderContext target) {
-		double viewportOffsetX = Math.round((target.getWidth() - level
+		double viewportOffsetX = ((target.getWidth() - level
 				.getPlayer().getAABB().getWidth()) / 2);
-		double viewportOffsetY = Math.round((target.getHeight() - level
+		double viewportOffsetY = ((target.getHeight() - level
 				.getPlayer().getAABB().getHeight()) / 2);
 		double viewportX = level.getPlayer().getAABB().getMinX()
 				- viewportOffsetX;
 		double viewportY = level.getPlayer().getAABB().getMinY()
 				- viewportOffsetY;
-		int viewportXInt = (int) Math.round(viewportX);
-		int viewportYInt = (int) Math.round(viewportY);
 
 		switch (state) {
 		case RUNNING:
-			target.clearLighting();
+			// TODO: Parameterize ambient lighting
+			double ambient = 16.0 / 256.0;
+			target.clearLighting(ambient, ambient, ambient, ambient);
 			renderScene(target, viewportX, viewportY);
-			target.drawLight(level.getStaticLightMap(), 0, 0, viewportXInt,
-					viewportYInt, target.getWidth(), target.getHeight());
-			target.applyLighting(16.0 / 256.0);
+			target.drawLight(level.getStaticLightMap(), 0, 0, viewportX,
+					viewportY, target.getWidth(), target.getHeight());
+			target.applyLighting();
 			break;
 		case LOST_LIFE:
 			target.clear(0.0, 0.0, 0.0, 0.0);
-			level.getPlayer().render(target, (int) Math.round(viewportX),
-					(int) Math.round(viewportY));
+			level.getPlayer().render(target, viewportX, viewportY);
 			break;
 		case ERROR:
 			// Nothing to do

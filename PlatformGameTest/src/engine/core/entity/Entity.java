@@ -10,30 +10,32 @@ import engine.rendering.IRenderContext;
 import engine.space.AABB;
 import engine.space.ISpatialObject;
 import engine.space.ISpatialStructure;
+import engine.util.components.CollisionComponent;
+import engine.util.components.CollisionComponent.DoublePair;
 import engine.util.components.RemoveComponent;
 
 public class Entity implements ISpatialObject, Comparable<Entity> {
 	private static int currentId = 0;
 	private ISpatialStructure<Entity> structure;
-	private AABB aabb;
-	private boolean isBlocking;
-	private boolean isRemoved;
 	private List<EntityComponent> components;
+	private List<EntityComponent> componentsToRemove;
+	private AABB aabb;
 	private int id;
-	
+	private boolean isRemoved;
+
 	private static int getNextId() {
 		return currentId++;
 	}
 
 	public Entity(ISpatialStructure<Entity> structure, double posX,
-			double posY, double posZ, boolean isBlocking) {
+			double posY, double posZ) {
 		this.structure = structure;
 		this.aabb = new AABB(posX, posY, posZ, posX, posY);
-		this.isBlocking = isBlocking;
 		this.isRemoved = false;
 		this.id = getNextId();
 		structure.add(this);
-		components = new ArrayList<EntityComponent>();
+		components = new ArrayList<>();
+		componentsToRemove = new ArrayList<>();
 	}
 
 	public void fitAABB(AABB newAABB) {
@@ -83,15 +85,15 @@ public class Entity implements ISpatialObject, Comparable<Entity> {
 	}
 
 	public void remove(EntityComponent component) {
-		components.remove(component);
+		componentsToRemove.add(component);
 	}
-	
+
 	public void remove(int id) {
 		Iterator<EntityComponent> it = components.iterator();
 		while (it.hasNext()) {
 			EntityComponent current = it.next();
 			if (current.getId() == id) {
-				it.remove();
+				componentsToRemove.add(current);
 			}
 		}
 	}
@@ -104,23 +106,12 @@ public class Entity implements ISpatialObject, Comparable<Entity> {
 		structure.remove(this);
 		double amtX = (double) amtXIn;
 		double amtY = (double) amtYIn;
-		AABB newAABB = aabb.stretch(amtX, amtY);
 
-		if (isBlocking) {
-			Set<Entity> hitEntities = structure.queryRange(
-					new HashSet<Entity>(), newAABB);
-			Iterator<Entity> it = hitEntities.iterator();
-			while (it.hasNext()) {
-				Entity current = it.next();
-				if (current == this || !current.getBlocking()) {
-					continue;
-				}
-
-				if (current.getAABB().intersects(newAABB)) {
-					amtX = aabb.resolveCollisionX(current.getAABB(), amtX);
-					amtY = aabb.resolveCollisionY(current.getAABB(), amtY);
-				}
-			}
+		CollisionComponent c = (CollisionComponent) getComponent(CollisionComponent.ID);
+		if (c != null) {
+			DoublePair amts = c.resolveCollisions(amtX, amtY);
+			amtX = amts.getVal1();
+			amtY = amts.getVal2();
 		}
 
 		this.aabb = aabb.move(amtX, amtY);
@@ -133,14 +124,14 @@ public class Entity implements ISpatialObject, Comparable<Entity> {
 	}
 
 	public void remove() {
-		RemoveComponent r = (RemoveComponent)getComponent(RemoveComponent.ID);
-		if(r != null) {
+		RemoveComponent r = (RemoveComponent) getComponent(RemoveComponent.ID);
+		if (r != null) {
 			r.activate();
 		} else {
 			forceRemove();
 		}
 	}
-	
+
 	public void forceRemove() {
 		structure.remove(this);
 		isRemoved = true;
@@ -149,23 +140,18 @@ public class Entity implements ISpatialObject, Comparable<Entity> {
 	public boolean getRemoved() {
 		return isRemoved;
 	}
-	
-	public boolean getBlocking() {
-		return isBlocking;
-	}
-
-	public void setBlocking(boolean value) {
-		this.isBlocking = value;
-	}
 
 	public void update(double delta) {
+		components.removeAll(componentsToRemove);
+		componentsToRemove.clear();
+		
 		Iterator<EntityComponent> it = components.iterator();
 		while (it.hasNext()) {
 			it.next().update(delta);
 		}
 	}
 
-	public void render(IRenderContext target, int viewportX, int viewportY) {
+	public void render(IRenderContext target, double viewportX, double viewportY) {
 		Iterator<EntityComponent> it = components.iterator();
 		while (it.hasNext()) {
 			it.next().render(target, viewportX, viewportY);
@@ -179,10 +165,10 @@ public class Entity implements ISpatialObject, Comparable<Entity> {
 
 	@Override
 	public int compareTo(Entity o) {
-		if(id > o.id) {
+		if (id > o.id) {
 			return 1;
 		}
-		if(id < o.id) {
+		if (id < o.id) {
 			return -1;
 		}
 		return 0;

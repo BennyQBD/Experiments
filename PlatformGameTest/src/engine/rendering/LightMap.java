@@ -27,14 +27,13 @@ public class LightMap {
 				generateLighting(radius, width, height));
 	}
 
-	public LightMap(IRenderDevice device, int width, int height,
-			double scale) {
+	public LightMap(IRenderDevice device, int width, int height, double scale) {
 		this.device = device;
 		this.width = width;
 		this.height = height;
 		this.scale = scale;
-		byte[] data = new byte[width*height];
-		Arrays.fill(data, (byte)0);
+		byte[] data = new byte[width * height];
+		Arrays.fill(data, (byte) 0);
 		initTextures(width, height, scale, data);
 	}
 
@@ -54,16 +53,16 @@ public class LightMap {
 		dispose();
 		super.finalize();
 	}
-	
+
 	private int getFbo() {
-		if(fbo == 0) {
+		if (fbo == 0) {
 			fbo = device.createRenderTarget(width, height, width, height, id);
 		}
 		return fbo;
 	}
 
-	public void clear() {
-		device.clear(getFbo(), 0.0, 0.0, 0.0, 0.0);
+	public void clear(double a, double r, double g, double b) {
+		device.clear(getFbo(), r, g, b, a);
 	}
 
 	public int getWidth() {
@@ -108,32 +107,28 @@ public class LightMap {
 	public int getId() {
 		return id;
 	}
-	
+
 	public void save(String filetype, File file) throws IOException {
 		BufferedImage output = new BufferedImage(width, height,
 				BufferedImage.TYPE_INT_ARGB);
 		int[] displayComponents = ((DataBufferInt) output.getRaster()
 				.getDataBuffer()).getData();
 		device.getTexture(id, displayComponents, 0, 0, width, height);
-		for(int i = 0; i < displayComponents.length; i++) {
+		for (int i = 0; i < displayComponents.length; i++) {
 			displayComponents[i] |= 0xFF000000;
 		}
 
 		ImageIO.write(output, "png", file);
 	}
-	
-	public void addLight(LightMap light, int x, int y, int mapStartX,
-			int mapStartY, int width, int height) {
+
+	public void addLight(LightMap light, double x, double y, double mapStartX,
+			double mapStartY, double width, double height) {
 		double posScale = 1.0 / scale;
 		double texScale = 1.0 / light.getScale();
-		double texMinX = texScale
-				* ((double) mapStartX / ((double) light.getWidth()));
-		double texMinY = texScale
-				* ((double) mapStartY / ((double) light.getHeight()));
-		double texWidth = texScale * ((double) width)
-				/ ((double) light.getWidth());
-		double texHeight = texScale * ((double) height)
-				/ ((double) light.getHeight());
+		double texMinX = texScale * (mapStartX / ((double) light.getWidth()));
+		double texMinY = texScale * (mapStartY / ((double) light.getHeight()));
+		double texWidth = texScale * width / ((double) light.getWidth());
+		double texHeight = texScale * height / ((double) light.getHeight());
 
 		double xStart = x * posScale;
 		double xEnd = (x + width) * posScale;

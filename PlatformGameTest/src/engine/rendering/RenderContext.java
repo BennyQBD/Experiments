@@ -13,7 +13,6 @@ public class RenderContext implements IRenderContext {
 		this.width = device.getRenderTargetWidth(0);
 		this.height = device.getRenderTargetHeight(0);
 		this.lightMap = new LightMap(device, width, height, 1);
-		lightMap.clear();
 	}
 
 	@Override
@@ -37,8 +36,8 @@ public class RenderContext implements IRenderContext {
 	}
 
 	@Override
-	public void drawSprite(SpriteSheet sheet, int index, int x, int y,
-			double transparency, boolean flipX, boolean flipY, int colorMask) {
+	public void drawSprite(SpriteSheet sheet, int index, double x, double y,
+			double transparency, boolean flipX, boolean flipY, Color color) {
 		int width = sheet.getSpriteWidth();
 		int height = sheet.getSpriteHeight();
 		double texMinX = ((double) sheet.getStartX(index) / ((double) sheet
@@ -65,20 +64,20 @@ public class RenderContext implements IRenderContext {
 		double texWidth = texMaxX - texMinX;
 		double texHeight = texMaxY - texMinY;
 
-		device.drawRect(0, sheet.getSheet().getHardwareID(),
+		device.drawRect(0, sheet.getSheet().getDeviceID(),
 				IRenderDevice.BlendMode.SPRITE, x, y, width, height, texMinX,
-				texMinY, texWidth, texHeight, colorMask, transparency);
+				texMinY, texWidth, texHeight, color, transparency);
 	}
 
 	@Override
-	public int drawString(String str, SpriteSheet font, int x, int y,
-			int color, int wrapX) {
-		int maxLength = (wrapX - x) / font.getSpriteWidth();
+	public double drawString(String str, SpriteSheet font, double x, double y,
+			Color color, double wrapX) {
+		double maxLength = (wrapX - x) / font.getSpriteWidth();
 		if (wrapX <= x || wrapX <= 0 || str.length() < maxLength) {
 			drawStringLine(str, font, x, y, color);
 			return font.getSpriteHeight();
 		}
-		int yStart = y;
+		double yStart = y;
 		str = Util.wrapString(str, maxLength);
 		String[] strs = str.split("\n");
 		for (int i = 0; i < strs.length; i++) {
@@ -92,8 +91,8 @@ public class RenderContext implements IRenderContext {
 		return y - yStart;
 	}
 
-	private void drawStringLine(String str, SpriteSheet font, int x, int y,
-			int color) {
+	private void drawStringLine(String str, SpriteSheet font, double x,
+			double y, Color color) {
 		for (int i = 0; i < str.length(); i++, x += font.getSpriteWidth()) {
 			char c = str.charAt(i);
 			drawSprite(font, (int) c, x, y, 1.0, false, false, color);
@@ -101,23 +100,23 @@ public class RenderContext implements IRenderContext {
 	}
 
 	@Override
-	public void clearLighting() {
-		lightMap.clear();
+	public void clearLighting(double a, double r, double g, double b) {
+		lightMap.clear(a, r, g, b);
 	}
 
 	@Override
-	public void drawLight(LightMap light, int x, int y, int mapStartX,
-			int mapStartY, int width, int height) {
+	public void drawLight(LightMap light, double x, double y, double mapStartX,
+			double mapStartY, double width, double height) {
 		lightMap.addLight(light, x, y, mapStartX, mapStartY, width, height);
 	}
 
 	@Override
-	public void applyLighting(double ambientLightAmt) {
+	public void applyLighting() {
 		device.drawRect(0, lightMap.getId(),
 				IRenderDevice.BlendMode.APPLY_LIGHT, 0, 0, width, height, 0, 0,
 				1, 1);
 	}
-	
+
 	public void getPixels(int[] dest) {
 		device.getTexture(0, dest, 0, 0, width, height);
 	}

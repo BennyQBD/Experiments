@@ -49,6 +49,23 @@ public class Util {
 			return mod;
 		}
 	}
+	
+	public static double floorMod(double num, double den) {
+		if(den < 0) {
+			throw new IllegalArgumentException(
+					"floorMod does not currently support negative" +
+					"denominators");
+		}
+		if(num > 0) {
+			return num % den;
+		} else {
+			double mod = (-num) % den;
+			if(mod != 0) {
+				mod = den - mod;
+			}
+			return mod;
+		}
+	}
 
 	public static void boundsCheck(int index, int min, int max) {
 		if(index > max) {
@@ -59,9 +76,9 @@ public class Util {
 		}
 	}
 
-	public static String wrapString(String str, int maxLength) {
+	public static String wrapString(String str, double maxLength) {
 		StringTokenizer st=new StringTokenizer(str);
-		int spaceLeft=maxLength;
+		double spaceLeft=maxLength;
 		int spaceWidth=1;
 		StringBuilder sb = new StringBuilder();
 		while(st.hasMoreTokens())

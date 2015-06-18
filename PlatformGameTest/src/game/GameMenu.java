@@ -5,7 +5,7 @@ import java.text.ParseException;
 
 import engine.input.Control;
 import engine.input.IInput;
-import engine.rendering.ARGBColor;
+import engine.rendering.Color;
 import engine.rendering.IRenderContext;
 import engine.rendering.SpriteSheet;
 import engine.util.menu.IMenuHandler;
@@ -30,16 +30,16 @@ public class GameMenu {
 		this.numSaveFiles = config.getInt("menu.numSaveFiles");
 		this.helpMessage = config.getString("menu.helpMessage");
 		this.helpMenuKey = new Control(input, config, "menu.helpKey.");
-		int fontColor = ARGBColor.makeColor(
+		Color fontColor = new Color(
 				config.getDouble("menu.fontColor.r"),
 				config.getDouble("menu.fontColor.g"),
 				config.getDouble("menu.fontColor.b"));
-		int selectColor = ARGBColor.makeColor(
+		Color selectColor = new Color(
 				config.getDouble("menu.selectColor.r"),
 				config.getDouble("menu.selectColor.g"),
 				config.getDouble("menu.selectColor.b"));
 		this.menu = new MenuStack(font, fontColor, selectColor,
-				config.getInt("menu.x"), config.getInt("menu.y"), new Control(
+				config.getDouble("menu.x"), config.getDouble("menu.y"), new Control(
 						input, config, "menu.upKey."), new Control(input,
 						config, "menu.downKey."), new Control(input, config,
 						"menu.activateKey."), new Control(input, config,

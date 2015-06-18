@@ -4,7 +4,6 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 
 import javax.imageio.ImageIO;
 
@@ -14,16 +13,15 @@ public class Bitmap {
 	private final int height;
 	private int id;
 
-	public Bitmap(IRenderDevice device, int width, int height) {
+	public Bitmap(IRenderDevice device, int width, int height, int[] pixels) {
 		this.device = device;
 		this.width = width;
 		this.height = height;
-		this.id = device.createTexture(width, height, (int[]) null,
+		this.id = device.createTexture(width, height, pixels,
 				IRenderDevice.FILTER_NEAREST);
 	}
 
-	public Bitmap(IRenderDevice device, String fileName)
-			throws IOException {
+	public Bitmap(IRenderDevice device, String fileName) throws IOException {
 		this.device = device;
 		BufferedImage image = ImageIO.read(new File(fileName));
 
@@ -46,7 +44,7 @@ public class Bitmap {
 		super.finalize();
 	}
 
-	public int getHardwareID() {
+	public int getDeviceID() {
 		return id;
 	}
 
@@ -56,12 +54,6 @@ public class Bitmap {
 
 	public int getHeight() {
 		return height;
-	}
-
-	public void clear(int color) {
-		int[] newTex = new int[width * height];
-		Arrays.fill(newTex, color);
-		device.updateTexture(id, newTex, 0, 0, width, height);
 	}
 
 	public int[] getPixels(int[] dest) {
@@ -80,9 +72,5 @@ public class Bitmap {
 		device.getTexture(id, displayComponents, 0, 0, width, height);
 
 		ImageIO.write(output, "png", file);
-	}
-
-	public void setPixels(int[] colors, int x, int y, int width, int height) {
-		device.updateTexture(id, colors, x, y, width, height);
 	}
 }

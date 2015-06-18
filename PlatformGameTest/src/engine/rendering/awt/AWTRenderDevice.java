@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import engine.rendering.ARGBColor;
+import engine.rendering.Color;
 import engine.rendering.IRenderDevice;
 import engine.util.Util;
 
@@ -84,23 +84,6 @@ public class AWTRenderDevice implements IRenderDevice {
 	}
 
 	@Override
-	public void updateTexture(int id, int[] data, int x, int y, int width,
-			int height) {
-		ArrayBitmap tex = textures.get(id);
-		for (int j = y, b = 0; j < y + height; j++, b++) {
-			for (int i = x, a = 0; i < x + width; i++, a++) {
-				tex.pixels[i + j * tex.width] = data[a + b * width];
-			}
-		}
-	}
-
-	@Override
-	public void updateTexture(int id, byte[] data, int x, int y, int width,
-			int height) {
-		updateTexture(id, byteToInt(data), x, y, width, height);
-	}
-
-	@Override
 	public int[] getTexture(int id, int[] dest, int x, int y, int width,
 			int height) {
 		ArrayBitmap tex = textures.get(id);
@@ -145,7 +128,7 @@ public class AWTRenderDevice implements IRenderDevice {
 	public void clear(int fbo, double a, double r, double g, double b) {
 		Framebuffer framebuffer = framebuffers.get(fbo);
 		ArrayBitmap texture = textures.get(framebuffer.texId);
-		Arrays.fill(texture.pixels, ARGBColor.makeColor(a, r, g, b));
+		Arrays.fill(texture.pixels, Color.makeARGB(a, r, g, b));
 	}
 
 	@Override
@@ -153,7 +136,7 @@ public class AWTRenderDevice implements IRenderDevice {
 			double y, double width, double height, double texX, double texY,
 			double texWidth, double texHeight) {
 		this.drawRect(fbo, texId, mode, x, texY, width, height, texX, texY,
-				texWidth, texHeight, 0xFFFFFF, 1.0);
+				texWidth, texHeight, Color.WHITE, 1.0);
 	}
 
 	@SuppressWarnings("unused")
@@ -164,7 +147,7 @@ public class AWTRenderDevice implements IRenderDevice {
 	@Override
 	public void drawRect(int fbo, int texId, BlendMode mode, double x,
 			double y, double width, double height, double texX, double texY,
-			double texWidth, double texHeight, int colorMask,
+			double texWidth, double texHeight, Color c,
 			double transparency) {
 		// If you want to make a software renderer, you'd implement it here.
 //		Framebuffer framebuffer = framebuffers.get(fbo);

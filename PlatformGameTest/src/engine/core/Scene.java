@@ -55,8 +55,7 @@ public abstract class Scene {
 
 		Iterator<Entity> it = renderableEntities.iterator();
 		while (it.hasNext()) {
-			it.next().render(target, (int) Math.round(viewportX),
-					(int) Math.round(viewportY));
+			it.next().render(target, viewportX, viewportY);
 		}
 	}
 

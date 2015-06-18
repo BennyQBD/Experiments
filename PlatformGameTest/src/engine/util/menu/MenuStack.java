@@ -3,6 +3,7 @@ package engine.util.menu;
 import java.util.Stack;
 
 import engine.input.Control;
+import engine.rendering.Color;
 import engine.rendering.IRenderContext;
 import engine.rendering.SpriteSheet;
 import engine.util.Delay;
@@ -18,13 +19,13 @@ public class MenuStack {
 	private Delay moveDelay;
 	private Delay toggleDelay;
 	private Delay activateDelay;
-	private int fontColor;
-	private int selectionColor;
-	private int offsetX;
-	private int offsetY;
+	private Color fontColor;
+	private Color selectionColor;
+	private double offsetX;
+	private double offsetY;
 
-	public MenuStack(SpriteSheet font, int fontColor, int selectionColor,
-			int offsetX, int offsetY, Control upKey,
+	public MenuStack(SpriteSheet font, Color fontColor, Color selectionColor,
+			double offsetX, double offsetY, Control upKey,
 			Control downKey, Control activateKey,
 			Control toggleKey, double usageDelayLength, Menu defaultMenu) {
 		this.font = font;

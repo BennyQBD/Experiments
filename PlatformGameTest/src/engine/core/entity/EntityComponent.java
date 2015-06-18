@@ -23,6 +23,6 @@ public abstract class EntityComponent {
 	public void update(double delta) {
 	}
 
-	public void render(IRenderContext target, int viewportX, int viewportY) {
+	public void render(IRenderContext target, double viewportX, double viewportY) {
 	}
 }

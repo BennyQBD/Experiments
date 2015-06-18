@@ -5,6 +5,7 @@ import engine.core.entity.EntityComponent;
 import engine.core.entity.IEntityVisitor;
 import engine.rendering.IRenderContext;
 import engine.util.IDAssigner;
+import engine.util.components.CollisionComponent;
 import engine.util.components.SpriteComponent;
 import engine.util.parsing.Config;
 
@@ -62,7 +63,7 @@ public class EnemyComponent extends EntityComponent {
 		}
 		state = STATE_DYING;
 		velY = killBounceSpeed;
-		getEntity().setBlocking(false);
+		getEntity().remove(CollisionComponent.ID);
 		getEntity().remove(HazardComponent.ID);
 		getSpriteComponent().setFlipY(true);
 		return true;
@@ -90,7 +91,7 @@ public class EnemyComponent extends EntityComponent {
 	}
 
 	@Override
-	public void render(IRenderContext target, int viewportX, int viewportY) {
+	public void render(IRenderContext target, double viewportX, double viewportY) {
 		lastRenderCounter = 0.0;
 	}
 
@@ -130,11 +131,11 @@ public class EnemyComponent extends EntityComponent {
 
 	private boolean aboutToWalkOffCliff(double distX, double distY) {
 		final DoubleVal val = new DoubleVal();
-		getEntity().visitInRange(-1, getEntity().getAABB().move(distX, distY),
+		getEntity().visitInRange(CollisionComponent.ID, getEntity().getAABB().move(distX, distY),
 				new IEntityVisitor() {
 					@Override
 					public void visit(Entity entity, EntityComponent component) {
-						if (entity != getEntity() && entity.getBlocking()) {
+						if (entity != getEntity()) {
 							val.val = 1.0;
 						}
 					}

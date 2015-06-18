@@ -1,4 +1,4 @@
-package engine.util;
+package engine.util.factory;
 
 import java.lang.ref.SoftReference;
 import java.util.HashMap;

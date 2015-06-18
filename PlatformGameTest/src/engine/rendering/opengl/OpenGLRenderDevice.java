@@ -9,7 +9,7 @@ import java.util.Map;
 
 import org.lwjgl.BufferUtils;
 
-import engine.rendering.ARGBColor;
+import engine.rendering.Color;
 import engine.rendering.IRenderDevice;
 
 public class OpenGLRenderDevice implements IRenderDevice {
@@ -27,12 +27,13 @@ public class OpenGLRenderDevice implements IRenderDevice {
 		private int projWidth;
 		private int projHeight;
 	}
-	
+
 	private class TextureData {
 		public TextureData(int width, int height) {
 			this.width = width;
 			this.height = height;
 		}
+
 		private int width;
 		private int height;
 	}
@@ -55,7 +56,7 @@ public class OpenGLRenderDevice implements IRenderDevice {
 
 		glEnable(GL_BLEND);
 	}
-	
+
 	@Override
 	public void dispose() {
 		// Do nothing
@@ -85,34 +86,23 @@ public class OpenGLRenderDevice implements IRenderDevice {
 	}
 
 	@Override
-	public void updateTexture(int id, int[] data, int x, int y, int width,
+	public int[] getTexture(int id, int[] dest, int x, int y, int width,
 			int height) {
-		bindTexture(id);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA,
-				GL_UNSIGNED_BYTE, makeRGBABuffer(data, width, height));
-	}
-
-	@Override
-	public void updateTexture(int id, byte[] data, int x, int y, int width,
-			int height) {
-		updateTexture(id, byteToInt(data), x, y, width, height);
-	}
-
-	@Override
-	public int[] getTexture(int id, int[] dest, int x, int y, int width, int height) {
 		if (dest == null || dest.length < width * height) {
 			dest = new int[width * height];
 		}
 		TextureData tex = textures.get(id);
-		ByteBuffer buffer = BufferUtils.createByteBuffer(tex.width * tex.height * 4);
+		ByteBuffer buffer = BufferUtils.createByteBuffer(tex.width * tex.height
+				* 4);
 		bindTexture(id);
 		glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
-		
-		if(x == 0 && y == 0 && width == tex.width && height == tex.height) {
+
+		if (x == 0 && y == 0 && width == tex.width && height == tex.height) {
 			return byteBufferToInt(dest, buffer, tex.width, tex.height);
 		}
 
-		int[] pixels = byteBufferToInt(new int[tex.width*tex.height], buffer, tex.width, tex.height);
+		int[] pixels = byteBufferToInt(new int[tex.width * tex.height], buffer,
+				tex.width, tex.height);
 		for (int j = 0, srcY = y; j < height; j++, srcY++) {
 			for (int i = 0, srcX = x; i < width; i++, srcX++) {
 				dest[i + j * width] = pixels[srcX + srcY * tex.width];
@@ -135,12 +125,12 @@ public class OpenGLRenderDevice implements IRenderDevice {
 		}
 		return fbo;
 	}
-	
+
 	@Override
 	public int getRenderTargetWidth(int fbo) {
 		return framebuffers.get(fbo).width;
 	}
-	
+
 	@Override
 	public int getRenderTargetHeight(int fbo) {
 		return framebuffers.get(fbo).height;
@@ -170,20 +160,17 @@ public class OpenGLRenderDevice implements IRenderDevice {
 			double y, double width, double height, double texX, double texY,
 			double texWidth, double texHeight) {
 		drawRect(fbo, texId, mode, x, y, width, height, texX, texY, texWidth,
-				texHeight, 0xFFFFFF, 1.0);
+				texHeight, Color.WHITE, 1.0);
 	}
 
 	@Override
 	public void drawRect(int fbo, int texId, BlendMode mode, double x,
 			double y, double width, double height, double texX, double texY,
-			double texWidth, double texHeight, int colorMask,
-			double transparency) {
+			double texWidth, double texHeight, Color c, double transparency) {
 		bindRenderTarget(fbo);
 
-		glColor4f((float) ARGBColor.getComponentd(colorMask, 1),
-				(float) ARGBColor.getComponentd(colorMask, 2),
-				(float) ARGBColor.getComponentd(colorMask, 3),
-				(float) transparency);
+		glColor4f((float) c.getRed(), (float) c.getGreen(),
+				(float) c.getBlue(), (float) transparency);
 
 		switch (mode) {
 		case ADD_LIGHT:
@@ -197,7 +184,7 @@ public class OpenGLRenderDevice implements IRenderDevice {
 			break;
 		}
 		bindTexture(texId);
-		
+
 		glBegin(GL_TRIANGLE_FAN);
 		{
 			glTexCoord2f((float) texX, (float) (texY));
@@ -219,7 +206,7 @@ public class OpenGLRenderDevice implements IRenderDevice {
 		FramebufferData data = framebuffers.get(fbo);
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		boundFbo = fbo;
-		
+
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
 		glOrtho(0, data.width, data.height, 0, 1, -1);
@@ -285,7 +272,7 @@ public class OpenGLRenderDevice implements IRenderDevice {
 			int g = buffer.get() & 0xFF;
 			int b = buffer.get() & 0xFF;
 			int a = buffer.get() & 0xFF;
-			data[i] = ARGBColor.makeColor(a, r, g, b);
+			data[i] = Color.makeARGB(a, r, g, b);
 		}
 		return data;
 	}

@@ -15,10 +15,6 @@ public interface IRenderDevice {
 	public int createTexture(int width, int height, int[] data, int filter);
 	public int createTexture(int width, int height, byte[] data, int filter);
 	public int releaseTexture(int id);
-	public void updateTexture(int id, int[] data, int x, int y, int width,
-			int height);
-	public void updateTexture(int id, byte[] data, int x, int y, int width,
-			int height);
 	public int[] getTexture(int id, int[] dest, int x, int y, int width, int height);
 
 	public int createRenderTarget(int width, int height, int projWidth,
@@ -33,6 +29,5 @@ public interface IRenderDevice {
 			double texWidth, double texHeight);
 	public void drawRect(int fbo, int texId, BlendMode mode, double x,
 			double y, double width, double height, double texX, double texY,
-			double texWidth, double texHeight, int colorMask,
-			double transparency);
+			double texWidth, double texHeight, Color c, double transparency);
 }
