@@ -1,5 +1,6 @@
 package game.components;
 
+import engine.components.SpriteComponent;
 import engine.core.entity.Entity;
 import engine.core.entity.EntityComponent;
 import engine.core.entity.IEntityVisitor;
@@ -7,7 +8,6 @@ import engine.input.Control;
 import engine.input.IInput;
 import engine.util.IDAssigner;
 import engine.util.Util;
-import engine.util.components.SpriteComponent;
 import engine.util.parsing.Config;
 
 public class PlayerComponent extends EntityComponent {

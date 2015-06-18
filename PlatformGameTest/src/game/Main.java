@@ -16,7 +16,7 @@ public class Main {
 		//IDisplay display = new AWTDisplay(256, 224, 3.0, "My Game");
 		IDisplay display = new OpenGLDisplay(256, 224, 3.0, "My Game");
 		CoreEngine engine = new CoreEngine(display, new PlatformScene(test,
-				display.getInput(), display.getRenderDevice()), 60.0);
+				display.getInput(), display.getRenderDevice(), display.getAudioDevice()), 60.0);
 		engine.start();
 		engine.dispose();
 	}

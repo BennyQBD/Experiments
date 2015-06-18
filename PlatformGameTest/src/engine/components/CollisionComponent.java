@@ -1,4 +1,4 @@
-package engine.util.components;
+package engine.components;
 
 import engine.core.entity.Entity;
 import engine.core.entity.EntityComponent;

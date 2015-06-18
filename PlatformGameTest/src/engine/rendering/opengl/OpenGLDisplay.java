@@ -6,6 +6,8 @@ import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
 
+import engine.audio.IAudioDevice;
+import engine.audio.openal.OpenALAudioDevice;
 import engine.input.IInput;
 import engine.input.opengl.OpenGLInput;
 import engine.rendering.IDisplay;
@@ -16,6 +18,7 @@ import engine.util.Debug;
 
 public class OpenGLDisplay implements IDisplay {
 	private final IRenderDevice device;
+	private final IAudioDevice audioDevice;
 	private final IRenderContext frameBuffer;
 	private final IInput input;
 
@@ -34,6 +37,7 @@ public class OpenGLDisplay implements IDisplay {
 		device = new OpenGLRenderDevice(width, height, scaledWidth, scaledHeight);
 		frameBuffer = new RenderContext(device);
 		input = new OpenGLInput();
+		audioDevice = new OpenALAudioDevice();
 	}
 
 	@Override
@@ -48,6 +52,8 @@ public class OpenGLDisplay implements IDisplay {
 
 	@Override
 	public void dispose() {
+		device.dispose();
+		audioDevice.dispose();
 		frameBuffer.dispose();
 		Display.destroy();
 		Keyboard.destroy();
@@ -67,5 +73,10 @@ public class OpenGLDisplay implements IDisplay {
 	@Override
 	public IInput getInput() {
 		return input;
+	}
+
+	@Override
+	public IAudioDevice getAudioDevice() {
+		return audioDevice;
 	}
 }

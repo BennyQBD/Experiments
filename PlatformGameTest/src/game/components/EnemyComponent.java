@@ -1,12 +1,12 @@
 package game.components;
 
+import engine.components.CollisionComponent;
+import engine.components.SpriteComponent;
 import engine.core.entity.Entity;
 import engine.core.entity.EntityComponent;
 import engine.core.entity.IEntityVisitor;
 import engine.rendering.IRenderContext;
 import engine.util.IDAssigner;
-import engine.util.components.CollisionComponent;
-import engine.util.components.SpriteComponent;
 import engine.util.parsing.Config;
 
 public class EnemyComponent extends EntityComponent {

@@ -1,5 +1,6 @@
 package engine.rendering;
 
+import engine.audio.IAudioDevice;
 import engine.input.IInput;
 
 public interface IDisplay {
@@ -11,4 +12,5 @@ public interface IDisplay {
 	public IRenderContext getRenderContext();
 	public IRenderDevice getRenderDevice();
 	public IInput getInput();
+	public IAudioDevice getAudioDevice();
 }

@@ -11,6 +11,7 @@ import java.awt.image.DataBufferInt;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
+import engine.audio.IAudioDevice;
 import engine.input.IInput;
 import engine.input.awt.AWTInput;
 import engine.rendering.IDisplay;
@@ -30,6 +31,11 @@ public class AWTDisplay extends Canvas implements IDisplay {
 	private final int scaledHeight;
 	private final AWTInput input;
 	private final IRenderDevice device;
+	
+	@Override
+	public IAudioDevice getAudioDevice() {
+		return null;
+	}
 
 	@Override
 	public IRenderContext getRenderContext() {

@@ -4,6 +4,11 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import engine.components.CollisionComponent;
+import engine.components.FadeRemove;
+import engine.components.LightComponent;
+import engine.components.LinkComponent;
+import engine.components.SpriteComponent;
 import engine.core.entity.Entity;
 import engine.input.IInput;
 import engine.rendering.Color;
@@ -11,12 +16,8 @@ import engine.rendering.IRenderDevice;
 import engine.rendering.LightMap;
 import engine.rendering.SpriteSheet;
 import engine.space.ISpatialStructure;
-import engine.util.components.CollisionComponent;
-import engine.util.components.FadeRemove;
-import engine.util.components.LightComponent;
-import engine.util.components.LinkComponent;
-import engine.util.components.SpriteComponent;
 import engine.util.factory.LightMapFactory;
+import engine.util.factory.SoundFactory;
 import engine.util.factory.SpriteSheetFactory;
 import engine.util.parsing.Config;
 import game.components.CollectableComponent;
@@ -35,6 +36,8 @@ public class PlatformLevel {
 
 	private SpriteSheetFactory sprites;
 	private LightMapFactory lightMaps;
+	// TODO: Use this factory to create and play sounds
+	private SoundFactory sounds;
 	private Config config;
 	private IInput input;
 	private IRenderDevice device;
@@ -45,9 +48,11 @@ public class PlatformLevel {
 	private Color lastColor;
 
 	public PlatformLevel(IRenderDevice device, IInput input, Config config,
-			SpriteSheetFactory sprites, LightMapFactory lightMaps) {
+			SpriteSheetFactory sprites, LightMapFactory lightMaps,
+			SoundFactory sounds) {
 		this.sprites = sprites;
 		this.lightMaps = lightMaps;
+		this.sounds = sounds;
 		this.config = config;
 		this.input = input;
 		this.device = device;

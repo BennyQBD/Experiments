@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
+import engine.audio.IAudioDevice;
 import engine.core.Scene;
 import engine.core.entity.Entity;
 import engine.input.IInput;
@@ -15,6 +16,7 @@ import engine.space.Grid;
 import engine.util.Delay;
 import engine.util.factory.BitmapFactory;
 import engine.util.factory.LightMapFactory;
+import engine.util.factory.SoundFactory;
 import engine.util.factory.SpriteSheetFactory;
 import engine.util.parsing.Config;
 
@@ -57,13 +59,13 @@ public class PlatformScene extends Scene {
 		gameMenu.close();
 	}
 
-	public PlatformScene(Config config, IInput input, IRenderDevice device)
-			throws IOException {
+	public PlatformScene(Config config, IInput input, IRenderDevice device,
+			IAudioDevice audioDevice) throws IOException {
 		super(new Grid<Entity>(16, 256, 256));
 		SpriteSheetFactory sprites = new SpriteSheetFactory(new BitmapFactory(
 				device));
 		this.level = new PlatformLevel(device, input, config, sprites,
-				new LightMapFactory(device));
+				new LightMapFactory(device), new SoundFactory(audioDevice));
 		SpriteSheet font = sprites.get("./res/monospace.png", 16, 16);
 
 		this.gameIO = new GameIO(this, level);
@@ -134,10 +136,10 @@ public class PlatformScene extends Scene {
 	}
 
 	public void render(IRenderContext target) {
-		double viewportOffsetX = ((target.getWidth() - level
-				.getPlayer().getAABB().getWidth()) / 2);
-		double viewportOffsetY = ((target.getHeight() - level
-				.getPlayer().getAABB().getHeight()) / 2);
+		double viewportOffsetX = ((target.getWidth() - level.getPlayer()
+				.getAABB().getWidth()) / 2);
+		double viewportOffsetY = ((target.getHeight() - level.getPlayer()
+				.getAABB().getHeight()) / 2);
 		double viewportX = level.getPlayer().getAABB().getMinX()
 				- viewportOffsetX;
 		double viewportY = level.getPlayer().getAABB().getMinY()
@@ -150,7 +152,8 @@ public class PlatformScene extends Scene {
 			target.clearLighting(ambient, ambient, ambient, ambient);
 			renderScene(target, viewportX, viewportY);
 			target.drawLight(level.getStaticLightMap(), 0, 0, viewportX,
-					viewportY, target.getWidth(), target.getHeight(), Color.WHITE);
+					viewportY, target.getWidth(), target.getHeight(),
+					Color.WHITE);
 			target.applyLighting();
 			break;
 		case LOST_LIFE:

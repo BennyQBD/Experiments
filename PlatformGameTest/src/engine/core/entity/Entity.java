@@ -6,13 +6,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import engine.components.CollisionComponent;
+import engine.components.RemoveComponent;
+import engine.components.CollisionComponent.DoublePair;
 import engine.rendering.IRenderContext;
 import engine.space.AABB;
 import engine.space.ISpatialObject;
 import engine.space.ISpatialStructure;
-import engine.util.components.CollisionComponent;
-import engine.util.components.CollisionComponent.DoublePair;
-import engine.util.components.RemoveComponent;
 
 public class Entity implements ISpatialObject, Comparable<Entity> {
 	private static int currentId = 0;
