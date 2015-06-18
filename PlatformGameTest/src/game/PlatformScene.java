@@ -7,6 +7,7 @@ import java.io.StringWriter;
 import engine.core.Scene;
 import engine.core.entity.Entity;
 import engine.input.IInput;
+import engine.rendering.Color;
 import engine.rendering.IRenderContext;
 import engine.rendering.IRenderDevice;
 import engine.rendering.SpriteSheet;
@@ -149,7 +150,7 @@ public class PlatformScene extends Scene {
 			target.clearLighting(ambient, ambient, ambient, ambient);
 			renderScene(target, viewportX, viewportY);
 			target.drawLight(level.getStaticLightMap(), 0, 0, viewportX,
-					viewportY, target.getWidth(), target.getHeight());
+					viewportY, target.getWidth(), target.getHeight(), Color.WHITE);
 			target.applyLighting();
 			break;
 		case LOST_LIFE:

@@ -14,6 +14,7 @@ import engine.space.ISpatialStructure;
 import engine.util.components.CollisionComponent;
 import engine.util.components.FadeRemove;
 import engine.util.components.LightComponent;
+import engine.util.components.LinkComponent;
 import engine.util.components.SpriteComponent;
 import engine.util.factory.LightMapFactory;
 import engine.util.factory.SpriteSheetFactory;
@@ -116,10 +117,10 @@ public class PlatformLevel {
 		String animationType = config.getStringWithDefault(prefix
 				+ ".animationType", "sprite.default.animationType");
 
-		Color color = new Color(
-				config.getDoubleWithDefault(prefix + ".r", "sprite.default.r"),
-				config.getDoubleWithDefault(prefix + ".g", "sprite.default.g"),
-				config.getDoubleWithDefault(prefix + ".b", "sprite.default.b"));
+		Color color = new Color(config.getDoubleWithDefault(prefix + ".r",
+				"sprite.default.r"), config.getDoubleWithDefault(prefix + ".g",
+				"sprite.default.g"), config.getDoubleWithDefault(prefix + ".b",
+				"sprite.default.b"));
 		lastColor = color;
 
 		SpriteSheet sheet = sprites.get("./res/" + fileName, numSpritesX,
@@ -128,8 +129,7 @@ public class PlatformLevel {
 		switch (animationType) {
 		case "automatic":
 			sc = new SpriteComponent(e, sheet, config.getDoubleWithDefault(
-					prefix + ".frameTime", "sprite.default.frameTime"),
-					color);
+					prefix + ".frameTime", "sprite.default.frameTime"), color);
 			break;
 		case "none":
 			int spriteIndex = config.getIntWithDefault(prefix + ".spriteIndex",
@@ -156,15 +156,26 @@ public class PlatformLevel {
 		}
 		boolean blocking = (color & 0x8000) != 0;
 		int b = color & 0xFF;
+		String prefixIn = "entity." + b + ".";
+		String defaultPrefixIn = "entity." + "default" + ".";
+
+		parseEntity(input, structure, x, y, layer, points, lives, lifeDeficit,
+				prefixIn, defaultPrefixIn, blocking, b);
+	}
+
+	private Entity parseEntity(IInput input,
+			ISpatialStructure<Entity> structure, int x, int y, int layer,
+			int points, int lives, int lifeDeficit, String prefixIn,
+			String defaultPrefixIn, boolean blocking, int defaultSpriteIndex)
+			throws IOException {
 		int componentCounter = 0;
-		String center = b + "";
-		String prefix = "entity." + center + "." + componentCounter;
+		String prefix = prefixIn + componentCounter;
 		String component = config.getString(prefix);
 		if (component == null) {
-			center = "default";
-			prefix = "entity." + center + "." + componentCounter;
-			component = config.getString(prefix);
+			prefixIn = defaultPrefixIn;
+			prefix = prefixIn + componentCounter;
 		}
+		component = config.getString(prefix);
 		if (component != null) {
 			Entity e = new Entity(structure, x, y, layer);
 			if (blocking) {
@@ -175,7 +186,7 @@ public class PlatformLevel {
 			while (component != null) {
 				switch (component) {
 				case "sprite":
-					sheet = addSpriteComponent(e, prefix, b);
+					sheet = addSpriteComponent(e, prefix, defaultSpriteIndex);
 					break;
 				case "player":
 					player = e;
@@ -203,8 +214,15 @@ public class PlatformLevel {
 					new HazardComponent(e, spaceX, spaceY, spaceZ);
 					break;
 				case "light":
+					double lightR = config.getDoubleWithDefault(prefix + ".r",
+							"light.default.r");
+					double lightG = config.getDoubleWithDefault(prefix + ".g",
+							"light.default.g");
+					double lightB = config.getDoubleWithDefault(prefix + ".b",
+							"light.default.b");
 					LightMap light = lightMaps.get(config.getIntWithDefault(
-							prefix + ".radius", "light.default.radius"));
+							prefix + ".radius", "light.default.radius"),
+							new Color(lightR, lightG, lightB));
 					String lightType = config.getStringWithDefault(prefix
 							+ ".type", "light.default.type");
 					if (lightType.equals("static")) {
@@ -242,10 +260,32 @@ public class PlatformLevel {
 						break;
 					}
 					break;
+				case "link":
+					int offsetX = config.getIntWithDefault(prefix + ".offsetX",
+							"link.default.offsetX");
+					int offsetY = config.getIntWithDefault(prefix + ".offsetY",
+							"link.default.offsetY");
+					int layerOffset = config.getIntWithDefault(prefix
+							+ ".layerOffset", "link.default.layerOffset");
+					boolean isLinkedEntityBlocking = config
+							.getBooleanWithDefault(prefix + ".blocking",
+									"link.default.blocking");
+					int linkedEntityDefaultSpriteIndex = config
+							.getIntWithDefault(prefix + ".defaultSpriteIndex",
+									"link.default.defaultSpriteIndex");
+					Entity linkedEntity = parseEntity(input, structure, x
+							+ offsetX, y + offsetY, layer + layerOffset,
+							points, lives, lifeDeficit, prefix + ".", prefix
+									+ ".", isLinkedEntityBlocking,
+							linkedEntityDefaultSpriteIndex);
+					if (linkedEntity != null) {
+						new LinkComponent(linkedEntity, e);
+					}
+					break;
 				}
 
 				componentCounter++;
-				prefix = "entity." + center + "." + componentCounter;
+				prefix = prefixIn + componentCounter;
 				component = config.getString(prefix);
 			}
 
@@ -253,7 +293,11 @@ public class PlatformLevel {
 				itemSprites.put(itemId, sheet);
 				itemColors.put(itemId, lastColor);
 			}
+
+			return e;
 		}
+
+		return null;
 	}
 
 	private static void addStaticLight(Entity e, int x, int y,
@@ -261,6 +305,6 @@ public class PlatformLevel {
 		staticLightMap.addLight(lightToAdd, x - lightToAdd.getWidth() / 2
 				+ (int) e.getAABB().getWidth() / 2, y - lightToAdd.getHeight()
 				/ 2 + (int) e.getAABB().getHeight() / 2, 0, 0,
-				lightToAdd.getWidth(), lightToAdd.getHeight());
+				lightToAdd.getWidth(), lightToAdd.getHeight(), Color.WHITE);
 	}
 }

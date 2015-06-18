@@ -31,6 +31,7 @@
 + Secret locked areas
 + Refactor PlatformScene
 + Controls in config file
++ Colored Lighting
 - Different enemy types (projectile shooting enemies?)
 - Multiple levels
 - Sound

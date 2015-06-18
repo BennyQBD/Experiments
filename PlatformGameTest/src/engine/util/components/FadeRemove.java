@@ -8,7 +8,8 @@ public class FadeRemove extends RemoveComponent {
 	private int animationFrame;
 	private double solidityDuration;
 
-	public FadeRemove(Entity entity, double duration, int animationFrame, double solidityDuration) {
+	public FadeRemove(Entity entity, double duration, int animationFrame,
+			double solidityDuration) {
 		super(entity);
 		this.duration = duration;
 		this.animationFrame = animationFrame;
@@ -40,6 +41,12 @@ public class FadeRemove extends RemoveComponent {
 				SpriteComponent.ID);
 		if (sc != null) {
 			sc.setTransparency(amt);
+		}
+
+		LightComponent l = (LightComponent) getEntity().getComponent(
+				LightComponent.ID);
+		if(l != null) {
+			l.setIntensity(amt);
 		}
 	}
 }

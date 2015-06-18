@@ -106,8 +106,8 @@ public class RenderContext implements IRenderContext {
 
 	@Override
 	public void drawLight(LightMap light, double x, double y, double mapStartX,
-			double mapStartY, double width, double height) {
-		lightMap.addLight(light, x, y, mapStartX, mapStartY, width, height);
+			double mapStartY, double width, double height, Color color) {
+		lightMap.addLight(light, x, y, mapStartX, mapStartY, width, height, color);
 	}
 
 	@Override

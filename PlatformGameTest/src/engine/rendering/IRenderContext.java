@@ -9,7 +9,7 @@ public interface IRenderContext {
 
 	public void clearLighting(double a, double r, double g, double b);
 	public void drawLight(LightMap light, double x, double y, double mapStartX,
-			double mapStartY, double width, double height);
+			double mapStartY, double width, double height, Color color);
 	public void applyLighting();
 
 	public int getWidth();

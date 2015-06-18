@@ -33,9 +33,9 @@ public class Entity implements ISpatialObject, Comparable<Entity> {
 		this.aabb = new AABB(posX, posY, posZ, posX, posY);
 		this.isRemoved = false;
 		this.id = getNextId();
+		this.components = new ArrayList<>();
+		this.componentsToRemove = new ArrayList<>();
 		structure.add(this);
-		components = new ArrayList<>();
-		componentsToRemove = new ArrayList<>();
 	}
 
 	public void fitAABB(AABB newAABB) {
@@ -72,6 +72,9 @@ public class Entity implements ISpatialObject, Comparable<Entity> {
 		Iterator<Entity> it = entities.iterator();
 		while (it.hasNext()) {
 			Entity entity = it.next();
+			if(entity.isRemoved) {
+				continue;
+			}
 			EntityComponent component = id == -1 ? null : entity
 					.getComponent(id);
 			if (component != null || id == -1) {
@@ -124,6 +127,7 @@ public class Entity implements ISpatialObject, Comparable<Entity> {
 	}
 
 	public void remove() {
+		isRemoved = true;
 		RemoveComponent r = (RemoveComponent) getComponent(RemoveComponent.ID);
 		if (r != null) {
 			r.activate();
@@ -133,8 +137,8 @@ public class Entity implements ISpatialObject, Comparable<Entity> {
 	}
 
 	public void forceRemove() {
-		structure.remove(this);
 		isRemoved = true;
+		structure.remove(this);
 	}
 
 	public boolean getRemoved() {

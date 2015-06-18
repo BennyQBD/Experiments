@@ -18,13 +18,13 @@ public class LightMap {
 	private int id;
 	private int fbo;
 
-	public LightMap(IRenderDevice device, int radius) {
+	public LightMap(IRenderDevice device, int radius, Color color) {
 		this.device = device;
 		this.width = radius * 2;
 		this.height = radius * 2;
 		this.scale = 1;
 		initTextures(width, height, scale,
-				generateLighting(radius, width, height));
+				generateLighting(radius, width, height, color));
 	}
 
 	public LightMap(IRenderDevice device, int width, int height, double scale) {
@@ -32,12 +32,12 @@ public class LightMap {
 		this.width = width;
 		this.height = height;
 		this.scale = scale;
-		byte[] data = new byte[width * height];
-		Arrays.fill(data, (byte) 0);
+		int[] data = new int[width * height];
+		Arrays.fill(data, 0);
 		initTextures(width, height, scale, data);
 	}
 
-	private void initTextures(int width, int height, double scale, byte[] data) {
+	private void initTextures(int width, int height, double scale, int[] data) {
 		this.id = device.createTexture(width, height, data,
 				IRenderDevice.FILTER_LINEAR);
 		this.fbo = 0;
@@ -77,28 +77,29 @@ public class LightMap {
 		return scale;
 	}
 
-	private static byte toData(double val, double dither) {
-		return (byte) (Util.saturate(val) * 255.0 + dither);
+	private static int toData(double val, double dither, Color color) {
+		double amt = (Util.saturate(val  + dither/255.0));
+		return color.scaleToARGB(amt);
 	}
 
-	private static byte calcLight(int radius, int radiusSq, int distX,
-			int distY, double dither) {
+	private static int calcLight(int radius, int radiusSq, int distX,
+			int distY, double dither, Color color) {
 		int distCenterSq = distY * distY + distX * distX;
 		if (distCenterSq > radiusSq) {
-			return (byte) 0;
+			return 0;
 		}
-		return toData(((double) radius / (double) (distCenterSq)), dither);
+		return toData(((double) radius / (double) (distCenterSq)), dither, color);
 	}
 
-	private static byte[] generateLighting(int radius, int width, int height) {
-		byte[] result = new byte[width * height];
+	private static int[] generateLighting(int radius, int width, int height, Color color) {
+		int[] result = new int[width * height];
 		int centerX = width / 2;
 		int centerY = height / 2;
 		int radiusSq = radius * radius;
 		for (int j = 0, distY = -centerY; j < height; j++, distY++) {
 			for (int i = 0, distX = -centerX; i < width; i++, distX++) {
 				result[i + j * width] = calcLight(radius, radiusSq, distX,
-						distY, Dither.getDither(i, j));
+						distY, Dither.getDither(i, j), color);
 			}
 		}
 		return result;
@@ -122,7 +123,7 @@ public class LightMap {
 	}
 
 	public void addLight(LightMap light, double x, double y, double mapStartX,
-			double mapStartY, double width, double height) {
+			double mapStartY, double width, double height, Color color) {
 		double posScale = 1.0 / scale;
 		double texScale = 1.0 / light.getScale();
 		double texMinX = texScale * (mapStartX / ((double) light.getWidth()));
@@ -143,6 +144,6 @@ public class LightMap {
 
 		device.drawRect(getFbo(), light.id, IRenderDevice.BlendMode.ADD_LIGHT,
 				xStart, yStart, drawWidth, drawHeight, texMinX, texMinY,
-				texWidth, texHeight);
+				texWidth, texHeight, color, 1.0);
 	}
 }
