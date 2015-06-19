@@ -5,6 +5,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 
 import engine.audio.IAudioDevice;
+import engine.audio.Sound;
 import engine.core.Scene;
 import engine.core.entity.Entity;
 import engine.input.IInput;
@@ -34,6 +35,8 @@ public class PlatformScene extends Scene {
 	private State state;
 	private Delay lostLifeDelay;
 	private String errorMessage;
+	
+	private Sound levelMusic;
 
 	private static String getStackTrace(Exception e) {
 		StringWriter sw = new StringWriter();
@@ -57,21 +60,31 @@ public class PlatformScene extends Scene {
 		initVariables();
 		level.loadLevel(getStructure(), points, lives, lifeDeficit);
 		gameMenu.close();
+		if(levelMusic != null) {
+			levelMusic.play();
+		}
 	}
 
 	public PlatformScene(Config config, IInput input, IRenderDevice device,
 			IAudioDevice audioDevice) throws IOException {
 		super(new Grid<Entity>(16, 256, 256));
 		SpriteSheetFactory sprites = new SpriteSheetFactory(new BitmapFactory(
-				device));
+				device, "./res/gfx/"));
+		SoundFactory sounds = new SoundFactory(audioDevice, "./res/sounds/");
 		this.level = new PlatformLevel(device, input, config, sprites,
-				new LightMapFactory(device), new SoundFactory(audioDevice));
-		SpriteSheet font = sprites.get("./res/monospace.png", 16, 16);
+				new LightMapFactory(device), sounds);
+		SpriteSheet font = sprites.get("monospace.png", 16, 16);
+		
+		try {
+			levelMusic = sounds.get("music.wav", 1.0, 1.0, true);
+		} catch(IOException e) {
+			levelMusic = null;
+		}
 
 		this.gameIO = new GameIO(this, level);
 		this.gameMenu = new GameMenu(this, config, gameIO, input, font);
-		this.hud = new HUD(font, sprites.get("./res/livesicon.png", 1, 1),
-				sprites.get("./res/healthicon.png", 1, 1));
+		this.hud = new HUD(font, sprites.get("livesicon.png", 1, 1),
+				sprites.get("healthicon.png", 1, 1));
 		this.background = new GradientBackground(device, 1.0, 0.0, 0.0);
 		startNewGame();
 	}

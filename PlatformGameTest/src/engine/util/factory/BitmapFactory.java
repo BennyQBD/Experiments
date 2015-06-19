@@ -10,14 +10,17 @@ import engine.rendering.IRenderDevice;
 
 public class BitmapFactory {
 	private final IRenderDevice device;
+	private final String filePath;
 	private Map<String, SoftReference<Bitmap>> loadedBitmaps;
 
-	public BitmapFactory(IRenderDevice device) {
+	public BitmapFactory(IRenderDevice device, String filePath) {
 		this.device = device;
+		this.filePath = filePath;
 		this.loadedBitmaps = new HashMap<>();
 	}
 
 	public Bitmap get(String fileName) throws IOException {
+		fileName = filePath + fileName;
 		SoftReference<Bitmap> ref = loadedBitmaps.get(fileName);
 		Bitmap current = ref == null ? null : ref.get();
 		if(current != null) {

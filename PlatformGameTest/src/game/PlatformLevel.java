@@ -1,9 +1,13 @@
 package game;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import engine.audio.Sound;
+import engine.components.AudioComponent;
 import engine.components.CollisionComponent;
 import engine.components.FadeRemove;
 import engine.components.LightComponent;
@@ -89,8 +93,7 @@ public class PlatformLevel {
 			staticLightMap.dispose();
 		}
 		this.staticLightMap = new LightMap(device, 2048, 2048, 2);
-		SpriteSheet level = sprites.get(
-				"./res/" + config.getString("level.data"), 4, 2);
+		SpriteSheet level = sprites.get(config.getString("level.data"), 4, 2);
 
 		this.itemSprites = new HashMap<>();
 		this.itemColors = new HashMap<>();
@@ -128,7 +131,7 @@ public class PlatformLevel {
 				"sprite.default.b"));
 		lastColor = color;
 
-		SpriteSheet sheet = sprites.get("./res/" + fileName, numSpritesX,
+		SpriteSheet sheet = sprites.get(fileName, numSpritesX,
 				numSpritesY);
 		SpriteComponent sc = null;
 		switch (animationType) {
@@ -286,6 +289,44 @@ public class PlatformLevel {
 					if (linkedEntity != null) {
 						new LinkComponent(linkedEntity, e);
 					}
+					break;
+				case "audio":
+					List<String> audioNames = new ArrayList<>();
+					List<Sound> audioData = new ArrayList<>();
+					String defaultAudioName = config
+							.getString("audio.default.name");
+					String defaultAudioFileName = config
+							.getString("audio.default.fileName");
+					int audioCounter = 0;
+					String audioPrefix = prefix + "." + audioCounter;
+					String audioName = config.getStringWithDefault(audioPrefix
+							+ ".name", "audio.default.name");
+					String audioFileName = config
+							.getStringWithDefault(audioPrefix + ".fileName",
+									"audio.default.fileName");
+					while (!audioName.equals(defaultAudioName)
+							&& !audioFileName.equals(defaultAudioFileName)) {
+						audioNames.add(audioName);
+						audioData.add(sounds.get(audioFileName, config
+								.getDoubleWithDefault(audioPrefix + ".volume",
+										"audio.default.volume"), config
+								.getDoubleWithDefault(audioPrefix + ".pitch",
+										"audio.default.pitch"), config
+								.getBooleanWithDefault(audioPrefix
+										+ ".shouldLoop",
+										"audio.default.shouldLoop")));
+
+						audioCounter++;
+						audioPrefix = prefix + "." + audioCounter;
+						audioName = config.getStringWithDefault(audioPrefix
+								+ ".name", "audio.default.name");
+						audioFileName = config.getStringWithDefault(audioPrefix
+								+ ".fileName", "audio.default.fileName");
+					}
+
+					new AudioComponent(e,
+							audioNames.toArray(new String[audioNames.size()]),
+							audioData.toArray(new Sound[audioData.size()]));
 					break;
 				}
 

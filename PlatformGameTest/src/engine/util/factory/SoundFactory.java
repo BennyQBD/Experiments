@@ -11,15 +11,18 @@ import engine.audio.SoundData;
 
 public class SoundFactory {
 	private final IAudioDevice device;
-	private Map<String, SoftReference<SoundData>> loaded;
+	private final String filePath;
+	private final Map<String, SoftReference<SoundData>> loaded;
 
-	public SoundFactory(IAudioDevice device) {
+	public SoundFactory(IAudioDevice device, String filePath) {
 		this.device = device;
+		this.filePath = filePath;
 		this.loaded = new HashMap<>();
 	}
 
 	public Sound get(String fileName, double volume, double pitch,
 			boolean shouldLoop) throws IOException {
+		fileName = filePath + fileName;
 		SoftReference<SoundData> ref = loaded.get(fileName);
 		SoundData data = ref == null ? null : ref.get();
 		if (data == null) {

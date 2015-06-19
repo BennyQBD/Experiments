@@ -117,6 +117,17 @@ public class OpenALAudioDevice implements IAudioDevice {
 		objects.put(id, object);
 		return id;
 	}
+	
+	@Override
+	public void updateAudioObject(int objectId, double volume, double pitch, boolean shouldLoop) {
+		if(objectId == 0) {
+			return;
+		}
+		AudioObject object = objects.get(objectId);
+		object.volume = volume;
+		object.pitch = pitch;
+		object.loop = shouldLoop;
+	}
 
 	@Override
 	public int releaseAudioObject(int objectId) {

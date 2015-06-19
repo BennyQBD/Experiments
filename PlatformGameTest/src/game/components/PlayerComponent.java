@@ -1,5 +1,6 @@
 package game.components;
 
+import engine.components.AudioComponent;
 import engine.components.SpriteComponent;
 import engine.core.entity.Entity;
 import engine.core.entity.EntityComponent;
@@ -25,13 +26,13 @@ public class PlayerComponent extends EntityComponent {
 	private Control jumpKey;
 	private Control slamKey;
 	private int state;
+	private int lastState;
 
 	private double velY;
 	private double velX;
 	private double jumpCounter;
 	private int health;
 	private double invulnerabilityTimer;
-	private SpriteComponent spriteComponent;
 	private final double moveSpeed;
 	private final double maxBounceVelocity;
 	private final double invulnerabilityLength;
@@ -48,6 +49,19 @@ public class PlayerComponent extends EntityComponent {
 	private final int standAnimationFrame;
 	private final int glideAnimationFrame;
 	private final int hoverAnimationFrame;
+
+	private SpriteComponent spriteComponent;
+	private AudioComponent audioComponent;
+
+	private AudioComponent getAudioComponent() {
+		if (audioComponent != null) {
+			return audioComponent;
+		}
+
+		audioComponent = (AudioComponent) getEntity().getComponent(
+				AudioComponent.ID);
+		return audioComponent;
+	}
 
 	private SpriteComponent getSpriteComponent() {
 		if (spriteComponent != null) {
@@ -74,7 +88,7 @@ public class PlayerComponent extends EntityComponent {
 		this.invulnerabilityLength = config
 				.getDouble("player.invulnerabilityLength");
 		this.health = config.getInt("player.health");
-		
+
 		this.invulnerabilityTimer = invulnerabilityLength;
 		spriteComponent = null;
 
@@ -94,6 +108,7 @@ public class PlayerComponent extends EntityComponent {
 		this.standAnimationFrame = config.getInt("player.standAnimationFrame");
 		this.glideAnimationFrame = config.getInt("player.glideAnimationFrame");
 		this.hoverAnimationFrame = config.getInt("player.hoverAnimationFrame");
+		this.lastState = state;
 
 		getSpriteComponent().setFrame(standAnimationFrame);
 	}
@@ -102,20 +117,19 @@ public class PlayerComponent extends EntityComponent {
 		if (!isInvulnerable()) {
 			health--;
 			invulnerabilityTimer = 0.0;
+			getAudioComponent().play("hit");
 		}
 	}
-
-	
 
 	public int getHealth() {
 		return health;
 	}
 
-	
-
 	@Override
 	public void update(double delta) {
+
 		boolean jumped = commonUpdate(delta);
+		lastState = state;
 		switch (state) {
 		case STATE_MOVING:
 			movingUpdate(delta, jumped);
@@ -141,6 +155,9 @@ public class PlayerComponent extends EntityComponent {
 		if (applyMovementY(delta)) {
 			state = STATE_IN_AIR;
 			jumpCounter = jumped ? delta : jumpTime;
+			if (jumped) {
+				getAudioComponent().play("jump");
+			}
 		} else {
 			velY = 0.0;
 			jumpCounter = 0.0;
@@ -281,8 +298,12 @@ public class PlayerComponent extends EntityComponent {
 		if (slamKey.isDown()) {
 			velY += jumpSpeed * 0.8 * delta;
 			getSpriteComponent().setFlipY(true);
+			if(lastState != STATE_MOVING && state == STATE_MOVING) {
+				getAudioComponent().play("thunk");
+			}
 		} else {
 			getSpriteComponent().setFlipY(false);
+			getAudioComponent().stop("thunk");
 		}
 	}
 

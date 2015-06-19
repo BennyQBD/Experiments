@@ -9,7 +9,7 @@ import engine.rendering.SpriteSheet;
 
 public class SpriteSheetFactory {
 	private final BitmapFactory bitmaps;
-	private Map<String, SoftReference<SpriteSheet>> loadedSpriteSheets;
+	private final Map<String, SoftReference<SpriteSheet>> loadedSpriteSheets;
 
 	public SpriteSheetFactory(BitmapFactory bitmaps) {
 		this.bitmaps = bitmaps;

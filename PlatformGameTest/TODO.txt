@@ -32,9 +32,9 @@
 + Refactor PlatformScene
 + Controls in config file
 + Colored Lighting
++ Sound
 - Different enemy types (projectile shooting enemies?)
 - Multiple levels
-- Sound
 - Flying powerup?
 - Weapons?
 

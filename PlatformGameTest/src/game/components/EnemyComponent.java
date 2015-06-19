@@ -1,5 +1,6 @@
 package game.components;
 
+import engine.components.AudioComponent;
 import engine.components.CollisionComponent;
 import engine.components.SpriteComponent;
 import engine.core.entity.Entity;
@@ -27,6 +28,7 @@ public class EnemyComponent extends EntityComponent {
 	private final double cliffLookDownDistance;
 	private final double killBounceSpeed;
 	private SpriteComponent spriteComponent;
+	private AudioComponent audioComponent;
 
 	private SpriteComponent getSpriteComponent() {
 		if (spriteComponent != null) {
@@ -36,6 +38,16 @@ public class EnemyComponent extends EntityComponent {
 		spriteComponent = (SpriteComponent) getEntity().getComponent(
 				SpriteComponent.ID);
 		return spriteComponent;
+	}
+	
+	private AudioComponent getAudioComponent() {
+		if (audioComponent != null) {
+			return audioComponent;
+		}
+
+		audioComponent = (AudioComponent) getEntity().getComponent(
+				AudioComponent.ID);
+		return audioComponent;
 	}
 
 	public EnemyComponent(Entity entity, Config config, String type) {
@@ -66,6 +78,7 @@ public class EnemyComponent extends EntityComponent {
 		getEntity().remove(CollisionComponent.ID);
 		getEntity().remove(HazardComponent.ID);
 		getSpriteComponent().setFlipY(true);
+		getAudioComponent().play("die");
 		return true;
 	}
 

@@ -11,6 +11,7 @@ public interface IAudioDevice {
 	public int releaseAudioData(int dataId);
 	
 	public int createAudioObject(int dataId, double volume, double pitch, boolean shouldLoop);
+	public void updateAudioObject(int objectId, double volume, double pitch, boolean shouldLoop);
 	public int releaseAudioObject(int objectId);
 	
 	public void play(int objectId);

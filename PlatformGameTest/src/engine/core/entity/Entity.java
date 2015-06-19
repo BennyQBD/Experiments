@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import engine.components.AudioComponent;
 import engine.components.CollisionComponent;
 import engine.components.RemoveComponent;
 import engine.components.CollisionComponent.DoublePair;
@@ -127,6 +128,11 @@ public class Entity implements ISpatialObject, Comparable<Entity> {
 	}
 
 	public void remove() {
+		AudioComponent ac = (AudioComponent)getComponent(AudioComponent.ID);
+		if(ac != null) {
+			ac.play("remove");
+		}
+		
 		isRemoved = true;
 		RemoveComponent r = (RemoveComponent) getComponent(RemoveComponent.ID);
 		if (r != null) {

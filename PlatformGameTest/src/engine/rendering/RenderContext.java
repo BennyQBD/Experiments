@@ -81,7 +81,7 @@ public class RenderContext implements IRenderContext {
 		str = Util.wrapString(str, maxLength);
 		String[] strs = str.split("\n");
 		for (int i = 0; i < strs.length; i++) {
-			String[] wrappedStrings = strs[i].split("(?<=\\G.{" + maxLength
+			String[] wrappedStrings = strs[i].split("(?<=\\G.{" + ((int)maxLength)
 					+ "})");
 			for (int j = 0; j < wrappedStrings.length; j++, y += font
 					.getSpriteHeight()) {
