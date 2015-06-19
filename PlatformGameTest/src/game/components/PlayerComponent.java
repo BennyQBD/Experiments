@@ -31,7 +31,6 @@ public class PlayerComponent extends EntityComponent {
 	private double velY;
 	private double velX;
 	private double jumpCounter;
-	private int health;
 	private double invulnerabilityTimer;
 	private final double moveSpeed;
 	private final double maxBounceVelocity;
@@ -87,7 +86,6 @@ public class PlayerComponent extends EntityComponent {
 		jumpCounter = 0.0;
 		this.invulnerabilityLength = config
 				.getDouble("player.invulnerabilityLength");
-		this.health = config.getInt("player.health");
 
 		this.invulnerabilityTimer = invulnerabilityLength;
 		spriteComponent = null;
@@ -115,14 +113,12 @@ public class PlayerComponent extends EntityComponent {
 
 	public void damage() {
 		if (!isInvulnerable()) {
-			health--;
+			InventoryComponent in = (InventoryComponent) getEntity()
+					.getComponent(InventoryComponent.ID);
+			in.addHealth(-1);
 			invulnerabilityTimer = 0.0;
 			getAudioComponent().play("hit");
 		}
-	}
-
-	public int getHealth() {
-		return health;
 	}
 
 	@Override
@@ -298,7 +294,7 @@ public class PlayerComponent extends EntityComponent {
 		if (slamKey.isDown()) {
 			velY += jumpSpeed * 0.8 * delta;
 			getSpriteComponent().setFlipY(true);
-			if(lastState != STATE_MOVING && state == STATE_MOVING) {
+			if (lastState != STATE_MOVING && state == STATE_MOVING) {
 				getAudioComponent().play("thunk");
 			}
 		} else {

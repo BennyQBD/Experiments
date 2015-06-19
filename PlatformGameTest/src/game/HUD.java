@@ -24,7 +24,7 @@ public class HUD {
 			drawError(target, errorMessage);
 		} else {
 			drawPoints(target, level.getPlayerInventory().getPoints());
-			drawPlayerHealth(target, level.getPlayerComponent().getHealth());
+			drawPlayerHealth(target, level.getPlayerInventory().getHealth());
 			drawLives(target, level.getPlayerInventory().getLives());
 			drawInventory(target, level);
 			drawGameOver(target, level.getPlayerInventory().getLives());

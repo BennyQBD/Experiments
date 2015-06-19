@@ -46,7 +46,7 @@ public class GameIO {
 	public void loadGame(int saveNum) throws IOException, ParseException {
 		Config saveFile = new Config(getSavePath(saveNum));
 		scene.startNewGame(saveFile.getInt("points"), saveFile.getInt("lives"),
-				saveFile.getInt("lifeDeficit"));
+				saveFile.getInt("lifeDeficit"), 0);
 	}
 	
 	private static String getSaveName(int saveNum) {

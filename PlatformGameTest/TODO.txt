@@ -33,6 +33,8 @@
 + Controls in config file
 + Colored Lighting
 + Sound
++ Checkpoints
++ Health items
 - Different enemy types (projectile shooting enemies?)
 - Multiple levels
 - Flying powerup?

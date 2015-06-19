@@ -19,6 +19,7 @@ import engine.rendering.Color;
 import engine.rendering.IRenderDevice;
 import engine.rendering.LightMap;
 import engine.rendering.SpriteSheet;
+import engine.space.AABB;
 import engine.space.ISpatialStructure;
 import engine.util.factory.LightMapFactory;
 import engine.util.factory.SoundFactory;
@@ -35,12 +36,10 @@ public class PlatformLevel {
 	private LightMap staticLightMap;
 
 	private Entity player;
-	private PlayerComponent playerComponent;
 	private InventoryComponent playerInventory;
 
 	private SpriteSheetFactory sprites;
 	private LightMapFactory lightMaps;
-	// TODO: Use this factory to create and play sounds
 	private SoundFactory sounds;
 	private Config config;
 	private IInput input;
@@ -67,10 +66,6 @@ public class PlatformLevel {
 		return player;
 	}
 
-	public PlayerComponent getPlayerComponent() {
-		return playerComponent;
-	}
-
 	public InventoryComponent getPlayerInventory() {
 		return playerInventory;
 	}
@@ -88,7 +83,7 @@ public class PlatformLevel {
 	}
 
 	public void loadLevel(ISpatialStructure<Entity> structure, int points,
-			int lives, int lifeDeficit) throws IOException {
+			int lives, int lifeDeficit, int checkpoint) throws IOException {
 		if (staticLightMap != null) {
 			staticLightMap.dispose();
 		}
@@ -107,7 +102,7 @@ public class PlatformLevel {
 					int x = i * tileSize;
 					int y = j * tileSize;
 					addEntity(input, structure, x, y, k, color, points, lives,
-							lifeDeficit);
+							lifeDeficit, checkpoint);
 				}
 			}
 		}
@@ -131,8 +126,7 @@ public class PlatformLevel {
 				"sprite.default.b"));
 		lastColor = color;
 
-		SpriteSheet sheet = sprites.get(fileName, numSpritesX,
-				numSpritesY);
+		SpriteSheet sheet = sprites.get(fileName, numSpritesX, numSpritesY);
 		SpriteComponent sc = null;
 		switch (animationType) {
 		case "automatic":
@@ -158,24 +152,25 @@ public class PlatformLevel {
 
 	private void addEntity(IInput input, ISpatialStructure<Entity> structure,
 			int x, int y, int layer, int color, int points, int lives,
-			int lifeDeficit) throws IOException {
+			int lifeDeficit, int checkpoint) throws IOException {
 		if (color == 0) {
 			return;
 		}
 		boolean blocking = (color & 0x8000) != 0;
+		int r = (color >> 16) & 0xFF;
 		int b = color & 0xFF;
 		String prefixIn = "entity." + b + ".";
 		String defaultPrefixIn = "entity." + "default" + ".";
 
 		parseEntity(input, structure, x, y, layer, points, lives, lifeDeficit,
-				prefixIn, defaultPrefixIn, blocking, b);
+				checkpoint, r, prefixIn, defaultPrefixIn, blocking, b);
 	}
 
 	private Entity parseEntity(IInput input,
 			ISpatialStructure<Entity> structure, int x, int y, int layer,
-			int points, int lives, int lifeDeficit, String prefixIn,
-			String defaultPrefixIn, boolean blocking, int defaultSpriteIndex)
-			throws IOException {
+			int points, int lives, int lifeDeficit, int checkpoint,
+			int entityCheckpoint, String prefixIn, String defaultPrefixIn,
+			boolean blocking, int defaultSpriteIndex) throws IOException {
 		int componentCounter = 0;
 		String prefix = prefixIn + componentCounter;
 		String component = config.getString(prefix);
@@ -197,16 +192,23 @@ public class PlatformLevel {
 					sheet = addSpriteComponent(e, prefix, defaultSpriteIndex);
 					break;
 				case "player":
+					if (checkpoint != entityCheckpoint) {
+						e.forceRemove();
+						return getCheckpointEntity(structure, x, y, layer,
+								config, entityCheckpoint);
+					}
 					player = e;
-					playerComponent = new PlayerComponent(e, input, config);
+					new PlayerComponent(e, input, config);
 					break;
 				case "collectable":
 					itemId = config.getIntWithDefault(prefix + ".id",
 							"collectable.default.id");
 					new CollectableComponent(e, config.getIntWithDefault(prefix
 							+ ".points", "collectable.default.points"),
+							config.getIntWithDefault(prefix + ".health",
+									"collectable.default.health"),
 							config.getIntWithDefault(prefix + ".lives",
-									"collectable.default.lives"), itemId);
+									"collectable.default.lives"), 0, itemId);
 					break;
 				case "enemy":
 					new EnemyComponent(e, config, config.getStringWithDefault(
@@ -241,10 +243,11 @@ public class PlatformLevel {
 					break;
 				case "inventory":
 					if (e.equals(player)) {
+						int health = config.getInt("player.health");
 						playerInventory = new InventoryComponent(e, points,
-								lives, lifeDeficit);
+								health, health, lives, lifeDeficit, checkpoint);
 					} else {
-						new InventoryComponent(e, 0, 0, 0);
+						new InventoryComponent(e, 0, 0, 0, 0, 0, 0);
 					}
 					break;
 				case "unlock":
@@ -283,8 +286,9 @@ public class PlatformLevel {
 									"link.default.defaultSpriteIndex");
 					Entity linkedEntity = parseEntity(input, structure, x
 							+ offsetX, y + offsetY, layer + layerOffset,
-							points, lives, lifeDeficit, prefix + ".", prefix
-									+ ".", isLinkedEntityBlocking,
+							points, lives, lifeDeficit, checkpoint,
+							entityCheckpoint, prefix + ".", prefix + ".",
+							isLinkedEntityBlocking,
 							linkedEntityDefaultSpriteIndex);
 					if (linkedEntity != null) {
 						new LinkComponent(linkedEntity, e);
@@ -344,6 +348,17 @@ public class PlatformLevel {
 		}
 
 		return null;
+	}
+
+	private static Entity getCheckpointEntity(
+			ISpatialStructure<Entity> structure, int x, int y, int layer,
+			Config config, int checkpoint) {
+		Entity e = new Entity(structure, x, y, layer);
+		new CollectableComponent(e, 0, 0, 0, checkpoint, 0);
+		double checkpointSize = config.getDouble("level.checkpointSize");
+		e.fitAABB(new AABB(-checkpointSize, -checkpointSize, checkpointSize,
+				checkpointSize));
+		return e;
 	}
 
 	private static void addStaticLight(Entity e, int x, int y,

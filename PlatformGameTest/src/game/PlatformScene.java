@@ -45,7 +45,7 @@ public class PlatformScene extends Scene {
 	}
 
 	public void startNewGame() throws IOException {
-		startNewGame(0, DEFAULT_LIVES, 0);
+		startNewGame(0, DEFAULT_LIVES, 0, 0);
 	}
 
 	private void initVariables() {
@@ -55,10 +55,10 @@ public class PlatformScene extends Scene {
 		getStructure().clear();
 	}
 
-	public void startNewGame(int points, int lives, int lifeDeficit)
+	public void startNewGame(int points, int lives, int lifeDeficit, int checkpoint)
 			throws IOException {
 		initVariables();
-		level.loadLevel(getStructure(), points, lives, lifeDeficit);
+		level.loadLevel(getStructure(), points, lives, lifeDeficit, checkpoint);
 		gameMenu.close();
 		if(levelMusic != null) {
 			levelMusic.play();
@@ -95,17 +95,19 @@ public class PlatformScene extends Scene {
 	}
 
 	private void checkForLostLife() {
-		if (level.getPlayerComponent().getHealth() <= 0) {
+		if (level.getPlayerInventory().getHealth() <= 0) {
 			getStructure().clear();
 			int lives = level.getPlayerInventory().getLives() - 1;
 			int points = level.getPlayerInventory().getPoints();
 			int lifeDeficit = level.getPlayerInventory().getLifeDeficit();
+			int checkpoint = level.getPlayerInventory().getCheckpoint();
 			if (lives <= 0) {
 				points = 0;
 				lifeDeficit = 0;
+				checkpoint = 0;
 			}
 			try {
-				level.loadLevel(getStructure(), points, lives, lifeDeficit);
+				level.loadLevel(getStructure(), points, lives, lifeDeficit, checkpoint);
 			} catch (IOException e) {
 				enterErrorState(e);
 				return;
