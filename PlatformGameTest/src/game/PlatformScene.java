@@ -5,7 +5,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 
 import engine.audio.IAudioDevice;
-import engine.audio.Sound;
 import engine.core.Scene;
 import engine.core.entity.Entity;
 import engine.input.IInput;
@@ -31,12 +30,12 @@ public class PlatformScene extends Scene {
 	private HUD hud;
 	private GameMenu gameMenu;
 	private GameIO gameIO;
-	private GradientBackground background;
+//	private GradientBackground background;
 	private State state;
 	private Delay lostLifeDelay;
 	private String errorMessage;
-	
-	private Sound levelMusic;
+	private int updateRangeX;
+	private int updateRangeY;
 
 	private static String getStackTrace(Exception e) {
 		StringWriter sw = new StringWriter();
@@ -45,7 +44,7 @@ public class PlatformScene extends Scene {
 	}
 
 	public void startNewGame() throws IOException {
-		startNewGame(0, DEFAULT_LIVES, 0, 0);
+		startNewGame(0, DEFAULT_LIVES, 0, 0, 0);
 	}
 
 	private void initVariables() {
@@ -55,37 +54,37 @@ public class PlatformScene extends Scene {
 		getStructure().clear();
 	}
 
-	public void startNewGame(int points, int lives, int lifeDeficit, int checkpoint)
-			throws IOException {
+	public void startNewGame(int points, int lives, int lifeDeficit,
+			int levelNum, int checkpoint) throws IOException {
 		initVariables();
-		level.loadLevel(getStructure(), points, lives, lifeDeficit, checkpoint);
+		level.loadLevel(getStructure(), points, lives, lifeDeficit, levelNum,
+				checkpoint);
 		gameMenu.close();
-		if(levelMusic != null) {
-			levelMusic.play();
-		}
 	}
 
 	public PlatformScene(Config config, IInput input, IRenderDevice device,
 			IAudioDevice audioDevice) throws IOException {
-		super(new Grid<Entity>(16, 256, 256));
+		super(new Grid<Entity>(
+				config.getInt("level.spatialStructure.tileSize"),
+				config.getInt("level.spatialStructure.width"),
+				config.getInt("level.spatialStructure.height")));
 		SpriteSheetFactory sprites = new SpriteSheetFactory(new BitmapFactory(
 				device, "./res/gfx/"));
 		SoundFactory sounds = new SoundFactory(audioDevice, "./res/sounds/");
 		this.level = new PlatformLevel(device, input, config, sprites,
 				new LightMapFactory(device), sounds);
 		SpriteSheet font = sprites.get("monospace.png", 16, 16);
-		
-		try {
-			levelMusic = sounds.get("music.wav", 1.0, 1.0, true);
-		} catch(IOException e) {
-			levelMusic = null;
-		}
 
 		this.gameIO = new GameIO(this, level);
 		this.gameMenu = new GameMenu(this, config, gameIO, input, font);
 		this.hud = new HUD(font, sprites.get("livesicon.png", 1, 1),
 				sprites.get("healthicon.png", 1, 1));
-		this.background = new GradientBackground(device, 1.0, 0.0, 0.0);
+//		this.background = new GradientBackground(device, 1.0, 0.0, 0.0);
+		
+		int tileSize = config.getInt("level.spriteSize");
+		this.updateRangeX = config.getInt("level.updateRangeX") * tileSize;
+		this.updateRangeY = config.getInt("level.updateRangeY") * tileSize;
+		
 		startNewGame();
 	}
 
@@ -107,7 +106,8 @@ public class PlatformScene extends Scene {
 				checkpoint = 0;
 			}
 			try {
-				level.loadLevel(getStructure(), points, lives, lifeDeficit, checkpoint);
+				level.loadLevel(getStructure(), points, lives, lifeDeficit,
+						level.getLevelNum(), checkpoint);
 			} catch (IOException e) {
 				enterErrorState(e);
 				return;
@@ -125,7 +125,7 @@ public class PlatformScene extends Scene {
 		checkForLostLife();
 		switch (state) {
 		case RUNNING:
-			updateRange(delta, level.getPlayer().getAABB().expand(200, 200, 0));
+			updateRange(delta, level.getPlayer().getAABB().expand(updateRangeX, updateRangeY, 0));
 			break;
 		case LOST_LIFE:
 			if (lostLifeDelay.over(delta)) {
@@ -146,7 +146,7 @@ public class PlatformScene extends Scene {
 
 	private void renderScene(IRenderContext target, double viewportX,
 			double viewportY) {
-		background.render(target, 4.0, viewportY);
+		level.renderBackground(target, viewportX, viewportY);
 		renderRange(target, viewportX, viewportY);
 	}
 
@@ -162,8 +162,7 @@ public class PlatformScene extends Scene {
 
 		switch (state) {
 		case RUNNING:
-			// TODO: Parameterize ambient lighting
-			double ambient = 16.0 / 256.0;
+			double ambient = level.getAmbientLight();
 			target.clearLighting(ambient, ambient, ambient, ambient);
 			renderScene(target, viewportX, viewportY);
 			target.drawLight(level.getStaticLightMap(), 0, 0, viewportX,

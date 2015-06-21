@@ -22,19 +22,20 @@ public class OpenGLDisplay implements IDisplay {
 	private final IRenderContext frameBuffer;
 	private final IInput input;
 
-	public OpenGLDisplay(int width, int height, double scale, String title)
-			throws LWJGLException {
+	public OpenGLDisplay(int renderWidth, int renderHeight, int displayWidth,
+			int displayHeight, String title) throws LWJGLException {
 		Display.setTitle(title);
-		int scaledWidth = (int) (width * scale);
-		int scaledHeight = (int) (height * scale);
+//		int scaledWidth = displayWidth;
+//		int scaledHeight = displayHeight;
 
-		Display.setDisplayMode(new DisplayMode(scaledWidth, scaledHeight));
+		Display.setDisplayMode(new DisplayMode(displayWidth, displayHeight));
 		Display.create();
 		Keyboard.create();
 		Mouse.create();
 
 		Display.setVSyncEnabled(!Debug.IGNORE_FRAME_CAP);
-		device = new OpenGLRenderDevice(width, height, scaledWidth, scaledHeight);
+		device = new OpenGLRenderDevice(renderWidth, renderHeight, displayWidth,
+				displayHeight);
 		frameBuffer = new RenderContext(device);
 		input = new OpenGLInput();
 		audioDevice = new OpenALAudioDevice();
@@ -64,7 +65,7 @@ public class OpenGLDisplay implements IDisplay {
 	public IRenderContext getRenderContext() {
 		return frameBuffer;
 	}
-	
+
 	@Override
 	public IRenderDevice getRenderDevice() {
 		return device;

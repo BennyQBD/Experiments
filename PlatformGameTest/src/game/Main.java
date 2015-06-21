@@ -11,12 +11,19 @@ import engine.rendering.opengl.OpenGLDisplay;
 import engine.util.parsing.Config;
 
 public class Main {
-	public static void main(String[] args) throws IOException, ParseException, LWJGLException {
-		Config test = new Config("./res/main.cfg");
-		//IDisplay display = new AWTDisplay(256, 224, 3.0, "My Game");
-		IDisplay display = new OpenGLDisplay(256, 224, 3.0, "My Game");
-		CoreEngine engine = new CoreEngine(display, new PlatformScene(test,
-				display.getInput(), display.getRenderDevice(), display.getAudioDevice()), 60.0);
+	public static void main(String[] args) throws IOException, ParseException,
+			LWJGLException {
+		Config config = new Config("./res/main.cfg");
+		int tileSize = config.getInt("level.spriteSize");
+		int tilesX = config.getInt("level.display.tilesX");
+		int tilesY = config.getInt("level.display.tilesY");
+		IDisplay display = new OpenGLDisplay(tileSize * tilesX, tileSize
+				* tilesY, config.getInt("level.display.width"),
+				config.getInt("level.display.height"), "My Game");
+		CoreEngine engine = new CoreEngine(display, new PlatformScene(config,
+				display.getInput(), display.getRenderDevice(),
+				display.getAudioDevice()),
+				config.getDouble("level.display.targetFramerate"));
 		engine.start();
 		engine.dispose();
 	}

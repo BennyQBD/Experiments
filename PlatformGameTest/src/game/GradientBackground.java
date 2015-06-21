@@ -21,6 +21,19 @@ public class GradientBackground {
 		this.g = g;
 		this.b = b;
 	}
+	
+	@Override
+	protected void finalize() throws Throwable {
+		dispose();
+		super.finalize();
+	}
+	
+	public void dispose() {
+		if(background != null) {
+			background.dispose();
+			background = null;
+		}
+	}
 
 	private SpriteSheet getBackground(IRenderContext target) {
 		if (background != null && target.getWidth() == background.getWidth()

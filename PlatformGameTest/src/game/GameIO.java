@@ -40,13 +40,14 @@ public class GameIO {
 		saveData.put("lives", level.getPlayerInventory().getLives() + "");
 		saveData.put("lifeDeficit", level.getPlayerInventory().getLifeDeficit()
 				+ "");
+		saveData.put("levelNum", level.getLevelNum() + "");
 		Config.write(getSavePath(saveNum), saveData);
 	}
 
 	public void loadGame(int saveNum) throws IOException, ParseException {
 		Config saveFile = new Config(getSavePath(saveNum));
 		scene.startNewGame(saveFile.getInt("points"), saveFile.getInt("lives"),
-				saveFile.getInt("lifeDeficit"), 0);
+				saveFile.getInt("lifeDeficit"), saveFile.getInt("levelNum"), 0);
 	}
 	
 	private static String getSaveName(int saveNum) {

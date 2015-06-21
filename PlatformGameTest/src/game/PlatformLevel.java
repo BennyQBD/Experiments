@@ -16,6 +16,7 @@ import engine.components.SpriteComponent;
 import engine.core.entity.Entity;
 import engine.input.IInput;
 import engine.rendering.Color;
+import engine.rendering.IRenderContext;
 import engine.rendering.IRenderDevice;
 import engine.rendering.LightMap;
 import engine.rendering.SpriteSheet;
@@ -44,6 +45,11 @@ public class PlatformLevel {
 	private Config config;
 	private IInput input;
 	private IRenderDevice device;
+	private int levelNum;
+	private Sound levelMusic;
+	private GradientBackground background;
+	private double parallax;
+	private double ambientLight;
 
 	private Map<Integer, SpriteSheet> itemSprites;
 	private Map<Integer, Color> itemColors;
@@ -60,6 +66,7 @@ public class PlatformLevel {
 		this.input = input;
 		this.device = device;
 		this.lastColor = null;
+		this.levelNum = -1;
 	}
 
 	public Entity getPlayer() {
@@ -82,18 +89,50 @@ public class PlatformLevel {
 		return itemColors.get(itemId);
 	}
 
+	public int getLevelNum() {
+		return levelNum;
+	}
+	
+	public double getAmbientLight() {
+		return ambientLight;
+	}
+	
+	public void renderBackground(IRenderContext target, double viewportX, double viewportY) {
+		background.render(target, parallax, viewportY);
+	}
+
 	public void loadLevel(ISpatialStructure<Entity> structure, int points,
-			int lives, int lifeDeficit, int checkpoint) throws IOException {
+			int lives, int lifeDeficit, int levelNum, int checkpoint)
+			throws IOException {
+		String prefix = "level." + levelNum;
+		SpriteSheet level = sprites.get(config.getString(prefix + ".data"),
+				config.getInt(prefix + ".sheetWidth"),
+				config.getInt(prefix + ".sheetHeight"));
+
 		if (staticLightMap != null) {
 			staticLightMap.dispose();
 		}
-		this.staticLightMap = new LightMap(device, 2048, 2048, 2);
-		SpriteSheet level = sprites.get(config.getString("level.data"), 4, 2);
+		int tileSize = config.getInt("level.spriteSize");
+		double lightMapScaleFactor = config.getDouble(prefix
+				+ ".lightMapScaleFactor");
+		int lightMapWidth = (int) (level.getSpriteWidth() * tileSize / lightMapScaleFactor);
+		int lightMapHeight = (int) (level.getSpriteWidth() * tileSize / lightMapScaleFactor);
+		this.staticLightMap = new LightMap(device, lightMapWidth,
+				lightMapHeight, lightMapScaleFactor);
+
+		if (background != null) {
+			background.dispose();
+		}
+
+		background = new GradientBackground(device, config.getDouble(prefix
+				+ ".background.r"), config.getDouble(prefix + ".background.g"),
+				config.getDouble(prefix + ".background.b"));
+		parallax = config.getDouble(prefix + ".background.parallax");
+		ambientLight = config.getDouble(prefix + ".ambientLight");
 
 		this.itemSprites = new HashMap<>();
 		this.itemColors = new HashMap<>();
 
-		int tileSize = 16;
 		int[] pixels = level.getSheet().getPixels(null);
 		for (int k = 0; k < level.getNumSprites(); k++) {
 			for (int j = 0; j < level.getSpriteHeight(); j++) {
@@ -106,6 +145,22 @@ public class PlatformLevel {
 				}
 			}
 		}
+		if (this.levelNum != levelNum) {
+			if (levelMusic != null) {
+				levelMusic.stop();
+			}
+			try {
+				levelMusic = sounds.get(
+						config.getString(prefix + ".music.fileName"),
+						config.getDouble(prefix + ".music.volume"),
+						config.getDouble(prefix + ".music.pitch"),
+						config.getBoolean(prefix + ".music.shouldLoop"));
+				levelMusic.play();
+			} catch (Exception e) {
+				levelMusic = null;
+			}
+		}
+		this.levelNum = levelNum;
 	}
 
 	private SpriteSheet addSpriteComponent(Entity e, String prefix, int b)
@@ -245,9 +300,10 @@ public class PlatformLevel {
 					if (e.equals(player)) {
 						int health = config.getInt("player.health");
 						playerInventory = new InventoryComponent(e, points,
-								health, health, lives, lifeDeficit, checkpoint);
+								health, health, lives, lifeDeficit, checkpoint,
+								config.getInt("player.pointsForExtraLife"));
 					} else {
-						new InventoryComponent(e, 0, 0, 0, 0, 0, 0);
+						new InventoryComponent(e);
 					}
 					break;
 				case "unlock":

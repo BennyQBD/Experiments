@@ -13,7 +13,6 @@ import engine.util.IDAssigner;
 public class InventoryComponent extends EntityComponent {
 	public static final int ID = IDAssigner.getId();
 
-	private static final int POINTS_FOR_EXTRA_LIFE = 1000;
 	private Set<Integer> itemIds;
 	private int points;
 	private int maxHealth;
@@ -21,9 +20,14 @@ public class InventoryComponent extends EntityComponent {
 	private int lives;
 	private int lifeDeficit;
 	private int checkpoint;
+	private int pointsForExtraLife;
 
+	public InventoryComponent(Entity entity) {
+		this(entity, 0, 0, 0, 0, 0, 0, 0);
+	}
+	
 	public InventoryComponent(Entity entity, int points, int health, int maxHealth, int lives,
-			int lifeDeficit, int checkpoint) {
+			int lifeDeficit, int checkpoint, int pointsForExtraLife) {
 		super(entity, ID);
 		itemIds = new TreeSet<Integer>();
 		this.points = points;
@@ -32,6 +36,7 @@ public class InventoryComponent extends EntityComponent {
 		this.lives = lives;
 		this.lifeDeficit = lifeDeficit;
 		this.checkpoint = checkpoint;
+		this.pointsForExtraLife = pointsForExtraLife;
 	}
 	
 	public Iterator<Integer> getItemIterator() {
@@ -112,9 +117,13 @@ public class InventoryComponent extends EntityComponent {
 	}
 
 	public void addPoints(int amt) {
-		int livesFromPointsBefore = points / POINTS_FOR_EXTRA_LIFE;
+		if(pointsForExtraLife == 0) {
+			points += amt;
+			return;
+		}
+		int livesFromPointsBefore = points / pointsForExtraLife;
 		points += amt;
-		int extraLives = points / POINTS_FOR_EXTRA_LIFE - livesFromPointsBefore;
+		int extraLives = points / pointsForExtraLife - livesFromPointsBefore;
 		if (extraLives > 0) {
 			addLives(extraLives);
 		} else {
