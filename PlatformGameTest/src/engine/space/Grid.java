@@ -84,15 +84,13 @@ public class Grid<T extends ISpatialObject> implements ISpatialStructure<T> {
 	}
 
 	@Override
-	public boolean remove(final T obj) {
+	public void remove(final T obj) {
 		visit(obj.getAABB(), new IVisitor<T>() {
 			@Override
 			public void onVisit(List<T> tile) {
 				tile.remove(obj);
 			}
 		});
-
-		return false;
 	}
 
 	@Override

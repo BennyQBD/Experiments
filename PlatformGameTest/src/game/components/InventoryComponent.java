@@ -7,7 +7,6 @@ import java.util.TreeSet;
 import engine.core.entity.Entity;
 import engine.core.entity.EntityComponent;
 import engine.core.entity.IEntityVisitor;
-import engine.util.Debug;
 import engine.util.IDAssigner;
 
 public class InventoryComponent extends EntityComponent {
@@ -96,7 +95,6 @@ public class InventoryComponent extends EntityComponent {
 		lives += c.getLives();
 		if(c.getCheckpoint() > checkpoint) {
 			checkpoint = c.getCheckpoint();
-			Debug.log("Hit checkpoint!");
 		}
 		e.remove();
 	}

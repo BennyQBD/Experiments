@@ -12,7 +12,8 @@ import engine.rendering.Color;
 import engine.rendering.IRenderContext;
 import engine.rendering.IRenderDevice;
 import engine.rendering.SpriteSheet;
-import engine.space.Grid;
+import engine.space.AABB;
+import engine.space.*;
 import engine.util.Delay;
 import engine.util.factory.BitmapFactory;
 import engine.util.factory.LightMapFactory;
@@ -30,7 +31,7 @@ public class PlatformScene extends Scene {
 	private HUD hud;
 	private GameMenu gameMenu;
 	private GameIO gameIO;
-//	private GradientBackground background;
+	// private GradientBackground background;
 	private State state;
 	private Delay lostLifeDelay;
 	private String errorMessage;
@@ -64,10 +65,12 @@ public class PlatformScene extends Scene {
 
 	public PlatformScene(Config config, IInput input, IRenderDevice device,
 			IAudioDevice audioDevice) throws IOException {
-		super(new Grid<Entity>(
-				config.getInt("level.spatialStructure.tileSize"),
-				config.getInt("level.spatialStructure.width"),
-				config.getInt("level.spatialStructure.height")));
+		super(new QuadTree<Entity>(new AABB(0, 0,
+				config.getInt("level.spatialStructure.tileSize")
+						* config.getInt("level.spatialStructure.width"),
+				config.getInt("level.spatialStructure.tileSize")
+						* config.getInt("level.spatialStructure.height")),
+				config.getInt("level.spatialStructure.tileCapacity")));
 		SpriteSheetFactory sprites = new SpriteSheetFactory(new BitmapFactory(
 				device, "./res/gfx/"));
 		SoundFactory sounds = new SoundFactory(audioDevice, "./res/sounds/");
@@ -79,12 +82,12 @@ public class PlatformScene extends Scene {
 		this.gameMenu = new GameMenu(this, config, gameIO, input, font);
 		this.hud = new HUD(font, sprites.get("livesicon.png", 1, 1),
 				sprites.get("healthicon.png", 1, 1));
-//		this.background = new GradientBackground(device, 1.0, 0.0, 0.0);
-		
+		// this.background = new GradientBackground(device, 1.0, 0.0, 0.0);
+
 		int tileSize = config.getInt("level.spriteSize");
 		this.updateRangeX = config.getInt("level.updateRangeX") * tileSize;
 		this.updateRangeY = config.getInt("level.updateRangeY") * tileSize;
-		
+
 		startNewGame();
 	}
 
@@ -125,7 +128,10 @@ public class PlatformScene extends Scene {
 		checkForLostLife();
 		switch (state) {
 		case RUNNING:
-			updateRange(delta, level.getPlayer().getAABB().expand(updateRangeX, updateRangeY, 0));
+			updateRange(
+					delta,
+					level.getPlayer().getAABB()
+							.expand(updateRangeX, updateRangeY, 0));
 			break;
 		case LOST_LIFE:
 			if (lostLifeDelay.over(delta)) {

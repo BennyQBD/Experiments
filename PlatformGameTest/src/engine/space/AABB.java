@@ -1,8 +1,8 @@
 package engine.space;
 
 public class AABB {
-	private static final double DEFAULT_MIN_Z = Double.MIN_VALUE;
-	private static final double DEFAULT_MAX_Z = Double.MAX_VALUE;
+	private static final double DEFAULT_MIN_Z = Double.NEGATIVE_INFINITY;
+	private static final double DEFAULT_MAX_Z = Double.POSITIVE_INFINITY;
 
 	private final double minX;
 	private final double minY;
@@ -27,6 +27,12 @@ public class AABB {
 		this.maxX = maxX;
 		this.maxY = maxY;
 		this.maxZ = maxZ;
+	}
+	
+	public boolean contains(AABB other) {
+		return minX <= other.minX && other.maxX <= maxX &&
+				minY <= other.minY && other.maxY <= maxY &&
+				minZ <= other.minZ && other.maxZ <= maxZ;
 	}
 
 	public boolean intersects(AABB other) {
@@ -144,7 +150,7 @@ public class AABB {
 	}
 
 	public AABB move(double amtX, double amtY) {
-		return new AABB(minX + amtX, minY + amtY, maxX + amtX, maxY + amtY);
+		return new AABB(minX + amtX, minY + amtY, minZ, maxX + amtX, maxY + amtY, maxZ);
 	}
 	
 	public AABB combine(AABB other) {
@@ -173,6 +179,6 @@ public class AABB {
 			minY = this.minY;
 			maxY = this.maxY + amtY;
 		}
-		return new AABB(minX, minY, maxX, maxY);
+		return new AABB(minX, minY, minZ, maxX, maxY, maxZ);
 	}
 }

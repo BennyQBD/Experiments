@@ -1,82 +1,99 @@
 package engine.space;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
-public class QuadTree<T extends ISpatialObject> implements ISpatialStructure<T> {
+public class QuadTree<T extends ISpatialObject> implements
+		ISpatialStructure<T> {
 	private QuadTree<T> nodes[];
-	private T objects[];
-	private int numObjects;
+	private int capacity;
+	private List<T> objects;
 	private AABB aabb;
 
-	@SuppressWarnings("unchecked")
-	public QuadTree(AABB aabb, int numObjectsPerNode) {
-		this.nodes = (QuadTree<T>[]) (new QuadTree[4]);
-		this.objects = (T[]) (new ISpatialObject[numObjectsPerNode]);
-		this.numObjects = 0;
+	public QuadTree(AABB aabb, int capacity) {
 		this.aabb = aabb;
+		this.capacity = capacity;
+		objects = new ArrayList<>();
+		nodes = null;
 	}
-
+	
 	private QuadTree(QuadTree<T> other) {
 		this.nodes = other.nodes;
 		this.objects = other.objects;
-		this.numObjects = other.numObjects;
+		this.capacity = other.capacity;
 		this.aabb = other.aabb;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public void add(T obj) {
-		if (obj.getAABB().intersects(aabb)) {
-			if (numObjects < objects.length) {
-				objects[numObjects] = obj;
-				numObjects++;
-			} else {
-				addToChild(obj);
-			}
+		if (addInternal(obj)) {
+			return;
+		}
+		
+		double dirX = obj.getAABB().getCenterX() - aabb.getCenterX();
+		double dirY = obj.getAABB().getCenterY() - aabb.getCenterY();
+		expand(dirX, dirY);
+		add(obj);
+	}
+	
+	private void expand(double dirX, double dirY) {
+		QuadTree<T> thisAsNode = new QuadTree<>(this);
+
+		double minX = aabb.getMinX();
+		double minY = aabb.getMinY();
+		double maxX = aabb.getMaxX();
+		double maxY = aabb.getMaxY();
+
+		double expanseX = maxX - minX;
+		double expanseY = maxY - minY;
+
+		nodes = null;
+		objects = new ArrayList<>();
+		
+		if (dirX <= 0 && dirY <= 0) {	
+			aabb = new AABB(minX - expanseX, minY - expanseY, maxX, maxY);
+			subdivide();
+			nodes[1] = thisAsNode;
+		} else if (dirX <= 0 && dirY > 0) {
+			aabb = new AABB(minX - expanseX, minY, maxX, maxY + expanseY);
+			subdivide();
+			nodes[3] = thisAsNode;
+		} else if (dirX > 0 && dirY > 0) {
+			aabb = new AABB(minX, minY, maxX + expanseX, maxY + expanseY);
+			subdivide();
+			nodes[2] = thisAsNode;
+		} else if (dirX > 0 && dirY <= 0) {
+			aabb = new AABB(minX, minY - expanseY, maxX + expanseX, maxY);
+			subdivide();
+			nodes[0] = thisAsNode;
 		} else {
-			QuadTree<T> thisAsNode = new QuadTree<T>(this);
-
-			double dirX = obj.getAABB().getCenterX() - aabb.getCenterX();
-			double dirY = obj.getAABB().getCenterY() - aabb.getCenterY();
-
-			double minX = aabb.getMinX();
-			double minY = aabb.getMinY();
-			double maxX = aabb.getMaxX();
-			double maxY = aabb.getMaxY();
-
-			double expanseX = maxX - minX;
-			double expanseY = maxY - minY;
-
-			nodes = (QuadTree<T>[]) (new QuadTree[4]);
-			numObjects = 0;
-			objects = (T[]) (new ISpatialObject[objects.length]);
-			;
-
-			if (dirX <= 0 && dirY <= 0) {
-				nodes[1] = thisAsNode;
-				aabb = new AABB(minX - expanseX, minY - expanseY, maxX, maxY);
-			} else if (dirX <= 0 && dirY > 0) {
-				nodes[3] = thisAsNode;
-				aabb = new AABB(minX - expanseX, minY, maxX, maxY + expanseY);
-
-			} else if (dirX > 0 && dirY > 0) {
-				nodes[2] = thisAsNode;
-				aabb = new AABB(minX, minY, maxX + expanseX, maxY + expanseY);
-
-			} else if (dirX > 0 && dirY <= 0) {
-				nodes[0] = thisAsNode;
-				aabb = new AABB(minX, minY - expanseY, maxX + expanseX, maxY);
-			} else {
-				throw new AssertionError(
-						"Error: QuadTree direction is invalid (?): " + dirX
-								+ " (dirX) " + dirY + " (dirY)");
-			}
-
-			add(obj);
+			throw new AssertionError(
+					"Error: QuadTree direction is invalid (?): " + dirX
+							+ " (dirX) " + dirY + " (dirY)");
 		}
 	}
 
-	private void addToChild(T obj) {
+	private boolean addInternal(T obj) {
+		if (!aabb.contains(obj.getAABB())) {
+			return false;
+		}
+		if (nodes == null) {
+			if (objects.size() < capacity) {
+				objects.add(obj);
+				return true;
+			}
+			subdivide();
+		}
+		if (!addToChildNode(obj)) {
+			objects.add(obj);
+		}
+		return true;
+	}
+
+	@SuppressWarnings("unchecked")
+	private void subdivide() {
 		double minX = aabb.getMinX();
 		double minY = aabb.getMinY();
 		double maxX = aabb.getMaxX();
@@ -85,112 +102,157 @@ public class QuadTree<T extends ISpatialObject> implements ISpatialStructure<T> 
 		double halfXLength = (maxX - minX) / 2.0f;
 		double halfYLength = (maxY - minY) / 2.0f;
 
+		nodes = (QuadTree<T>[]) (new QuadTree[4]);
+
 		minY += halfYLength;
 		maxX -= halfXLength;
-
-		tryToAddToChildNode(obj, minX, minY, maxX, maxY, 0);
+		nodes[0] = new QuadTree<T>(new AABB(minX, minY, maxX, maxY), capacity);
 
 		minX += halfXLength;
 		maxX += halfXLength;
-
-		tryToAddToChildNode(obj, minX, minY, maxX, maxY, 1);
+		nodes[1] = new QuadTree<T>(new AABB(minX, minY, maxX, maxY), capacity);
 
 		minY -= halfYLength;
 		maxY -= halfYLength;
-
-		tryToAddToChildNode(obj, minX, minY, maxX, maxY, 3);
+		nodes[3] = new QuadTree<T>(new AABB(minX, minY, maxX, maxY), capacity);
 
 		minX -= halfXLength;
 		maxX -= halfXLength;
+		nodes[2] = new QuadTree<T>(new AABB(minX, minY, maxX, maxY), capacity);
 
-		tryToAddToChildNode(obj, minX, minY, maxX, maxY, 2);
+		reinsertObjects();
 	}
 
-	private void tryToAddToChildNode(T obj, double minX, double minY,
-			double maxX, double maxY, int nodeIndex) {
-		if (obj.getAABB().intersectRect(minX, minY, maxX, maxY)) {
-			if (nodes[nodeIndex] == null) {
-				nodes[nodeIndex] = new QuadTree<T>(new AABB(minX, minY, maxX,
-						maxY), objects.length);
+	private void reinsertObjects() {
+		Iterator<T> it = objects.iterator();
+		while (it.hasNext()) {
+			if (addToChildNode(it.next())) {
+				it.remove();
 			}
-
-			nodes[nodeIndex].add(obj);
 		}
+	}
+
+	private boolean addToChildNode(T obj) {
+		for(int i = 0; i < nodes.length; i++) {
+			if(nodes[i].addInternal(obj)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	@Override
-	public boolean remove(T obj) {
-		if (!obj.getAABB().intersects(aabb)) {
+	public void remove(T obj) {
+		if(!removeInternal(obj)) {
+			objects.remove(obj);
+		}
+	}
+	
+	private boolean removeInternal(T obj) {
+		if(!aabb.contains(obj.getAABB())) {
 			return false;
 		}
-
-		for (int i = 0; i < numObjects; i++) {
-			if (objects[i] == obj) {
-				removeEntityFromList(i);
+		
+		if(objects.remove(obj)) {
+			return true;
+		}
+		
+		if(nodes == null) {
+			return false;
+		}
+		
+		for(int i = 0; i < nodes.length; i++) {
+			if(nodes[i].removeInternal(obj)) {
+				prune();
+				return true;
 			}
 		}
-
-		for (int i = 0; i < nodes.length; i++) {
-			if (nodes[i] != null && nodes[i].remove(obj)) {
-				nodes[i] = null;
-			}
-		}
-
-		return isThisNodeEmpty();
+		
+		return false;
 	}
 
-	private boolean isThisNodeEmpty() {
-		for (int i = 0; i < nodes.length; i++) {
-			if (nodes[i] != null) {
+	private void prune() {
+		if(!isNodesEmpty()) {
+			return;
+		}
+		
+		nodes = null;
+	}
+	
+	private boolean isNodesEmpty() {
+		for(int i = 0; i < nodes.length; i++) {
+			if(!nodes[i].isEmpty()) {
 				return false;
 			}
 		}
-
-		return numObjects == 0;
+		
+		return true;
 	}
 
-	private void removeEntityFromList(int index) {
-		for (int i = index + 1; i < numObjects; i++) {
-			objects[i - 1] = objects[i];
+	private boolean isEmpty() {
+		if(!objects.isEmpty()) {
+			return false;
 		}
-		objects[numObjects - 1] = null;
-		numObjects--;
-	}
-
-	@Override
-	public Set<T> getAll(Set<T> result) {
-		return queryRange(result, aabb);
-	}
-
-	@Override
-	public Set<T> queryRange(Set<T> result, AABB aabb) {
-		if (!aabb.intersects(aabb)) {
-			return result;
+		
+		if(nodes == null) {
+			return true;
 		}
-
-		for (int i = 0; i < numObjects; i++) {
-			if (objects[i].getAABB().intersects(aabb)) {
-				result.add(objects[i]);
-			}
-		}
-
-		for (int i = 0; i < nodes.length; i++) {
-			if (nodes[i] != null) {
-				nodes[i].queryRange(result, aabb);
-			}
-		}
-
-		return result;
+		
+		return isNodesEmpty();
 	}
 
 	@Override
 	public void clear() {
-		for(int i = 0; i < numObjects; i++) {
-			objects[i] = null;
+		objects.clear();
+		
+		if(nodes != null) {
+			for(int i = 0; i < nodes.length; i++) {
+				nodes[i].clear();
+			}
 		}
-		numObjects = 0;
-		for (int i = 0; i < nodes.length; i++) {
-			nodes[i] = null;
+	}
+
+	@Override
+	public Set<T> getAll(Set<T> result) {
+		return addAll(result);
+	}
+	
+	private Set<T> addAll(Set<T> result) {
+		result.addAll(objects);
+		
+		if(nodes != null) {
+			for(int i = 0; i < nodes.length; i++) {
+				nodes[i].addAll(result);
+			}
 		}
+		
+		return result;
+	}
+	
+	@Override
+	public Set<T> queryRange(Set<T> result, AABB range) {
+		if (!aabb.intersects(range)) {
+			return result;
+		}
+		
+		if(range.contains(aabb)) {
+			return addAll(result);
+		}
+		
+		if(nodes != null) {
+			for (int i = 0; i < nodes.length; i++) {
+				result = nodes[i].queryRange(result, range);
+			}
+		}
+		
+		Iterator<T> it = objects.iterator();
+		while (it.hasNext()) {
+			T current = it.next();
+			if (current.getAABB().intersects(range)) {
+				result.add(current);
+			}
+		}
+		
+		return result;
 	}
 }
