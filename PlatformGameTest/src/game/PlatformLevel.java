@@ -8,6 +8,7 @@ import java.util.Map;
 
 import engine.audio.Sound;
 import engine.components.AudioComponent;
+import engine.components.ColliderComponent;
 import engine.components.CollisionComponent;
 import engine.components.FadeRemove;
 import engine.components.LightComponent;
@@ -236,7 +237,10 @@ public class PlatformLevel {
 		component = config.getString(prefix);
 		if (component != null) {
 			Entity e = new Entity(structure, x, y, layer);
+			boolean hasCollider = false;
 			if (blocking) {
+				new ColliderComponent(e);
+				hasCollider = true;
 				new CollisionComponent(e);
 			}
 			SpriteSheet sheet = null;
@@ -256,6 +260,10 @@ public class PlatformLevel {
 					new PlayerComponent(e, input, config);
 					break;
 				case "collectable":
+					if(!hasCollider) {
+						new ColliderComponent(e);
+						hasCollider = true;
+					}
 					itemId = config.getIntWithDefault(prefix + ".id",
 							"collectable.default.id");
 					new CollectableComponent(e, config.getIntWithDefault(prefix
@@ -270,6 +278,10 @@ public class PlatformLevel {
 							prefix + ".type", "enemy.default.type"));
 					break;
 				case "hazard":
+					if(!hasCollider) {
+						new ColliderComponent(e);
+						hasCollider = true;
+					}
 					double spaceX = config.getDoubleWithDefault(prefix
 							+ ".spaceX", "hazard.default.spaceX");
 					double spaceY = config.getDoubleWithDefault(prefix
@@ -290,10 +302,14 @@ public class PlatformLevel {
 							new Color(lightR, lightG, lightB));
 					String lightType = config.getStringWithDefault(prefix
 							+ ".type", "light.default.type");
+					double lightOffsetX = config.getDoubleWithDefault(prefix + ".offsetX",
+							"light.default.offsetX");
+					double lightOffsetY = config.getDoubleWithDefault(prefix + ".offsetY",
+							"light.default.offsetY");
 					if (lightType.equals("static")) {
 						addStaticLight(e, x, y, staticLightMap, light);
 					} else if (lightType.equals("dynamic")) {
-						new LightComponent(e, light);
+						new LightComponent(e, light, lightOffsetX, lightOffsetY);
 					}
 					break;
 				case "inventory":
@@ -410,9 +426,10 @@ public class PlatformLevel {
 			ISpatialStructure<Entity> structure, int x, int y, int layer,
 			Config config, int checkpoint) {
 		Entity e = new Entity(structure, x, y, layer);
+		ColliderComponent c = new ColliderComponent(e);
 		new CollectableComponent(e, 0, 0, 0, checkpoint, 0);
 		double checkpointSize = config.getDouble("level.checkpointSize");
-		e.fitAABB(new AABB(-checkpointSize, -checkpointSize, checkpointSize,
+		c.fitAABB(new AABB(-checkpointSize, -checkpointSize, checkpointSize,
 				checkpointSize));
 		return e;
 	}

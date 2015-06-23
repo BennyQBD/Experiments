@@ -31,7 +31,6 @@ public class PlatformScene extends Scene {
 	private HUD hud;
 	private GameMenu gameMenu;
 	private GameIO gameIO;
-	// private GradientBackground background;
 	private State state;
 	private Delay lostLifeDelay;
 	private String errorMessage;

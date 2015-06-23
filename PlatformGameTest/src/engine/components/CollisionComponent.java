@@ -33,7 +33,11 @@ public class CollisionComponent extends EntityComponent {
 
 	public DoublePair resolveCollisions(double amtX, double amtY) {
 		final DoublePair amts = new DoublePair(amtX, amtY);
-		final AABB collider = getEntity().getAABB();
+		ColliderComponent c = (ColliderComponent)getEntity().getComponent(ColliderComponent.ID);
+		if(c == null) {
+			return amts;
+		}
+		final AABB collider = c.getAABB();
 		final AABB collisionRange = getEntity().getAABB().stretch(amtX, amtY);
 		getEntity().visitInRange(CollisionComponent.ID, collisionRange,
 				new IEntityVisitor() {

@@ -53,10 +53,8 @@ public class SpriteComponent extends EntityComponent {
 
 	public static final int ID = IDAssigner.getId();
 	private Animation animation;
-	private int spriteOffsetX;
-	private int spriteOffsetY;
-	private int spriteOffsetFlippedX;
-	private int spriteOffsetFlippedY;
+	private double spriteOffsetFlippedX;
+	private double spriteOffsetFlippedY;
 	private double transparency;
 	private boolean flipX;
 	private boolean flipY;
@@ -121,13 +119,17 @@ public class SpriteComponent extends EntityComponent {
 
 		AABB spriteAABB = animation.getSheet().getAABB(
 				animation.getSpriteIndex());
-		getEntity().fitAABB(spriteAABB);
-		spriteOffsetX = (int) spriteAABB.getMinX();
-		spriteOffsetY = (int) spriteAABB.getMinY();
+		ColliderComponent c = (ColliderComponent) getEntity().getComponent(
+				ColliderComponent.ID);
+		if (c != null) {
+			c.fitAABB(spriteAABB);
+		} else {
+			getEntity().fitAABB(spriteAABB);
+		}
 		spriteOffsetFlippedX = animation.getSheet().getSpriteWidth()
-				- (int) spriteAABB.getMaxX();
+				- spriteAABB.getMaxX() - spriteAABB.getMinX();
 		spriteOffsetFlippedY = animation.getSheet().getSpriteHeight()
-				- (int) spriteAABB.getMaxY();
+				- spriteAABB.getMaxY() - spriteAABB.getMinY();
 
 		this.transparency = 1.0;
 		this.flipX = false;
@@ -145,18 +147,16 @@ public class SpriteComponent extends EntityComponent {
 		SpriteSheet sheet = animation.getSheet();
 		int spriteIndex = animation.getSpriteIndex();
 		if (sheet != null) {
-			int spriteOffX = spriteOffsetX;
-			int spriteOffY = spriteOffsetY;
+			double spriteOffX = 0;
+			double spriteOffY = 0;
 			if (flipX) {
 				spriteOffX = spriteOffsetFlippedX;
 			}
 			if (flipY) {
 				spriteOffY = spriteOffsetFlippedY;
 			}
-			double xStart = getEntity().getAABB().getMinX() - viewportX
-					- spriteOffX;
-			double yStart = getEntity().getAABB().getMinY() - viewportY
-					- spriteOffY;
+			double xStart = getEntity().getX() - viewportX - spriteOffX;
+			double yStart = getEntity().getY() - viewportY - spriteOffY;
 			target.drawSprite(sheet, spriteIndex, xStart, yStart, transparency,
 					flipX, flipY, color);
 		}

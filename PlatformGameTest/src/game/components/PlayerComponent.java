@@ -1,6 +1,7 @@
 package game.components;
 
 import engine.components.AudioComponent;
+import engine.components.ColliderComponent;
 import engine.components.SpriteComponent;
 import engine.core.entity.Entity;
 import engine.core.entity.EntityComponent;
@@ -315,8 +316,9 @@ public class PlayerComponent extends EntityComponent {
 
 	private boolean tryHitEnemy() {
 		final DoubleVal result = new DoubleVal();
+		ColliderComponent c = (ColliderComponent)getEntity().getComponent(ColliderComponent.ID);
 		getEntity().visitInRange(EnemyComponent.ID,
-				getEntity().getAABB().expand(0, 1, 0), new IEntityVisitor() {
+				c.getAABB().expand(0, 1, 0), new IEntityVisitor() {
 					@Override
 					public void visit(Entity entity, EntityComponent component) {
 						if (((EnemyComponent) component).kill()) {

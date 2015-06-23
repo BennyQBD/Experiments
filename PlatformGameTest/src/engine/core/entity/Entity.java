@@ -23,6 +23,8 @@ public class Entity implements ISpatialObject, Comparable<Entity> {
 	private AABB aabb;
 	private int id;
 	private boolean isRemoved;
+	private double x;
+	private double y;
 
 	private static int getNextId() {
 		return currentId++;
@@ -31,7 +33,9 @@ public class Entity implements ISpatialObject, Comparable<Entity> {
 	public Entity(ISpatialStructure<Entity> structure, double posX,
 			double posY, double posZ) {
 		this.structure = structure;
-		this.aabb = new AABB(posX, posY, posZ, posX, posY);
+		this.x = posX;
+		this.y = posY;
+		this.aabb = new AABB(0, 0, posZ, 0, 0);
 		this.isRemoved = false;
 		this.id = getNextId();
 		this.components = new ArrayList<>();
@@ -41,22 +45,16 @@ public class Entity implements ISpatialObject, Comparable<Entity> {
 
 	public void fitAABB(AABB newAABB) {
 		structure.remove(this);
-		double width = aabb.getWidth();
-		double height = aabb.getHeight();
-		if (width < newAABB.getWidth()) {
-			width = newAABB.getWidth();
+		if(aabb.getWidth() == 0.0 && aabb.getHeight() == 0.0) {
+			aabb = newAABB;
+		} else {
+			aabb = aabb.combine(newAABB);
 		}
-		if (height < newAABB.getHeight()) {
-			height = newAABB.getHeight();
-		}
-		double newMinX = aabb.getMinX() + newAABB.getMinX();
-		double newMinY = aabb.getMinY() + newAABB.getMinY();
-		this.aabb = new AABB(newMinX, newMinY, aabb.getMinZ(), newMinX + width,
-				newMinY + height);
 		structure.add(this);
 	}
 
 	public EntityComponent getComponent(int id) {
+		// TODO: Possibly implement this in a way that allows binary search
 		Iterator<EntityComponent> it = components.iterator();
 		while (it.hasNext()) {
 			EntityComponent current = it.next();
@@ -101,6 +99,10 @@ public class Entity implements ISpatialObject, Comparable<Entity> {
 			}
 		}
 	}
+	
+	public AABB translateAABB(AABB aabb) {
+		return aabb.move(x, y);
+	}
 
 	public float move(float amtXIn, float amtYIn) {
 		if (amtXIn != 0.0f && amtYIn != 0.0f) {
@@ -118,7 +120,8 @@ public class Entity implements ISpatialObject, Comparable<Entity> {
 			amtY = amts.getVal2();
 		}
 
-		this.aabb = aabb.move(amtX, amtY);
+		x += amtX;
+		y += amtY;
 		structure.add(this);
 		if (amtX != 0) {
 			return (float) amtX;
@@ -170,7 +173,15 @@ public class Entity implements ISpatialObject, Comparable<Entity> {
 
 	@Override
 	public AABB getAABB() {
-		return aabb;
+		return translateAABB(aabb);
+	}
+	
+	public double getX() {
+		return x;
+	}
+	
+	public double getY() {
+		return y;
 	}
 
 	@Override

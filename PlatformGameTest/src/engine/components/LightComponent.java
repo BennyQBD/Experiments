@@ -12,21 +12,25 @@ public class LightComponent extends EntityComponent {
 	public static final int ID = IDAssigner.getId();
 	private LightMap light;
 	private Color color;
+	private double offsetX;
+	private double offsetY;
 
-	public LightComponent(Entity entity, LightMap light) {
+	public LightComponent(Entity entity, LightMap light, double offsetX, double offsetY) {
 		super(entity, ID);
 		this.light = light;
 		int halfWidth = light.getWidth() / 2;
 		int halfHeight = light.getHeight() / 2;
 		entity.fitAABB(new AABB(-halfWidth, -halfHeight, halfWidth, halfHeight));
 		this.color = Color.WHITE;
+		this.offsetX = offsetX;
+		this.offsetY = offsetY;
 	}
 
 	@Override
 	public void render(IRenderContext target, double viewportX, double viewportY) {
 		target.drawLight(light,
-				getEntity().getAABB().getMinX() - viewportX,
-				getEntity().getAABB().getMinY() - viewportY,
+				getEntity().getX() - viewportX + offsetX,
+				getEntity().getY() - viewportY + offsetY,
 				0, 0, light.getWidth(), light.getHeight(), color);
 	}
 

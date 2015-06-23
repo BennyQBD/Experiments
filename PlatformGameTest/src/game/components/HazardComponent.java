@@ -1,8 +1,10 @@
 package game.components;
 
+import engine.components.ColliderComponent;
 import engine.core.entity.Entity;
 import engine.core.entity.EntityComponent;
 import engine.core.entity.IEntityVisitor;
+import engine.space.AABB;
 import engine.util.IDAssigner;
 
 public class HazardComponent extends EntityComponent {
@@ -21,8 +23,13 @@ public class HazardComponent extends EntityComponent {
 
 	@Override
 	public void update(double delta) {
-		getEntity().visitInRange(PlayerComponent.ID,
-				getEntity().getAABB().expand(spaceX, spaceY, spaceZ),
+		ColliderComponent c = (ColliderComponent) getEntity().getComponent(
+				ColliderComponent.ID);
+		AABB aabb = c != null ? c.getAABB().expand(spaceX, spaceY, spaceZ)
+				: getEntity().translateAABB(
+						new AABB(0, 0, 0, 0, 0, 0).expand(spaceX, spaceY,
+								spaceZ));
+		getEntity().visitInRange(PlayerComponent.ID, aabb,
 				new IEntityVisitor() {
 					@Override
 					public void visit(Entity entity, EntityComponent component) {

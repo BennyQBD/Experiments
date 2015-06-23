@@ -1,6 +1,7 @@
 package game.components;
 
 import engine.components.AudioComponent;
+import engine.components.ColliderComponent;
 import engine.components.CollisionComponent;
 import engine.components.SpriteComponent;
 import engine.core.entity.Entity;
@@ -29,6 +30,17 @@ public class EnemyComponent extends EntityComponent {
 	private final double killBounceSpeed;
 	private SpriteComponent spriteComponent;
 	private AudioComponent audioComponent;
+	private ColliderComponent colliderComponent;
+
+	private ColliderComponent getColliderComponent() {
+		if (colliderComponent != null) {
+			return colliderComponent;
+		}
+
+		colliderComponent = (ColliderComponent) getEntity().getComponent(
+				ColliderComponent.ID);
+		return colliderComponent;
+	}
 
 	private SpriteComponent getSpriteComponent() {
 		if (spriteComponent != null) {
@@ -39,7 +51,7 @@ public class EnemyComponent extends EntityComponent {
 				SpriteComponent.ID);
 		return spriteComponent;
 	}
-	
+
 	private AudioComponent getAudioComponent() {
 		if (audioComponent != null) {
 			return audioComponent;
@@ -112,7 +124,7 @@ public class EnemyComponent extends EntityComponent {
 		float newMoveX = (float) (speedX * delta);
 		float moveX = getEntity().move(newMoveX, 0.0f);
 		if (moveX != newMoveX
-				|| aboutToWalkOffCliff(getEntity().getAABB().getWidth()
+				|| aboutToWalkOffCliff(getColliderComponent().getAABB().getWidth()
 						* speedX / Math.abs(speedX), cliffLookDownDistance)) {
 			speedX = -speedX;
 			getSpriteComponent().setFlipX(speedX < 0);
@@ -144,8 +156,8 @@ public class EnemyComponent extends EntityComponent {
 
 	private boolean aboutToWalkOffCliff(double distX, double distY) {
 		final DoubleVal val = new DoubleVal();
-		getEntity().visitInRange(CollisionComponent.ID, getEntity().getAABB().move(distX, distY),
-				new IEntityVisitor() {
+		getEntity().visitInRange(CollisionComponent.ID,
+				getColliderComponent().getAABB().move(distX, distY), new IEntityVisitor() {
 					@Override
 					public void visit(Entity entity, EntityComponent component) {
 						if (entity != getEntity()) {

@@ -4,6 +4,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.TreeSet;
 
+import engine.components.ColliderComponent;
 import engine.core.entity.Entity;
 import engine.core.entity.EntityComponent;
 import engine.core.entity.IEntityVisitor;
@@ -21,12 +22,25 @@ public class InventoryComponent extends EntityComponent {
 	private int checkpoint;
 	private int pointsForExtraLife;
 
+	private ColliderComponent colliderComponent;
+
+	private ColliderComponent getColliderComponent() {
+		if (colliderComponent != null) {
+			return colliderComponent;
+		}
+
+		colliderComponent = (ColliderComponent) getEntity().getComponent(
+				ColliderComponent.ID);
+		return colliderComponent;
+	}
+
 	public InventoryComponent(Entity entity) {
 		this(entity, 0, 0, 0, 0, 0, 0, 0);
 	}
-	
-	public InventoryComponent(Entity entity, int points, int health, int maxHealth, int lives,
-			int lifeDeficit, int checkpoint, int pointsForExtraLife) {
+
+	public InventoryComponent(Entity entity, int points, int health,
+			int maxHealth, int lives, int lifeDeficit, int checkpoint,
+			int pointsForExtraLife) {
 		super(entity, ID);
 		itemIds = new TreeSet<Integer>();
 		this.points = points;
@@ -37,7 +51,7 @@ public class InventoryComponent extends EntityComponent {
 		this.checkpoint = checkpoint;
 		this.pointsForExtraLife = pointsForExtraLife;
 	}
-	
+
 	public Iterator<Integer> getItemIterator() {
 		return itemIds.iterator();
 	}
@@ -57,7 +71,8 @@ public class InventoryComponent extends EntityComponent {
 	}
 
 	private void unlockObjects() {
-		getEntity().visitInRange(UnlockComponent.ID, getEntity().getAABB().expand(1, 1, 0),
+		getEntity().visitInRange(UnlockComponent.ID,
+				getColliderComponent().getAABB().expand(1, 1, 0),
 				new IEntityVisitor() {
 					@Override
 					public void visit(Entity entity, EntityComponent component) {
@@ -72,28 +87,36 @@ public class InventoryComponent extends EntityComponent {
 
 	private void pickupItems() {
 		getEntity().visitInRange(CollectableComponent.ID,
-				getEntity().getAABB(), new IEntityVisitor() {
+				getColliderComponent().getAABB(), new IEntityVisitor() {
 					@Override
 					public void visit(Entity entity, EntityComponent component) {
+						ColliderComponent collider = (ColliderComponent) entity
+								.getComponent(ColliderComponent.ID);
+						if (collider != null
+								&& !getColliderComponent().getAABB()
+										.intersects(collider.getAABB())) {
+							return;
+						}
+
 						CollectableComponent c = (CollectableComponent) component;
 						int id = c.getItemId();
 						if (id != 0) {
-							if(!hasItem(id)) {
+							if (!hasItem(id)) {
 								itemIds.add(id);
 								pickupItem(entity, c);
 							}
-						} else if(c.getHealth() <= 0 || health < maxHealth) {
+						} else if (c.getHealth() <= 0 || health < maxHealth) {
 							pickupItem(entity, c);
 						}
 					}
 				});
 	}
-	
+
 	private void pickupItem(Entity e, CollectableComponent c) {
 		addPoints(c.getPoints());
 		addHealth(c.getHealth());
 		lives += c.getLives();
-		if(c.getCheckpoint() > checkpoint) {
+		if (c.getCheckpoint() > checkpoint) {
 			checkpoint = c.getCheckpoint();
 		}
 		e.remove();
@@ -106,16 +129,16 @@ public class InventoryComponent extends EntityComponent {
 			lifeDeficit = 0;
 		}
 	}
-	
+
 	public void addHealth(int amt) {
 		health += amt;
-		if(health > maxHealth) {
+		if (health > maxHealth) {
 			health = maxHealth;
 		}
 	}
 
 	public void addPoints(int amt) {
-		if(pointsForExtraLife == 0) {
+		if (pointsForExtraLife == 0) {
 			points += amt;
 			return;
 		}
@@ -136,7 +159,7 @@ public class InventoryComponent extends EntityComponent {
 	public int getLives() {
 		return lives;
 	}
-	
+
 	public int getHealth() {
 		return health;
 	}
@@ -144,7 +167,7 @@ public class InventoryComponent extends EntityComponent {
 	public int getPoints() {
 		return points;
 	}
-	
+
 	public int getCheckpoint() {
 		return checkpoint;
 	}
