@@ -13,6 +13,12 @@ import engine.util.parsing.Config;
 public class Main {
 	public static void main(String[] args) throws IOException, ParseException,
 			LWJGLException {
+		// TODO: Make preprocessing a command line option
+//		if(true) {
+//			LevelPreprocessor.processLevel("./res/gfx/testLevel.png", "./res/gfx/testLevel2.png", "png");
+//			return;
+//		}
+		
 		Config config = new Config("./res/main.cfg");
 		int tileSize = config.getInt("level.spriteSize");
 		int tilesX = config.getInt("level.display.tilesX");
