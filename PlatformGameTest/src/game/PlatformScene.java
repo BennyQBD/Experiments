@@ -57,8 +57,7 @@ public class PlatformScene extends Scene {
 	public void startNewGame(int points, int lives, int lifeDeficit,
 			int levelNum, int checkpoint) throws IOException {
 		initVariables();
-		level.loadLevel(getStructure(), points, lives, lifeDeficit, levelNum,
-				checkpoint);
+		level.loadLevel(points, lives, lifeDeficit, levelNum, checkpoint);
 		gameMenu.close();
 	}
 
@@ -73,8 +72,8 @@ public class PlatformScene extends Scene {
 		SpriteSheetFactory sprites = new SpriteSheetFactory(new BitmapFactory(
 				device, "./res/gfx/"));
 		SoundFactory sounds = new SoundFactory(audioDevice, "./res/sounds/");
-		this.level = new PlatformLevel(device, input, config, sprites,
-				new LightMapFactory(device), sounds);
+		this.level = new PlatformLevel(this, getStructure(), device, input,
+				config, sprites, new LightMapFactory(device), sounds);
 		SpriteSheet font = sprites.get("monospace.png", 16, 16);
 
 		this.gameIO = new GameIO(this, level);
@@ -108,7 +107,7 @@ public class PlatformScene extends Scene {
 				checkpoint = 0;
 			}
 			try {
-				level.loadLevel(getStructure(), points, lives, lifeDeficit,
+				level.loadLevel(points, lives, lifeDeficit,
 						level.getLevelNum(), checkpoint);
 			} catch (IOException e) {
 				enterErrorState(e);

@@ -35,7 +35,9 @@
 + Sound
 + Checkpoints
 + Health items
-- Different enemy types (projectile shooting enemies?)
++ Different enemy types (projectile shooting enemies?)
+- Sounds for fireballs
+- Finish rock tileset
 - Multiple levels
 - Flying powerup?
 - Weapons?

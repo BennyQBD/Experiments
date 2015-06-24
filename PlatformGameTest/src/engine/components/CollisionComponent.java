@@ -4,27 +4,10 @@ import engine.core.entity.Entity;
 import engine.core.entity.EntityComponent;
 import engine.core.entity.IEntityVisitor;
 import engine.space.AABB;
+import engine.util.DoublePair;
 import engine.util.IDAssigner;
 
 public class CollisionComponent extends EntityComponent {
-	public class DoublePair {
-		public DoublePair(double val1, double val2) {
-			this.val1 = val1;
-			this.val2 = val2;
-		}
-
-		private double val1;
-		private double val2;
-
-		public double getVal1() {
-			return val1;
-		}
-
-		public double getVal2() {
-			return val2;
-		}
-	}
-
 	public static final int ID = IDAssigner.getId();
 
 	public CollisionComponent(Entity entity) {
@@ -48,10 +31,10 @@ public class CollisionComponent extends EntityComponent {
 						}
 
 						if (entity.getAABB().intersects(collisionRange)) {
-							amts.val1 = collider.resolveCollisionX(
-									entity.getAABB(), amts.val1);
-							amts.val2 = collider.resolveCollisionY(
-									entity.getAABB(), amts.val2);
+							amts.setVal1(collider.resolveCollisionX(
+									entity.getAABB(), amts.getVal1()));
+							amts.setVal2(collider.resolveCollisionY(
+									entity.getAABB(), amts.getVal2()));
 						}
 					}
 				});

@@ -8,8 +8,10 @@ import engine.core.entity.Entity;
 import engine.core.entity.EntityComponent;
 import engine.core.entity.IEntityVisitor;
 import engine.rendering.IRenderContext;
+import engine.util.Delay;
 import engine.util.IDAssigner;
 import engine.util.parsing.Config;
+import game.PlatformLevel;
 
 public class EnemyComponent extends EntityComponent {
 	private class DoubleVal {
@@ -28,9 +30,18 @@ public class EnemyComponent extends EntityComponent {
 	private final double gravity;
 	private final double cliffLookDownDistance;
 	private final double killBounceSpeed;
+	private final Delay shootDelay;
+	private final PlatformLevel level;
 	private SpriteComponent spriteComponent;
 	private AudioComponent audioComponent;
 	private ColliderComponent colliderComponent;
+	private final String projectileName;
+
+	private final double projectileOffsetX;
+	private final double projectileOffsetY;
+	private final double projectileSpeedX;
+	private final double projectileSpeedY;
+	private final double projectileGravity;
 
 	private ColliderComponent getColliderComponent() {
 		if (colliderComponent != null) {
@@ -62,19 +73,40 @@ public class EnemyComponent extends EntityComponent {
 		return audioComponent;
 	}
 
-	public EnemyComponent(Entity entity, Config config, String type) {
+	public EnemyComponent(Entity entity, Config config, String type,
+			PlatformLevel level) {
 		super(entity, ID);
 		this.velY = 0.0;
 		this.state = STATE_WALK;
 		this.lastRenderCounter = 0.0;
-		this.points = config.getInt("enemy." + type + ".points");
-		this.speedX = config.getDouble("enemy." + type + ".speedX");
-		this.gravity = config.getDouble("enemy." + type + ".gravity");
-		this.removeDelay = config.getDouble("enemy." + type + ".removeDelay");
-		this.cliffLookDownDistance = config.getDouble("enemy." + type
-				+ ".cliffLookDownDistance");
-		this.killBounceSpeed = config.getDouble("enemy." + type
-				+ ".killBounceSpeed");
+		this.points = config.getIntWithDefault("enemy." + type + ".points", "enemy.default.points");
+		this.speedX = config.getDoubleWithDefault("enemy." + type + ".speedX", "enemy.default.speedX");
+		this.gravity = config.getDoubleWithDefault("enemy." + type + ".gravity", "enemy.default.gravity");
+		this.removeDelay = config.getDoubleWithDefault("enemy." + type + ".removeDelay", "enemy.default.removeDelay");
+		this.cliffLookDownDistance = config.getDoubleWithDefault("enemy." + type
+				+ ".cliffLookDownDistance", "enemy.default.cliffLookDownDistance");
+		this.killBounceSpeed = config.getDoubleWithDefault("enemy." + type
+				+ ".killBounceSpeed", "enemy.default.killBounceSpeed");
+		double shootDelayAmt = config.getDoubleWithDefault("enemy." + type
+				+ ".shootDelay", "enemy.default.shootDelay");
+		if(shootDelayAmt != 0.0) {
+			this.shootDelay = new Delay(shootDelayAmt);
+		} else {
+			this.shootDelay = null;
+		}
+		this.level = level;
+		this.projectileName = config.getStringWithDefault("enemy." + type + ".projectile", "enemy.default.projectile");
+
+		this.projectileOffsetX = config.getDoubleWithDefault("enemy." + type
+				+ ".projectile.offsetX", "enemy.default.projectile.offsetX");
+		this.projectileOffsetY = config.getDoubleWithDefault("enemy." + type
+				+ ".projectile.offsetY", "enemy.default.projectile.offsetY");
+		this.projectileSpeedX = config.getDoubleWithDefault("enemy." + type
+				+ ".projectile.speedX", "enemy.default.projectile.speedX");
+		this.projectileSpeedY = config.getDoubleWithDefault("enemy." + type
+				+ ".projectile.speedY", "enemy.default.projectile.speedY");
+		this.projectileGravity = config.getDoubleWithDefault("enemy." + type
+				+ ".projectile.gravity", "enemy.default.projectile.gravity");
 	}
 
 	public int getPoints() {
@@ -124,10 +156,45 @@ public class EnemyComponent extends EntityComponent {
 		float newMoveX = (float) (speedX * delta);
 		float moveX = getEntity().move(newMoveX, 0.0f);
 		if (moveX != newMoveX
-				|| aboutToWalkOffCliff(getColliderComponent().getAABB().getWidth()
-						* speedX / Math.abs(speedX), cliffLookDownDistance)) {
+				|| aboutToWalkOffCliff(getColliderComponent().getAABB()
+						.getWidth() * speedX / Math.abs(speedX),
+						cliffLookDownDistance)) {
 			speedX = -speedX;
 			getSpriteComponent().setFlipX(speedX < 0);
+		}
+
+		if (shootDelay != null && shootDelay.over(delta)) {
+			shoot();
+			shootDelay.reset();
+		}
+	}
+
+	private void shoot() {
+		double x = getEntity().getX();
+		double y = getEntity().getY();
+
+		double projVelX = projectileSpeedX;
+		double projVelY = projectileSpeedY;
+
+		double shootOffsetX = getColliderComponent().getAABB().getWidth();
+
+		if (speedX < 0) {
+			projVelX = -projVelX;
+			x -= shootOffsetX;
+			x -= projectileOffsetX;
+		} else {
+			x += shootOffsetX;
+			x += projectileOffsetX;
+		}
+		if (velY < 0) {
+			projVelY = -projVelY;
+		}
+		y += projectileOffsetY;
+
+		Entity e = level.parseEntity(x, y, 0, "enemy.projectile."
+				+ projectileName + ".", false);
+		if (e != null) {
+			new ProjectileComponent(e, projVelX, projVelY, projectileGravity);
 		}
 	}
 
@@ -157,7 +224,8 @@ public class EnemyComponent extends EntityComponent {
 	private boolean aboutToWalkOffCliff(double distX, double distY) {
 		final DoubleVal val = new DoubleVal();
 		getEntity().visitInRange(CollisionComponent.ID,
-				getColliderComponent().getAABB().move(distX, distY), new IEntityVisitor() {
+				getColliderComponent().getAABB().move(distX, distY),
+				new IEntityVisitor() {
 					@Override
 					public void visit(Entity entity, EntityComponent component) {
 						if (entity != getEntity()) {

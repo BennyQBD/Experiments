@@ -46,18 +46,22 @@ public class PlatformLevel {
 	private Config config;
 	private IInput input;
 	private IRenderDevice device;
+	private ISpatialStructure<Entity> structure;
 	private int levelNum;
 	private Sound levelMusic;
 	private GradientBackground background;
 	private double parallax;
 	private double ambientLight;
+	private String defaultPrefixIn;
+	private PlatformScene scene;
 
 	private Map<Integer, SpriteSheet> itemSprites;
 	private Map<Integer, Color> itemColors;
 
 	private Color lastColor;
 
-	public PlatformLevel(IRenderDevice device, IInput input, Config config,
+	public PlatformLevel(PlatformScene scene, ISpatialStructure<Entity> structure,
+			IRenderDevice device, IInput input, Config config,
 			SpriteSheetFactory sprites, LightMapFactory lightMaps,
 			SoundFactory sounds) {
 		this.sprites = sprites;
@@ -68,6 +72,9 @@ public class PlatformLevel {
 		this.device = device;
 		this.lastColor = null;
 		this.levelNum = -1;
+		this.structure = structure;
+		this.defaultPrefixIn = "entity." + "default" + ".";
+		this.scene = scene;
 	}
 
 	public Entity getPlayer() {
@@ -93,18 +100,18 @@ public class PlatformLevel {
 	public int getLevelNum() {
 		return levelNum;
 	}
-	
+
 	public double getAmbientLight() {
 		return ambientLight;
 	}
-	
-	public void renderBackground(IRenderContext target, double viewportX, double viewportY) {
+
+	public void renderBackground(IRenderContext target, double viewportX,
+			double viewportY) {
 		background.render(target, parallax, viewportY);
 	}
 
-	public void loadLevel(ISpatialStructure<Entity> structure, int points,
-			int lives, int lifeDeficit, int levelNum, int checkpoint)
-			throws IOException {
+	public void loadLevel(int points, int lives, int lifeDeficit, int levelNum,
+			int checkpoint) throws IOException {
 		String prefix = "level." + levelNum;
 		SpriteSheet level = sprites.get(config.getString(prefix + ".data"),
 				config.getInt(prefix + ".sheetWidth"),
@@ -141,8 +148,8 @@ public class PlatformLevel {
 					int color = pixels[level.getPixelIndex(k, i, j)] & 0x00FFFFFF;
 					int x = i * tileSize;
 					int y = j * tileSize;
-					addEntity(input, structure, x, y, k, color, points, lives,
-							lifeDeficit, checkpoint);
+					addEntity(x, y, k, color, points, lives, lifeDeficit,
+							checkpoint);
 				}
 			}
 		}
@@ -206,9 +213,8 @@ public class PlatformLevel {
 		return sheet;
 	}
 
-	private void addEntity(IInput input, ISpatialStructure<Entity> structure,
-			int x, int y, int layer, int color, int points, int lives,
-			int lifeDeficit, int checkpoint) throws IOException {
+	private void addEntity(int x, int y, int layer, int color, int points,
+			int lives, int lifeDeficit, int checkpoint) throws IOException {
 		if (color == 0) {
 			return;
 		}
@@ -216,17 +222,25 @@ public class PlatformLevel {
 		int r = (color >> 16) & 0xFF;
 		int b = color & 0xFF;
 		String prefixIn = "entity." + b + ".";
-		String defaultPrefixIn = "entity." + "default" + ".";
 
-		parseEntity(input, structure, x, y, layer, points, lives, lifeDeficit,
-				checkpoint, r, prefixIn, defaultPrefixIn, blocking, b);
+		parseEntity(x, y, layer, points, lives, lifeDeficit, checkpoint, r,
+				prefixIn, blocking, b);
+	}
+	
+	public Entity parseEntity(double x, double y, double layer, String prefix, boolean blocking) {
+		Entity result = null;
+		try {
+			result = parseEntity(x, y, layer, 0, 0, 0, 0, 0, prefix, blocking, 0);
+		} catch (IOException e) {
+			scene.enterErrorState(e);
+		}
+		return result;
 	}
 
-	private Entity parseEntity(IInput input,
-			ISpatialStructure<Entity> structure, int x, int y, int layer,
-			int points, int lives, int lifeDeficit, int checkpoint,
-			int entityCheckpoint, String prefixIn, String defaultPrefixIn,
-			boolean blocking, int defaultSpriteIndex) throws IOException {
+	private Entity parseEntity(double x, double y, double layer, int points, int lives,
+			int lifeDeficit, int checkpoint, int entityCheckpoint,
+			String prefixIn, boolean blocking, int defaultSpriteIndex)
+			throws IOException {
 		int componentCounter = 0;
 		String prefix = prefixIn + componentCounter;
 		String component = config.getString(prefix);
@@ -260,7 +274,7 @@ public class PlatformLevel {
 					new PlayerComponent(e, input, config);
 					break;
 				case "collectable":
-					if(!hasCollider) {
+					if (!hasCollider) {
 						new ColliderComponent(e);
 						hasCollider = true;
 					}
@@ -275,10 +289,10 @@ public class PlatformLevel {
 					break;
 				case "enemy":
 					new EnemyComponent(e, config, config.getStringWithDefault(
-							prefix + ".type", "enemy.default.type"));
+							prefix + ".type", "enemy.default.type"), this);
 					break;
 				case "hazard":
-					if(!hasCollider) {
+					if (!hasCollider) {
 						new ColliderComponent(e);
 						hasCollider = true;
 					}
@@ -302,10 +316,10 @@ public class PlatformLevel {
 							new Color(lightR, lightG, lightB));
 					String lightType = config.getStringWithDefault(prefix
 							+ ".type", "light.default.type");
-					double lightOffsetX = config.getDoubleWithDefault(prefix + ".offsetX",
-							"light.default.offsetX");
-					double lightOffsetY = config.getDoubleWithDefault(prefix + ".offsetY",
-							"light.default.offsetY");
+					double lightOffsetX = config.getDoubleWithDefault(prefix
+							+ ".offsetX", "light.default.offsetX");
+					double lightOffsetY = config.getDoubleWithDefault(prefix
+							+ ".offsetY", "light.default.offsetY");
 					if (lightType.equals("static")) {
 						addStaticLight(e, x, y, staticLightMap, light);
 					} else if (lightType.equals("dynamic")) {
@@ -356,10 +370,9 @@ public class PlatformLevel {
 					int linkedEntityDefaultSpriteIndex = config
 							.getIntWithDefault(prefix + ".defaultSpriteIndex",
 									"link.default.defaultSpriteIndex");
-					Entity linkedEntity = parseEntity(input, structure, x
-							+ offsetX, y + offsetY, layer + layerOffset,
-							points, lives, lifeDeficit, checkpoint,
-							entityCheckpoint, prefix + ".", prefix + ".",
+					Entity linkedEntity = parseEntity(x + offsetX, y + offsetY,
+							layer + layerOffset, points, lives, lifeDeficit,
+							checkpoint, entityCheckpoint, prefix + ".",
 							isLinkedEntityBlocking,
 							linkedEntityDefaultSpriteIndex);
 					if (linkedEntity != null) {
@@ -423,7 +436,7 @@ public class PlatformLevel {
 	}
 
 	private static Entity getCheckpointEntity(
-			ISpatialStructure<Entity> structure, int x, int y, int layer,
+			ISpatialStructure<Entity> structure, double x, double y, double layer,
 			Config config, int checkpoint) {
 		Entity e = new Entity(structure, x, y, layer);
 		ColliderComponent c = new ColliderComponent(e);
@@ -434,7 +447,7 @@ public class PlatformLevel {
 		return e;
 	}
 
-	private static void addStaticLight(Entity e, int x, int y,
+	private static void addStaticLight(Entity e, double x, double y,
 			LightMap staticLightMap, LightMap lightToAdd) {
 		staticLightMap.addLight(lightToAdd, x - lightToAdd.getWidth() / 2
 				+ (int) e.getAABB().getWidth() / 2, y - lightToAdd.getHeight()

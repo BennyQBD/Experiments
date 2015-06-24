@@ -9,11 +9,11 @@ import java.util.Set;
 import engine.components.AudioComponent;
 import engine.components.CollisionComponent;
 import engine.components.RemoveComponent;
-import engine.components.CollisionComponent.DoublePair;
 import engine.rendering.IRenderContext;
 import engine.space.AABB;
 import engine.space.ISpatialObject;
 import engine.space.ISpatialStructure;
+import engine.util.DoublePair;
 
 public class Entity implements ISpatialObject, Comparable<Entity> {
 	private static int currentId = 0;
@@ -54,7 +54,6 @@ public class Entity implements ISpatialObject, Comparable<Entity> {
 	}
 
 	public EntityComponent getComponent(int id) {
-		// TODO: Possibly implement this in a way that allows binary search
 		Iterator<EntityComponent> it = components.iterator();
 		while (it.hasNext()) {
 			EntityComponent current = it.next();
@@ -131,6 +130,9 @@ public class Entity implements ISpatialObject, Comparable<Entity> {
 	}
 
 	public void remove() {
+		if(isRemoved) {
+			return;
+		}
 		AudioComponent ac = (AudioComponent)getComponent(AudioComponent.ID);
 		if(ac != null) {
 			ac.play("remove");
