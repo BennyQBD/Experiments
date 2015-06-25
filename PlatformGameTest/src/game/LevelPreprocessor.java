@@ -13,7 +13,7 @@ public class LevelPreprocessor {
 		if(c == 0) {
 			return true;
 		}
-		c &= 0xFF;
+		c = (c >> 16) & 0xFF;
 		return (c > 200 && c != 249 && c != 248 && c != 220 && c != 222
 						&& c != 224 && c != 226 && c != 228);
 	}
@@ -27,114 +27,114 @@ public class LevelPreprocessor {
 	}
 
 	private static int processWall(int[] level, int i, int j, int width) {
-		int b = 33;
-		int bl = getPixel(level, i - 1, j, width) & 0xFFFFFF;
-		int br = getPixel(level, i + 1, j, width) & 0xFFFFFF;
-		int bt = getPixel(level, i, j - 1, width) & 0xFFFFFF;
-		int bb = getPixel(level, i, j + 1, width) & 0xFFFFFF;
+		int r = 33;
+		int rl = getPixel(level, i - 1, j, width) & 0xFFFFFF;
+		int rr = getPixel(level, i + 1, j, width) & 0xFFFFFF;
+		int rt = getPixel(level, i, j - 1, width) & 0xFFFFFF;
+		int rb = getPixel(level, i, j + 1, width) & 0xFFFFFF;
 
-		if (notWall(bl)) {
-			if (notWall(br)) {
-				if (notWall(bt)) {
-					if (notWall(bb)) {
-						b = 21;
+		if (notWall(rl)) {
+			if (notWall(rr)) {
+				if (notWall(rt)) {
+					if (notWall(rb)) {
+						r = 21;
 					} else {
-						b = 20;
+						r = 20;
 					}
 				} else {
-					if (notWall(bb)) {
-						b = 35;
+					if (notWall(rb)) {
+						r = 35;
 					} else {
-						b = 37;
+						r = 37;
 					}
 				}
 			} else {
-				if (notWall(bt)) {
-					if (notWall(bb)) {
-						b = 19;
+				if (notWall(rt)) {
+					if (notWall(rb)) {
+						r = 19;
 					} else {
-						b = 3;
+						r = 3;
 					}
 				} else {
-					if (notWall(bb)) {
-						b = 48;
+					if (notWall(rb)) {
+						r = 48;
 					} else {
-						b = 32;
+						r = 32;
 					}
 				}
 			}
 		} else {
-			if (notWall(br)) {
-				if (notWall(bt)) {
-					if (notWall(bb)) {
-						b = 36;
+			if (notWall(rr)) {
+				if (notWall(rt)) {
+					if (notWall(rb)) {
+						r = 36;
 					} else {
-						b = 5;
+						r = 5;
 					}
 				} else {
-					if (notWall(bb)) {
-						b = 50;
+					if (notWall(rb)) {
+						r = 50;
 					} else {
-						b = 34;
+						r = 34;
 					}
 				}
 			} else {
-				if (notWall(bt)) {
-					if (notWall(bb)) {
-						b = 52;
+				if (notWall(rt)) {
+					if (notWall(rb)) {
+						r = 52;
 					} else {
-						b = 4;
+						r = 4;
 					}
 				} else {
-					if (notWall(bb)) {
-						b = 49;
+					if (notWall(rb)) {
+						r = 49;
 					} else {
-						b = 33;
+						r = 33;
 					}
 				}
 			}
 		}
 
-		return b;
+		return r;
 	}
 
 	private static int processPlatform(int[] level, int i, int j, int width) {
-		int b = 1;
-		int bl = getPixel(level, i - 1, j, width) & 0xFFFFFF;
-		int br = getPixel(level, i + 1, j, width) & 0xFFFFFF;
-		int bb = getPixel(level, i, j + 1, width) & 0xFFFFFF;
+		int r = 1;
+		int rl = getPixel(level, i - 1, j, width) & 0xFFFFFF;
+		int rr = getPixel(level, i + 1, j, width) & 0xFFFFFF;
+		int rb = getPixel(level, i, j + 1, width) & 0xFFFFFF;
 
-		if (notWall(bl)) {
-			if (notWall(br)) {
-				if (notWall(bb)) {
-					b = 53;
+		if (notWall(rl)) {
+			if (notWall(rr)) {
+				if (notWall(rb)) {
+					r = 53;
 				} else {
-					b = 51;
+					r = 51;
 				}
 			} else {
-				if (notWall(bb)) {
-					b = 16;
+				if (notWall(rb)) {
+					r = 16;
 				} else {
-					b = 0;
+					r = 0;
 				}
 			}
 		} else {
-			if (notWall(br)) {
-				if (notWall(bb)) {
-					b = 18;
+			if (notWall(rr)) {
+				if (notWall(rb)) {
+					r = 18;
 				} else {
-					b = 2;
+					r = 2;
 				}
 			} else {
-				if (notWall(bb)) {
-					b = 17;
+				if (notWall(rb)) {
+					r = 17;
 				} else {
-					b = 1;
+					r = 1;
 				}
 			}
 		}
 
-		return b;
+		return r;
 	}
 
 	public static void processLevel(String fileName,
@@ -150,17 +150,28 @@ public class LevelPreprocessor {
 		for (int j = 1; j < height - 1; j++) {
 			for (int i = 1; i < width - 1; i++) {
 				int pixel = getPixel(level, i, j, width);
-				int b = pixel & 0xFF;
+				int r = (pixel >> 16) & 0xFF;
 
-				if (b == 33) {
-					b = processWall(level, i, j, width);
-				} else if (b == 1) {
-					b = processPlatform(level, i, j, width);
-				} else if(b == 17) {
-					b = processPlatform(level, i, j, width);
+				if (r == 33) {
+					r = processWall(level, i, j, width);
+				} else if (r == 1) {
+					r = processPlatform(level, i, j, width);
+				} else if(r == 17) {
+					r = processPlatform(level, i, j, width);
 				}
+				
+//				if((pixel & 0xFFFFFF) == 0 || b >= 200) {
+//					continue;
+//				}
+//				
+//				int newB = 1;
+//				if(b == 14 || b == 30 || b == 46 || b == 62) {
+//					newB = 2;
+//				}
+//				
+//				pixel = (b << 16) | (pixel & 0xFF00FF00) | newB;
 
-				pixel = (pixel & 0xFFFFFF00) | b;
+				pixel = (pixel & 0xFFFFFF00) | r;
 				setPixel(level, i, j, width, pixel);
 			}
 		}

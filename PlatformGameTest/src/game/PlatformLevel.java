@@ -219,12 +219,13 @@ public class PlatformLevel {
 			return;
 		}
 		boolean blocking = (color & 0x8000) != 0;
+		int entityCheckpoint = (color >> 8) & 0x7F;
 		int r = (color >> 16) & 0xFF;
 		int b = color & 0xFF;
 		String prefixIn = "entity." + b + ".";
 
-		parseEntity(x, y, layer, points, lives, lifeDeficit, checkpoint, r,
-				prefixIn, blocking, b);
+		parseEntity(x, y, layer, points, lives, lifeDeficit, checkpoint, entityCheckpoint,
+				prefixIn, blocking, r);
 	}
 	
 	public Entity parseEntity(double x, double y, double layer, String prefix, boolean blocking) {
