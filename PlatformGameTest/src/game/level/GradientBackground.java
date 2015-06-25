@@ -1,4 +1,4 @@
-package game;
+package game.level;
 
 import engine.rendering.Bitmap;
 import engine.rendering.Color;

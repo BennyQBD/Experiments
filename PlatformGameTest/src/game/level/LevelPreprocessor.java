@@ -1,4 +1,4 @@
-package game;
+package game.level;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
@@ -13,7 +13,7 @@ public class LevelPreprocessor {
 		if(c == 0) {
 			return true;
 		}
-		c = (c >> 16) & 0xFF;
+		c = c & 0xFF;
 		return (c > 200 && c != 249 && c != 248 && c != 220 && c != 222
 						&& c != 224 && c != 226 && c != 228);
 	}
@@ -151,6 +151,10 @@ public class LevelPreprocessor {
 			for (int i = 1; i < width - 1; i++) {
 				int pixel = getPixel(level, i, j, width);
 				int r = (pixel >> 16) & 0xFF;
+				int b = (pixel) & 0xFF;
+				if(b == 246) {
+					continue;
+				}
 
 				if (r == 33) {
 					r = processWall(level, i, j, width);
@@ -158,7 +162,7 @@ public class LevelPreprocessor {
 					r = processPlatform(level, i, j, width);
 				} else if(r == 17) {
 					r = processPlatform(level, i, j, width);
-				}
+				} 
 				
 //				if((pixel & 0xFFFFFF) == 0 || b >= 200) {
 //					continue;
@@ -171,7 +175,7 @@ public class LevelPreprocessor {
 //				
 //				pixel = (b << 16) | (pixel & 0xFF00FF00) | newB;
 
-				pixel = (pixel & 0xFFFFFF00) | r;
+				pixel = (pixel & 0xFF00FFFF) | (r << 16);
 				setPixel(level, i, j, width, pixel);
 			}
 		}

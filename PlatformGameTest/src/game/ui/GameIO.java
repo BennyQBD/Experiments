@@ -1,4 +1,4 @@
-package game;
+package game.ui;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import engine.util.parsing.Config;
+import game.level.PlatformLevel;
+import game.level.PlatformScene;
 
 public class GameIO {
 	private PlatformScene scene;

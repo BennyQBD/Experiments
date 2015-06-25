@@ -9,6 +9,7 @@ import engine.core.entity.Entity;
 import engine.core.entity.EntityComponent;
 import engine.core.entity.IEntityVisitor;
 import engine.util.IDAssigner;
+import game.level.PlatformLevel;
 
 public class InventoryComponent extends EntityComponent {
 	public static final int ID = IDAssigner.getId();
@@ -21,6 +22,7 @@ public class InventoryComponent extends EntityComponent {
 	private int lifeDeficit;
 	private int checkpoint;
 	private int pointsForExtraLife;
+	private PlatformLevel level;
 
 	private ColliderComponent colliderComponent;
 
@@ -35,12 +37,12 @@ public class InventoryComponent extends EntityComponent {
 	}
 
 	public InventoryComponent(Entity entity) {
-		this(entity, 0, 0, 0, 0, 0, 0, 0);
+		this(entity, 0, 0, 0, 0, 0, 0, 0, null);
 	}
 
 	public InventoryComponent(Entity entity, int points, int health,
 			int maxHealth, int lives, int lifeDeficit, int checkpoint,
-			int pointsForExtraLife) {
+			int pointsForExtraLife, PlatformLevel level) {
 		super(entity, ID);
 		itemIds = new TreeSet<Integer>();
 		this.points = points;
@@ -50,6 +52,7 @@ public class InventoryComponent extends EntityComponent {
 		this.lifeDeficit = lifeDeficit;
 		this.checkpoint = checkpoint;
 		this.pointsForExtraLife = pointsForExtraLife;
+		this.level = level;
 	}
 
 	public Iterator<Integer> getItemIterator() {
@@ -105,7 +108,8 @@ public class InventoryComponent extends EntityComponent {
 								itemIds.add(id);
 								pickupItem(entity, c);
 							}
-						} else if (c.getHealth() <= 0 || health < maxHealth) {
+						} else if (c.getHealth() <= 0 || health < maxHealth
+								|| (c.getNextLevel() != -1 && level != null)) {
 							pickupItem(entity, c);
 						}
 					}
@@ -119,7 +123,17 @@ public class InventoryComponent extends EntityComponent {
 		if (c.getCheckpoint() > checkpoint) {
 			checkpoint = c.getCheckpoint();
 		}
+		if(c.getNextLevel() != -1) {
+			changeLevel(c.getNextLevel());
+		}
 		e.remove();
+	}
+
+	private void changeLevel(int nextLevel) {
+		if(level == null) {
+			return;
+		}
+		level.setLevel(nextLevel);
 	}
 
 	public void addLives(int numLives) {

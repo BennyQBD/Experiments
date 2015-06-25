@@ -1,4 +1,4 @@
-package game;
+package game.ui;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -12,6 +12,7 @@ import engine.util.menu.IMenuHandler;
 import engine.util.menu.Menu;
 import engine.util.menu.MenuStack;
 import engine.util.parsing.Config;
+import game.level.PlatformScene;
 
 public class GameMenu {
 	private PlatformScene scene;

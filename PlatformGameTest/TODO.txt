@@ -36,9 +36,10 @@
 + Checkpoints
 + Health items
 + Different enemy types (projectile shooting enemies?)
-- Sounds for fireballs
-- Finish rock tileset
-- Multiple levels
++ Finish rock tileset
++ Sounds for fireballs
++ Multiple levels
++ New sound for 250 point gem
 - Flying powerup?
 - Weapons?
 

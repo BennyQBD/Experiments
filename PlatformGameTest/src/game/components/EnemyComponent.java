@@ -11,7 +11,7 @@ import engine.rendering.IRenderContext;
 import engine.util.Delay;
 import engine.util.IDAssigner;
 import engine.util.parsing.Config;
-import game.PlatformLevel;
+import game.level.PlatformLevel;
 
 public class EnemyComponent extends EntityComponent {
 	private class DoubleVal {
@@ -42,6 +42,7 @@ public class EnemyComponent extends EntityComponent {
 	private final double projectileSpeedX;
 	private final double projectileSpeedY;
 	private final double projectileGravity;
+	private final double projectileOffscreenRemoveTime;
 
 	private ColliderComponent getColliderComponent() {
 		if (colliderComponent != null) {
@@ -79,23 +80,29 @@ public class EnemyComponent extends EntityComponent {
 		this.velY = 0.0;
 		this.state = STATE_WALK;
 		this.lastRenderCounter = 0.0;
-		this.points = config.getIntWithDefault("enemy." + type + ".points", "enemy.default.points");
-		this.speedX = config.getDoubleWithDefault("enemy." + type + ".speedX", "enemy.default.speedX");
-		this.gravity = config.getDoubleWithDefault("enemy." + type + ".gravity", "enemy.default.gravity");
-		this.removeDelay = config.getDoubleWithDefault("enemy." + type + ".removeDelay", "enemy.default.removeDelay");
-		this.cliffLookDownDistance = config.getDoubleWithDefault("enemy." + type
-				+ ".cliffLookDownDistance", "enemy.default.cliffLookDownDistance");
+		this.points = config.getIntWithDefault("enemy." + type + ".points",
+				"enemy.default.points");
+		this.speedX = config.getDoubleWithDefault("enemy." + type + ".speedX",
+				"enemy.default.speedX");
+		this.gravity = config.getDoubleWithDefault(
+				"enemy." + type + ".gravity", "enemy.default.gravity");
+		this.removeDelay = config.getDoubleWithDefault("enemy." + type
+				+ ".removeDelay", "enemy.default.removeDelay");
+		this.cliffLookDownDistance = config.getDoubleWithDefault("enemy."
+				+ type + ".cliffLookDownDistance",
+				"enemy.default.cliffLookDownDistance");
 		this.killBounceSpeed = config.getDoubleWithDefault("enemy." + type
 				+ ".killBounceSpeed", "enemy.default.killBounceSpeed");
 		double shootDelayAmt = config.getDoubleWithDefault("enemy." + type
 				+ ".shootDelay", "enemy.default.shootDelay");
-		if(shootDelayAmt != 0.0) {
+		if (shootDelayAmt != 0.0) {
 			this.shootDelay = new Delay(shootDelayAmt);
 		} else {
 			this.shootDelay = null;
 		}
 		this.level = level;
-		this.projectileName = config.getStringWithDefault("enemy." + type + ".projectile", "enemy.default.projectile");
+		this.projectileName = config.getStringWithDefault("enemy." + type
+				+ ".projectile", "enemy.default.projectile");
 
 		this.projectileOffsetX = config.getDoubleWithDefault("enemy." + type
 				+ ".projectile.offsetX", "enemy.default.projectile.offsetX");
@@ -107,6 +114,9 @@ public class EnemyComponent extends EntityComponent {
 				+ ".projectile.speedY", "enemy.default.projectile.speedY");
 		this.projectileGravity = config.getDoubleWithDefault("enemy." + type
 				+ ".projectile.gravity", "enemy.default.projectile.gravity");
+		this.projectileOffscreenRemoveTime = config.getDoubleWithDefault(
+				"enemy." + type + ".projectile.offscreenRemoveTime",
+				"enemy.default.projectile.offscreenRemoveTime");
 	}
 
 	public int getPoints() {
@@ -194,7 +204,8 @@ public class EnemyComponent extends EntityComponent {
 		Entity e = level.parseEntity(x, y, 0, "enemy.projectile."
 				+ projectileName + ".", false);
 		if (e != null) {
-			new ProjectileComponent(e, projVelX, projVelY, projectileGravity);
+			new ProjectileComponent(e, projVelX, projVelY, projectileGravity,
+					projectileOffscreenRemoveTime);
 		}
 	}
 

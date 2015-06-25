@@ -9,6 +9,8 @@ import engine.core.CoreEngine;
 import engine.rendering.IDisplay;
 import engine.rendering.opengl.OpenGLDisplay;
 import engine.util.parsing.Config;
+import game.level.LevelPreprocessor;
+import game.level.PlatformScene;
 
 public class Main {
 	public static void main(String[] args) throws IOException, ParseException,

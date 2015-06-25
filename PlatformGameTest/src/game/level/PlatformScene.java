@@ -1,4 +1,4 @@
-package game;
+package game.level;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -12,7 +12,6 @@ import engine.rendering.Color;
 import engine.rendering.IRenderContext;
 import engine.rendering.IRenderDevice;
 import engine.rendering.SpriteSheet;
-import engine.space.AABB;
 import engine.space.*;
 import engine.util.Delay;
 import engine.util.factory.BitmapFactory;
@@ -20,6 +19,9 @@ import engine.util.factory.LightMapFactory;
 import engine.util.factory.SoundFactory;
 import engine.util.factory.SpriteSheetFactory;
 import engine.util.parsing.Config;
+import game.ui.GameIO;
+import game.ui.GameMenu;
+import game.ui.HUD;
 
 public class PlatformScene extends Scene {
 	private enum State {
@@ -80,7 +82,6 @@ public class PlatformScene extends Scene {
 		this.gameMenu = new GameMenu(this, config, gameIO, input, font);
 		this.hud = new HUD(font, sprites.get("livesicon.png", 1, 1),
 				sprites.get("healthicon.png", 1, 1));
-		// this.background = new GradientBackground(device, 1.0, 0.0, 0.0);
 
 		int tileSize = config.getInt("level.spriteSize");
 		this.updateRangeX = config.getInt("level.updateRangeX") * tileSize;
@@ -126,10 +127,15 @@ public class PlatformScene extends Scene {
 		checkForLostLife();
 		switch (state) {
 		case RUNNING:
-			updateRange(
+			try {
+				updateRange(
 					delta,
 					level.getPlayer().getAABB()
 							.expand(updateRangeX, updateRangeY, 0));
+			} catch (Exception e) {
+				enterErrorState(e);
+			}
+			checkIfLevelChanged();
 			break;
 		case LOST_LIFE:
 			if (lostLifeDelay.over(delta)) {
@@ -148,6 +154,23 @@ public class PlatformScene extends Scene {
 		return false;
 	}
 
+	private void checkIfLevelChanged() {
+		if (!level.hasLevelChanged()) {
+			return;
+		}
+
+		try {
+			startNewGame(level.getPlayerInventory().getPoints(), level
+					.getPlayerInventory().getLives(), level.getPlayerInventory()
+					.getLifeDeficit(), level.getLevelNum(), 0);
+			state = State.LOST_LIFE;
+		} catch (IOException e) {
+			enterErrorState(e);
+			return;
+		}
+		
+	}
+
 	private void renderScene(IRenderContext target, double viewportX,
 			double viewportY) {
 		level.renderBackground(target, viewportX, viewportY);
@@ -164,6 +187,7 @@ public class PlatformScene extends Scene {
 		double viewportY = level.getPlayer().getAABB().getMinY()
 				- viewportOffsetY;
 
+		boolean renderLevelNum = false;
 		switch (state) {
 		case RUNNING:
 			double ambient = level.getAmbientLight();
@@ -177,12 +201,13 @@ public class PlatformScene extends Scene {
 		case LOST_LIFE:
 			target.clear(0.0, 0.0, 0.0, 0.0);
 			level.getPlayer().render(target, viewportX, viewportY);
+			renderLevelNum = true;
 			break;
 		case ERROR:
 			// Nothing to do
 			break;
 		}
-		hud.render(target, level, errorMessage);
+		hud.render(target, level, errorMessage, renderLevelNum);
 		gameMenu.render(target);
 	}
 }

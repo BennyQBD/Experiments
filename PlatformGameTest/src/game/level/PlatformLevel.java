@@ -1,4 +1,4 @@
-package game;
+package game.level;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -54,6 +54,7 @@ public class PlatformLevel {
 	private double ambientLight;
 	private String defaultPrefixIn;
 	private PlatformScene scene;
+	private boolean hasLevelChanged;
 
 	private Map<Integer, SpriteSheet> itemSprites;
 	private Map<Integer, Color> itemColors;
@@ -75,6 +76,7 @@ public class PlatformLevel {
 		this.structure = structure;
 		this.defaultPrefixIn = "entity." + "default" + ".";
 		this.scene = scene;
+		this.hasLevelChanged = true;
 	}
 
 	public Entity getPlayer() {
@@ -153,7 +155,7 @@ public class PlatformLevel {
 				}
 			}
 		}
-		if (this.levelNum != levelNum) {
+		if (this.hasLevelChanged) {
 			if (levelMusic != null) {
 				levelMusic.stop();
 			}
@@ -168,6 +170,7 @@ public class PlatformLevel {
 				levelMusic = null;
 			}
 		}
+		this.hasLevelChanged = false;
 		this.levelNum = levelNum;
 	}
 
@@ -281,12 +284,18 @@ public class PlatformLevel {
 					}
 					itemId = config.getIntWithDefault(prefix + ".id",
 							"collectable.default.id");
+					int nextLevel = config.getIntWithDefault(prefix + ".nextLevel",
+							"collectable.default.nextLevel");
+					if(nextLevel == -2) {
+						nextLevel = defaultSpriteIndex;
+					}
 					new CollectableComponent(e, config.getIntWithDefault(prefix
 							+ ".points", "collectable.default.points"),
 							config.getIntWithDefault(prefix + ".health",
 									"collectable.default.health"),
 							config.getIntWithDefault(prefix + ".lives",
-									"collectable.default.lives"), 0, itemId);
+									"collectable.default.lives"), 0, itemId, 
+									nextLevel);
 					break;
 				case "enemy":
 					new EnemyComponent(e, config, config.getStringWithDefault(
@@ -332,7 +341,7 @@ public class PlatformLevel {
 						int health = config.getInt("player.health");
 						playerInventory = new InventoryComponent(e, points,
 								health, health, lives, lifeDeficit, checkpoint,
-								config.getInt("player.pointsForExtraLife"));
+								config.getInt("player.pointsForExtraLife"), this);
 					} else {
 						new InventoryComponent(e);
 					}
@@ -441,7 +450,7 @@ public class PlatformLevel {
 			Config config, int checkpoint) {
 		Entity e = new Entity(structure, x, y, layer);
 		ColliderComponent c = new ColliderComponent(e);
-		new CollectableComponent(e, 0, 0, 0, checkpoint, 0);
+		new CollectableComponent(e, 0, 0, 0, checkpoint, 0, -1);
 		double checkpointSize = config.getDouble("level.checkpointSize");
 		c.fitAABB(new AABB(-checkpointSize, -checkpointSize, checkpointSize,
 				checkpointSize));
@@ -454,5 +463,14 @@ public class PlatformLevel {
 				+ (int) e.getAABB().getWidth() / 2, y - lightToAdd.getHeight()
 				/ 2 + (int) e.getAABB().getHeight() / 2, 0, 0,
 				lightToAdd.getWidth(), lightToAdd.getHeight(), Color.WHITE);
+	}
+
+	public void setLevel(int nextLevel) {
+		this.levelNum = nextLevel;
+		this.hasLevelChanged = true;
+	}
+	
+	public boolean hasLevelChanged() {
+		return hasLevelChanged;
 	}
 }
