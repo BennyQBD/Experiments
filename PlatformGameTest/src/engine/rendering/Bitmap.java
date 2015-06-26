@@ -23,7 +23,12 @@ public class Bitmap {
 
 	public Bitmap(IRenderDevice device, String fileName) throws IOException {
 		this.device = device;
-		BufferedImage image = ImageIO.read(new File(fileName));
+		BufferedImage image;
+		try {
+			image = ImageIO.read(new File(fileName));
+		} catch (IOException e) {
+			throw new IOException(fileName + " couldn't be loaded");
+		}
 
 		this.width = image.getWidth();
 		this.height = image.getHeight();

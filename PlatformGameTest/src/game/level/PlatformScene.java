@@ -45,8 +45,8 @@ public class PlatformScene extends Scene {
 		return sw.toString();
 	}
 
-	public void startNewGame() throws IOException {
-		startNewGame(0, DEFAULT_LIVES, 0, 0, 0);
+	public boolean startNewGame() {
+		return startNewGame(0, DEFAULT_LIVES, 0, 0, 0);
 	}
 
 	private void initVariables() {
@@ -56,11 +56,18 @@ public class PlatformScene extends Scene {
 		getStructure().clear();
 	}
 
-	public void startNewGame(int points, int lives, int lifeDeficit,
-			int levelNum, int checkpoint) throws IOException {
+	public boolean startNewGame(int points, int lives, int lifeDeficit,
+			int levelNum, int checkpoint) {
+		boolean result = true;
 		initVariables();
-		level.loadLevel(points, lives, lifeDeficit, levelNum, checkpoint);
+		try {
+			level.loadLevel(points, lives, lifeDeficit, levelNum, checkpoint);
+		} catch (Exception e) {
+			enterErrorState(e);
+			result = false;
+		}
 		gameMenu.close();
+		return result;
 	}
 
 	public PlatformScene(Config config, IInput input, IRenderDevice device,
@@ -72,16 +79,18 @@ public class PlatformScene extends Scene {
 						* config.getInt("level.spatialStructure.height")),
 				config.getInt("level.spatialStructure.tileCapacity")));
 		SpriteSheetFactory sprites = new SpriteSheetFactory(new BitmapFactory(
-				device, "./res/gfx/"));
-		SoundFactory sounds = new SoundFactory(audioDevice, "./res/sounds/");
+				device, config.getString("level.graphicsPath")));
+		SoundFactory sounds = new SoundFactory(audioDevice,
+				config.getString("level.soundPath"));
 		this.level = new PlatformLevel(this, getStructure(), device, input,
 				config, sprites, new LightMapFactory(device), sounds);
-		SpriteSheet font = sprites.get("monospace.png", 16, 16);
+		SpriteSheet font = sprites
+				.get(config.getString("hud.fontName"), 16, 16);
 
 		this.gameIO = new GameIO(this, level);
 		this.gameMenu = new GameMenu(this, config, gameIO, input, font);
-		this.hud = new HUD(font, sprites.get("livesicon.png", 1, 1),
-				sprites.get("healthicon.png", 1, 1));
+		this.hud = new HUD(font, sprites.get(config.getString("hud.livesIcon"),
+				1, 1), sprites.get(config.getString("hud.healthIcon"), 1, 1));
 
 		int tileSize = config.getInt("level.spriteSize");
 		this.updateRangeX = config.getInt("level.updateRangeX") * tileSize;
@@ -124,18 +133,18 @@ public class PlatformScene extends Scene {
 		if (shouldExit || gameMenu.isShowing()) {
 			return shouldExit;
 		}
-		checkForLostLife();
 		switch (state) {
 		case RUNNING:
 			try {
+				checkForLostLife();
 				updateRange(
-					delta,
-					level.getPlayer().getAABB()
-							.expand(updateRangeX, updateRangeY, 0));
+						delta,
+						level.getPlayer().getAABB()
+								.expand(updateRangeX, updateRangeY, 0));
+				checkIfLevelChanged();
 			} catch (Exception e) {
 				enterErrorState(e);
 			}
-			checkIfLevelChanged();
 			break;
 		case LOST_LIFE:
 			if (lostLifeDelay.over(delta)) {
@@ -159,16 +168,11 @@ public class PlatformScene extends Scene {
 			return;
 		}
 
-		try {
-			startNewGame(level.getPlayerInventory().getPoints(), level
-					.getPlayerInventory().getLives(), level.getPlayerInventory()
-					.getLifeDeficit(), level.getLevelNum(), 0);
+		if (startNewGame(level.getPlayerInventory().getPoints(), level
+				.getPlayerInventory().getLives(), level.getPlayerInventory()
+				.getLifeDeficit(), level.getLevelNum(), 0)) {
 			state = State.LOST_LIFE;
-		} catch (IOException e) {
-			enterErrorState(e);
-			return;
 		}
-		
 	}
 
 	private void renderScene(IRenderContext target, double viewportX,
@@ -177,7 +181,16 @@ public class PlatformScene extends Scene {
 		renderRange(target, viewportX, viewportY);
 	}
 
+	private void drawUI(IRenderContext target, boolean renderLevelNum) {
+		hud.render(target, level, errorMessage, renderLevelNum);
+		gameMenu.render(target);
+	}
+
 	public void render(IRenderContext target) {
+		if(state == State.ERROR) {
+			drawUI(target, false);
+			return;
+		}
 		double viewportOffsetX = ((target.getWidth() - level.getPlayer()
 				.getAABB().getWidth()) / 2);
 		double viewportOffsetY = ((target.getHeight() - level.getPlayer()
@@ -207,7 +220,6 @@ public class PlatformScene extends Scene {
 			// Nothing to do
 			break;
 		}
-		hud.render(target, level, errorMessage, renderLevelNum);
-		gameMenu.render(target);
+		drawUI(target, renderLevelNum);
 	}
 }

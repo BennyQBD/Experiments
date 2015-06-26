@@ -27,7 +27,7 @@ public class Main {
 		int tilesY = config.getInt("level.display.tilesY");
 		IDisplay display = new OpenGLDisplay(tileSize * tilesX, tileSize
 				* tilesY, config.getInt("level.display.width"),
-				config.getInt("level.display.height"), "My Game");
+				config.getInt("level.display.height"), config.getString("level.display.title"));
 		CoreEngine engine = new CoreEngine(display, new PlatformScene(config,
 				display.getInput(), display.getRenderDevice(),
 				display.getAudioDevice()),
